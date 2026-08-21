@@ -253,6 +253,101 @@ export function renderTrackerView(container) {
     `;
   }
 
+  // Calculate Milestone Journey metrics
+  function getMilestoneData(sessions) {
+    const totalMinutes = sessions.reduce((acc, s) => acc + (s.duration || 0), 0);
+    const totalHoursNum = totalMinutes / 60;
+    const totalHours = totalHoursNum.toFixed(1);
+
+    // Dynamic milestone progression: 100h -> 200h -> 300h -> 500h -> 750h -> 1000h...
+    const milestones = [100, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000, 10000];
+    let target = milestones.find(m => m > totalHoursNum);
+    if (!target) {
+      target = Math.ceil((totalHoursNum + 1) / 1000) * 1000;
+    }
+
+    const progressPct = Math.min(100, Math.max(0, (totalHoursNum / target) * 100));
+    const hoursRemaining = Math.max(0, target - totalHoursNum).toFixed(1);
+
+    // 5 scale markers: 0h, 25h, 50h, 75h, 100h (scaled to target)
+    const scaleMarkers = [0, 0.25, 0.5, 0.75, 1].map(fraction => {
+      const val = Math.round(target * fraction);
+      return `${val}h`;
+    });
+
+    // Best Day calculation (date with highest cumulative minutes)
+    const dayMap = {};
+    sessions.forEach(s => {
+      dayMap[s.date] = (dayMap[s.date] || 0) + (s.duration || 0);
+    });
+    const maxDayMinutes = Math.max(0, ...Object.values(dayMap));
+    const bestDayHours = (maxDayMinutes / 60).toFixed(1);
+
+    // Longest single session calculation
+    const maxSessionMinutes = Math.max(0, ...sessions.map(s => s.duration || 0));
+    const longestSessionHours = (maxSessionMinutes / 60).toFixed(1);
+
+    return {
+      totalHours,
+      target,
+      progressPct: progressPct.toFixed(1),
+      hoursRemaining,
+      scaleMarkers,
+      bestDayHours,
+      allTimeHours: totalHours,
+      longestSessionHours
+    };
+  }
+
+  // Render Journey to Next Milestone Card
+  function renderMilestoneCard(sessions) {
+    const data = getMilestoneData(sessions);
+
+    return `
+      <div class="tool-card journey-milestone-card">
+        <div class="milestone-header">
+          <div class="milestone-header-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+              <line x1="4" y1="22" x2="4" y2="15"></line>
+            </svg>
+            <span>JOURNEY TO NEXT MILESTONE</span>
+          </div>
+        </div>
+
+        <div class="milestone-progress-block">
+          <div class="milestone-track">
+            <div class="milestone-fill" style="width: ${data.progressPct}%;"></div>
+          </div>
+          <div class="milestone-scale-markers">
+            ${data.scaleMarkers.map(m => `<span class="milestone-scale-marker">${m}</span>`).join('')}
+          </div>
+        </div>
+
+        <div class="milestone-progress-line">
+          <strong>${data.totalHours}h</strong> of <strong>${data.target}h milestone</strong> <span class="milestone-dot">&middot;</span> <span class="milestone-remaining-text">${data.hoursRemaining}h to go</span>
+        </div>
+
+        <div class="milestone-stats-row">
+          <div class="milestone-stat-col">
+            <span class="milestone-stat-value">${data.bestDayHours}h</span>
+            <span class="milestone-stat-label">Best Day</span>
+          </div>
+          <div class="milestone-stat-divider"></div>
+          <div class="milestone-stat-col">
+            <span class="milestone-stat-value">${data.allTimeHours}h</span>
+            <span class="milestone-stat-label">All Time</span>
+          </div>
+          <div class="milestone-stat-divider"></div>
+          <div class="milestone-stat-col">
+            <span class="milestone-stat-value">${data.longestSessionHours}h</span>
+            <span class="milestone-stat-label">Longest Session</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   container.innerHTML = `
     <div class="tracker-layout">
       <!-- 2-Column Analytics Top Row: Full-Year Activity Heatmap (Left) + Study Time Distribution (Right) -->
@@ -467,52 +562,61 @@ export function renderTrackerView(container) {
           </div>
         </div>
 
-        <!-- Manual Log Entry (Hours + Minutes Side-by-Side) -->
-        <div class="tool-card manual-log-card">
-          <div class="tool-card-title">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-              <span>Manual Study Log</span>
+        <!-- Right Column: Milestone Progress + Manual Study Log -->
+        <div class="tracker-tools-right-col">
+          <!-- Journey to Next Milestone Card -->
+          ${renderMilestoneCard(sessions)}
+
+          <!-- Manual Log Entry (Hours + Minutes Side-by-Side) -->
+          <div class="tool-card manual-log-card">
+            <div class="tool-card-title">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>Manual Study Log</span>
+              </div>
             </div>
+
+            <form id="manual-session-form">
+              <!-- Paired Inputs: Subject & Date Side-by-Side -->
+              <div class="form-row-paired" style="margin-bottom: 14px;">
+                <div class="form-group">
+                  <label class="form-label" for="manual-subject-select">Subject</label>
+                  <select id="manual-subject-select" class="form-select">
+                    <option value="">🌐 General / No Subject</option>
+                    ${activeSubjects.map(s => `
+                      <option value="${s.id}" ${s.id === selectedSubjectId ? 'selected' : ''}>
+                        ${s.code ? `[${s.code}] ` : ''}${s.name}
+                      </option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="manual-date">Date *</label>
+                  <input type="date" id="manual-date" class="form-input" value="${todayStr}" max="${todayStr}" required>
+                </div>
+              </div>
+
+              <!-- Paired Inputs: Hours & Minutes Side-by-Side -->
+              <div class="form-row-paired" style="margin-bottom: 20px;">
+                <div class="form-group">
+                  <label class="form-label" for="manual-hours">Hours</label>
+                  <input type="number" id="manual-hours" class="form-input" min="0" max="24" value="1" placeholder="0">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="manual-minutes">Minutes</label>
+                  <input type="number" id="manual-minutes" class="form-input" min="0" max="59" value="30" placeholder="0">
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%;">
+                Log Study Session
+              </button>
+            </form>
           </div>
-
-          <form id="manual-session-form">
-            <div class="form-group" style="margin-bottom: 14px;">
-              <label class="form-label" for="manual-subject-select">Subject</label>
-              <select id="manual-subject-select" class="form-select">
-                <option value="">🌐 General / No Subject</option>
-                ${activeSubjects.map(s => `
-                  <option value="${s.id}" ${s.id === selectedSubjectId ? 'selected' : ''}>
-                    ${s.code ? `[${s.code}] ` : ''}${s.name}
-                  </option>
-                `).join('')}
-              </select>
-            </div>
-
-            <!-- Paired Inputs: Hours & Minutes Side-by-Side -->
-            <div class="form-row-paired" style="margin-bottom: 14px;">
-              <div class="form-group">
-                <label class="form-label" for="manual-hours">Hours</label>
-                <input type="number" id="manual-hours" class="form-input" min="0" max="24" value="1" placeholder="0">
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="manual-minutes">Minutes</label>
-                <input type="number" id="manual-minutes" class="form-input" min="0" max="59" value="30" placeholder="0">
-              </div>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 20px;">
-              <label class="form-label" for="manual-date">Date *</label>
-              <input type="date" id="manual-date" class="form-input" value="${todayStr}" max="${todayStr}" required>
-            </div>
-
-            <button type="submit" class="btn btn-primary" style="width: 100%;">
-              Log Study Session
-            </button>
-          </form>
         </div>
       </div>
 
