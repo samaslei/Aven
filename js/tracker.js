@@ -348,6 +348,174 @@ export function renderTrackerView(container) {
     `;
   }
 
+  // Generate 60 dial tick marks
+  function generateDialTicks() {
+    const ticks = [];
+    for (let i = 0; i < 60; i++) {
+      const isMajor = i % 5 === 0;
+      const angle = i * 6;
+      const y1 = 20;
+      const y2 = isMajor ? 28 : 24;
+      ticks.push(`<line x1="130" y1="${y1}" x2="130" y2="${y2}" transform="rotate(${angle} 130 130)" stroke="currentColor" stroke-width="${isMajor ? '2' : '1'}" opacity="${isMajor ? '0.45' : '0.18'}" stroke-linecap="round" />`);
+    }
+    return ticks.join('');
+  }
+
+  // Render Growing Plant Illustration based on Pomodoro progress percentage
+  function renderPlantSvg(progressPct, isBreak) {
+    if (isBreak) {
+      return `
+        <!-- Break Stage: Cozy Hot Cup -->
+        <svg class="plant-svg" viewBox="0 0 70 60" width="58" height="50">
+          <path d="M19 22 L51 22 C51 40 46 48 35 48 C24 48 19 40 19 22 Z" fill="var(--bg-surface)" stroke="#10b981" stroke-width="2.2" />
+          <path d="M51 26 Q60 26 60 34 Q60 41 48 42" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" />
+          <line x1="14" y1="52" x2="56" y2="52" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" />
+          <path d="M28 16 Q25 10 28 4" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" opacity="0.7" class="steam-line-1" />
+          <path d="M35 14 Q38 8 35 2" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" opacity="0.9" class="steam-line-2" />
+          <path d="M42 16 Q39 10 42 4" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" opacity="0.7" class="steam-line-3" />
+        </svg>
+      `;
+    }
+
+    const potSvg = `
+      <g class="plant-pot">
+        <path d="M20 38 L50 38 L47 53 L23 53 Z" fill="var(--bg-surface)" stroke="#f97316" stroke-width="2" stroke-linejoin="round" />
+        <line x1="17" y1="38" x2="53" y2="38" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" />
+        <line x1="24" y1="42" x2="46" y2="42" stroke="#fb923c" stroke-width="1.2" opacity="0.6" />
+      </g>
+    `;
+
+    if (progressPct < 25) {
+      // Stage 0: Sprout (0% - 25%)
+      return `
+        <svg class="plant-svg" viewBox="0 0 70 60" width="58" height="50">
+          ${potSvg}
+          <path d="M35 38 Q35 28 33 24" fill="none" stroke="#10b981" stroke-width="2.4" stroke-linecap="round" />
+          <path d="M33 24 Q25 21 27 16 Q32 18 33 24" fill="#10b981" />
+          <path d="M33 24 Q41 20 40 15 Q35 18 33 24" fill="#34d399" />
+        </svg>
+      `;
+    } else if (progressPct < 50) {
+      // Stage 1: Seedling with 4 Leaves (25% - 50%)
+      return `
+        <svg class="plant-svg" viewBox="0 0 70 60" width="58" height="50">
+          ${potSvg}
+          <path d="M35 38 Q35 20 35 10" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" />
+          <path d="M35 26 Q23 23 24 17 Q31 19 35 24" fill="#10b981" />
+          <path d="M35 22 Q47 19 46 13 Q39 16 35 21" fill="#34d399" />
+          <path d="M35 12 Q27 6 30 1 Q34 4 35 10" fill="#10b981" />
+          <path d="M35 10 Q43 5 40 0 Q36 3 35 9" fill="#34d399" />
+        </svg>
+      `;
+    } else if (progressPct < 75) {
+      // Stage 2: Growing Plant with 6 Leaves + Bud (50% - 75%)
+      return `
+        <svg class="plant-svg" viewBox="0 0 70 60" width="58" height="50">
+          ${potSvg}
+          <path d="M35 38 Q35 15 35 6" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" />
+          <path d="M35 28 Q19 25 21 17 Q29 19 35 25" fill="#059669" />
+          <path d="M35 24 Q51 21 49 13 Q41 16 35 22" fill="#10b981" />
+          <path d="M35 16 Q21 11 23 4 Q30 7 35 14" fill="#10b981" />
+          <path d="M35 12 Q49 8 47 1 Q40 4 35 10" fill="#34d399" />
+          <circle cx="35" cy="5" r="3.2" fill="#fbbf24" />
+        </svg>
+      `;
+    } else {
+      // Stage 3: Blooming Plant with Flower & Sparkles (75% - 100%)
+      return `
+        <svg class="plant-svg" viewBox="0 0 70 60" width="58" height="50">
+          ${potSvg}
+          <path d="M35 38 Q35 18 35 8" fill="none" stroke="#10b981" stroke-width="2.6" stroke-linecap="round" />
+          <path d="M35 28 Q17 25 19 16 Q29 18 35 25" fill="#059669" />
+          <path d="M35 23 Q53 20 51 11 Q41 14 35 21" fill="#10b981" />
+          <path d="M35 15 Q19 9 22 1 Q30 4 35 12" fill="#10b981" />
+          <path d="M35 11 Q51 6 48 -2 Q40 2 35 9" fill="#34d399" />
+          <circle cx="35" cy="0" r="3.5" fill="#ec4899" opacity="0.9" />
+          <circle cx="35" cy="12" r="3.5" fill="#ec4899" opacity="0.9" />
+          <circle cx="29" cy="6" r="3.5" fill="#ec4899" opacity="0.9" />
+          <circle cx="41" cy="6" r="3.5" fill="#ec4899" opacity="0.9" />
+          <circle cx="35" cy="6" r="3.8" fill="#fbbf24" />
+          <circle cx="35" cy="6" r="2" fill="#fef08a" />
+          <polygon points="21,-3 23,-6 25,-3 23,0" fill="#fef08a" opacity="0.85" />
+          <polygon points="47,-5 49,-8 51,-5 49,-2" fill="#fef08a" opacity="0.85" />
+        </svg>
+      `;
+    }
+  }
+
+  // Render Stopwatch Center Icon SVG
+  function renderStopwatchIconSvg() {
+    return `
+      <svg viewBox="0 0 48 48" width="42" height="42" class="stopwatch-center-svg">
+        <circle cx="24" cy="26" r="16" fill="var(--bg-surface)" stroke="var(--accent)" stroke-width="2.2" />
+        <circle cx="24" cy="26" r="3" fill="var(--accent)" />
+        <line x1="24" y1="26" x2="24" y2="15" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" />
+        <line x1="24" y1="26" x2="31" y2="26" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" />
+        <line x1="20" y1="5" x2="28" y2="5" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" />
+        <line x1="24" y1="5" x2="24" y2="10" stroke="var(--accent)" stroke-width="2.2" />
+      </svg>
+    `;
+  }
+
+  // Render Dial SVG Component (Ticks, Ring, Progress Arc)
+  function renderTimerDialSvg({ mode, phase, secondsLeft, totalSeconds, stopwatchSecs, isRunning }) {
+    const ticks = generateDialTicks();
+    const radius = 96;
+    const circumference = 2 * Math.PI * radius; // ~603.185
+
+    let progressFraction = 0;
+    let gradientId = 'timerGradFocus';
+
+    if (mode === 'pomodoro') {
+      progressFraction = totalSeconds > 0 ? (totalSeconds - secondsLeft) / totalSeconds : 0;
+      if (phase === 'break') {
+        gradientId = 'timerGradBreak';
+      }
+    } else {
+      progressFraction = (stopwatchSecs % 60) / 60;
+      gradientId = 'timerGradFocus';
+    }
+
+    const dashOffset = (circumference * (1 - progressFraction)).toFixed(2);
+
+    return `
+      <svg class="timer-dial-svg" viewBox="0 0 260 260" width="250" height="250">
+        <defs>
+          <linearGradient id="timerGradFocus" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6366f1" />
+            <stop offset="50%" stop-color="#8b5cf6" />
+            <stop offset="100%" stop-color="#a855f7" />
+          </linearGradient>
+          <linearGradient id="timerGradBreak" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#10b981" />
+            <stop offset="50%" stop-color="#34d399" />
+            <stop offset="100%" stop-color="#059669" />
+          </linearGradient>
+        </defs>
+
+        <!-- Dial Clock Ticks -->
+        <g class="timer-dial-ticks">
+          ${ticks}
+        </g>
+
+        <!-- Track Ring -->
+        <circle cx="130" cy="130" r="${radius}" fill="none" stroke="var(--border-subtle)" stroke-width="6" opacity="0.3" />
+
+        <!-- Dynamic Progress Arc -->
+        <circle class="timer-progress-arc ${isRunning ? 'is-active' : ''}"
+                id="timer-progress-arc"
+                cx="130" cy="130" r="${radius}"
+                fill="none"
+                stroke="url(#${gradientId})"
+                stroke-width="7"
+                stroke-linecap="round"
+                stroke-dasharray="${circumference.toFixed(2)}"
+                stroke-dashoffset="${dashOffset}"
+                transform="rotate(-90 130 130)" />
+      </svg>
+    `;
+  }
+
   container.innerHTML = `
     <div class="tracker-layout">
       <!-- 2-Column Analytics Top Row: Full-Year Activity Heatmap (Left) + Study Time Distribution (Right) -->
@@ -439,8 +607,8 @@ export function renderTrackerView(container) {
               </div>
 
               <!-- Pomodoro Settings Dropdown Trigger -->
-              <div class="pomo-settings-wrapper" id="pomo-settings-wrapper" style="${timerMode === 'pomodoro' ? '' : 'display: none;'}">
-                <button type="button" class="pomo-settings-btn" id="btn-pomo-settings-toggle" title="Pomodoro Intervals" aria-label="Pomodoro Intervals">
+              <div class="pomo-settings-wrapper" id="pomo-settings-wrapper" style="${timerMode === 'pomodoro' ? '' : 'visibility: hidden; pointer-events: none;'}">
+                <button type="button" class="pomo-settings-btn" id="btn-pomo-settings-toggle" title="Pomodoro Intervals" aria-label="Pomodoro Intervals" ${timerMode === 'pomodoro' ? '' : 'tabindex="-1"'}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3"></circle>
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -452,113 +620,193 @@ export function renderTrackerView(container) {
                     <label class="form-label" for="pomo-work-input" style="font-size: 11px;">Work Duration (Mins)</label>
                     <input type="number" id="pomo-work-input" class="form-input" min="1" max="120" value="${settings.pomodoro_work_mins || 25}" ${pomoRunning ? 'disabled' : ''}>
                   </div>
-                  <div class="form-group">
+                  <div class="form-group" style="margin-bottom: 8px;">
                     <label class="form-label" for="pomo-break-input" style="font-size: 11px;">Break Duration (Mins)</label>
                     <input type="number" id="pomo-break-input" class="form-input" min="1" max="60" value="${settings.pomodoro_break_mins || 5}" ${pomoRunning ? 'disabled' : ''}>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="pomo-cycles-input" style="font-size: 11px;">Target Cycles</label>
+                    <input type="number" id="pomo-cycles-input" class="form-input" min="1" max="12" value="${pomoTargetCycles}" ${pomoRunning ? 'disabled' : ''}>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="timer-subject-select">Target Subject</label>
-            <select id="timer-subject-select" class="form-select" ${(stopwatchRunning || pomoRunning) ? 'disabled' : ''}>
-              <option value="" ${!selectedSubjectId ? 'selected' : ''}>🌐 General / No Subject</option>
-              ${activeSubjects.map(s => `
-                <option value="${s.id}" ${s.id === selectedSubjectId ? 'selected' : ''}>
-                  ${s.code ? `[${s.code}] ` : ''}${s.name}
-                </option>
-              `).join('')}
-            </select>
-          </div>
-
-          <!-- Animated Timer Mode Container -->
-          <div class="timer-mode-body" key="${timerMode}">
-            ${timerMode === 'stopwatch' ? `
-              <!-- STOPWATCH MODE UI -->
-              <div class="stopwatch-display-box ${stopwatchRunning ? 'is-running' : ''}">
-                <div class="stopwatch-digits" id="stopwatch-timer-display">
-                  ${formatTime(stopwatchSeconds)}
-                </div>
-                <span class="stopwatch-status-tag ${stopwatchRunning ? 'running' : (stopwatchSeconds > 0 ? 'paused' : 'idle')}" id="stopwatch-badge">
-                  ${stopwatchRunning ? '● Live Recording' : (stopwatchSeconds > 0 ? 'Paused' : 'Ready')}
-                </span>
+          <!-- Two-Column Internal Layout for Focus Timer -->
+          <div class="focus-timer-content-grid" key="${timerMode}">
+            <!-- Left Column: Context & Controls -->
+            <div class="timer-context-col">
+              <div class="timer-period-label">
+                ${timerMode === 'pomodoro' 
+                  ? `${pomoPhase === 'work' ? 'Focus' : 'Break'} period (${(pomoSessionsCompleted % pomoTargetCycles) + 1} of ${pomoTargetCycles})`
+                  : 'Continuous focus session'
+                }
               </div>
 
-              <div class="stopwatch-controls">
-                ${!stopwatchRunning ? `
-                  <button class="btn btn-primary" id="btn-start-stopwatch">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                    </svg>
-                    <span>${stopwatchSeconds > 0 ? 'Resume' : 'Start Focus'}</span>
-                  </button>
-                ` : `
-                  <button class="btn" id="btn-pause-stopwatch">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <rect x="6" y="4" width="4" height="16"></rect>
-                      <rect x="14" y="4" width="4" height="16"></rect>
-                    </svg>
-                    <span>Pause</span>
-                  </button>
-                `}
-
-                <button class="btn" id="btn-reset-stopwatch" ${stopwatchSeconds === 0 ? 'disabled' : ''}>Reset</button>
-
-                <button class="btn btn-primary" id="btn-save-stopwatch" ${stopwatchSeconds < 60 ? 'disabled title="Requires at least 1 minute to log"' : ''}>
-                  Save Session
-                </button>
+              <div class="form-group" style="margin-bottom: 0; width: 100%;">
+                <label class="form-label" for="timer-subject-select">TARGET SUBJECT</label>
+                <select id="timer-subject-select" class="form-select" ${(stopwatchRunning || pomoRunning) ? 'disabled' : ''}>
+                  <option value="" ${!selectedSubjectId ? 'selected' : ''}>🌐 General / No Subject</option>
+                  ${activeSubjects.map(s => `
+                    <option value="${s.id}" ${s.id === selectedSubjectId ? 'selected' : ''}>
+                      ${s.code ? `[${s.code}] ` : ''}${s.name}
+                    </option>
+                  `).join('')}
+                </select>
               </div>
-            ` : `
-              <!-- POMODORO MODE UI -->
-              <div class="stopwatch-display-box ${pomoRunning ? 'is-running' : ''} ${pomoPhase === 'break' ? 'is-break' : ''}">
-                <div class="stopwatch-digits" id="pomo-timer-display">
-                  ${formatMinutesSeconds(pomoSecondsLeft)}
-                </div>
-                <span class="stopwatch-status-tag ${pomoRunning ? 'running' : 'idle'} ${pomoPhase === 'break' ? 'is-break-tag' : ''}" id="pomo-badge">
-                  ${pomoRunning ? (pomoPhase === 'work' ? '● Work Interval' : '☕ Break Interval') : (pomoPhase === 'work' ? 'Work Ready' : 'Break Ready')}
-                </span>
-                <div class="pomo-status-meta-row">
-                  <!-- Visual Pomodoro Cycle Dots Group with +/- adjustments -->
-                  <div class="pomo-cycle-group" title="Cycle ${pomoSessionsCompleted % pomoTargetCycles}/${pomoTargetCycles} (${pomoTargetCycles} total)">
-                    <button type="button" class="pomo-cycle-adj-btn" id="btn-cycle-dec" title="Decrease target cycles" ${pomoTargetCycles <= 1 || pomoRunning ? 'disabled' : ''}>−</button>
-                    <div class="pomo-cycle-dots">
-                      ${Array.from({ length: pomoTargetCycles }).map((_, idx) => {
-                        const cyclePos = pomoSessionsCompleted % pomoTargetCycles;
-                        const isCompleted = pomoSessionsCompleted > 0 && (idx < cyclePos || (cyclePos === 0 && pomoSessionsCompleted >= pomoTargetCycles));
-                        const isCurrent = idx === cyclePos && pomoRunning && pomoPhase === 'work';
-                        return `<span class="pomo-dot ${isCompleted ? 'completed' : ''} ${isCurrent ? 'active' : ''}" title="Interval ${idx + 1}"></span>`;
-                      }).join('')}
+
+              <div class="timer-dial-controls">
+                ${timerMode === 'stopwatch' ? `
+                  <button type="button" class="btn-timer-circle-play ${stopwatchRunning ? 'is-running' : ''}" id="btn-toggle-stopwatch" title="${stopwatchRunning ? 'Pause' : (stopwatchSeconds > 0 ? 'Resume' : 'Start Focus')}">
+                    ${stopwatchRunning ? `
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="6" y="4" width="4" height="16" rx="1.5"></rect>
+                        <rect x="14" y="4" width="4" height="16" rx="1.5"></rect>
+                      </svg>
+                    ` : `
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 3px;">
+                        <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                      </svg>
+                    `}
+                  </button>
+
+                  <div class="timer-more-wrapper">
+                    <button type="button" class="btn-timer-circle-more" id="btn-stopwatch-more" title="More Options" aria-label="More Options">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="5" cy="12" r="2"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                        <circle cx="19" cy="12" r="2"></circle>
+                      </svg>
+                    </button>
+                    <div class="timer-more-popover" id="stopwatch-more-popover">
+                      <button type="button" class="timer-more-item" id="btn-save-stopwatch" ${stopwatchSeconds < 60 ? 'disabled title="Requires at least 1 minute to log"' : ''}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                          <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        <span>Save Session</span>
+                      </button>
+                      <button type="button" class="timer-more-item" id="btn-reset-stopwatch" ${stopwatchSeconds === 0 ? 'disabled' : ''}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M23 4v6h-6"></path>
+                          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        <span>Reset</span>
+                      </button>
                     </div>
-                    <button type="button" class="pomo-cycle-adj-btn" id="btn-cycle-inc" title="Increase target cycles" ${pomoTargetCycles >= 12 || pomoRunning ? 'disabled' : ''}>+</button>
-                    <span class="pomo-cycle-count">${pomoSessionsCompleted} done</span>
+                  </div>
+                ` : `
+                  <button type="button" class="btn-timer-circle-play ${pomoRunning ? 'is-running' : ''} ${pomoPhase === 'break' ? 'is-break' : ''}" id="btn-toggle-pomo" title="${pomoRunning ? 'Pause' : `Start ${pomoPhase === 'work' ? 'Focus' : 'Break'}`}">
+                    ${pomoRunning ? `
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="6" y="4" width="4" height="16" rx="1.5"></rect>
+                        <rect x="14" y="4" width="4" height="16" rx="1.5"></rect>
+                      </svg>
+                    ` : `
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 3px;">
+                        <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                      </svg>
+                    `}
+                  </button>
+
+                  <div class="timer-more-wrapper">
+                    <button type="button" class="btn-timer-circle-more" id="btn-pomo-more" title="More Options" aria-label="More Options">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="5" cy="12" r="2"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                        <circle cx="19" cy="12" r="2"></circle>
+                      </svg>
+                    </button>
+                    <div class="timer-more-popover" id="pomo-more-popover">
+                      <button type="button" class="timer-more-item" id="btn-skip-pomo">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                          <line x1="19" y1="5" x2="19" y2="19"></line>
+                        </svg>
+                        <span>Skip to ${pomoPhase === 'work' ? 'Break' : 'Focus'}</span>
+                      </button>
+                      <button type="button" class="timer-more-item" id="btn-reset-pomo">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M23 4v6h-6"></path>
+                          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        <span>Reset Timer</span>
+                      </button>
+                      <button type="button" class="timer-more-item" id="btn-reset-cycles">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polyline points="12 6 12 12 14 14"></polyline>
+                        </svg>
+                        <span>Reset Cycles Count</span>
+                      </button>
+                    </div>
+                  </div>
+                `}
+              </div>
+
+              <div class="timer-up-next-line">
+                ${timerMode === 'pomodoro'
+                  ? `Up next: <strong>${pomoPhase === 'work' ? `${settings.pomodoro_break_mins || 5} min break` : `${settings.pomodoro_work_mins || 25} min focus`}</strong>`
+                  : 'Mode: <strong>Tracking continuously</strong>'
+                }
+              </div>
+            </div>
+
+            <!-- Right Column: Timer Display -->
+            <div class="timer-dial-col">
+              ${timerMode === 'stopwatch' ? `
+                <div class="timer-dial-box ${stopwatchRunning ? 'is-running' : ''}">
+                  ${renderTimerDialSvg({
+                    mode: 'stopwatch',
+                    phase: 'work',
+                    secondsLeft: 0,
+                    totalSeconds: 60,
+                    stopwatchSecs: stopwatchSeconds,
+                    isRunning: stopwatchRunning
+                  })}
+                  <div class="dial-center-content">
+                    <div class="dial-center-illustration">
+                      ${renderStopwatchIconSvg()}
+                    </div>
+                    <span class="dial-phase-pill stopwatch">
+                      ${stopwatchRunning ? '● LIVE' : (stopwatchSeconds > 0 ? 'PAUSED' : 'READY')}
+                    </span>
+                    <div class="dial-time-digits" id="stopwatch-timer-display">
+                      ${formatTime(stopwatchSeconds)}
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div class="stopwatch-controls">
-                ${!pomoRunning ? `
-                  <button class="btn btn-primary" id="btn-start-pomo">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                    </svg>
-                    <span>Start ${pomoPhase === 'work' ? 'Work' : 'Break'}</span>
-                  </button>
-                ` : `
-                  <button class="btn" id="btn-pause-pomo">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <rect x="6" y="4" width="4" height="16"></rect>
-                      <rect x="14" y="4" width="4" height="16"></rect>
-                    </svg>
-                    <span>Pause</span>
-                  </button>
-                `}
-
-                <button class="btn" id="btn-skip-pomo">Skip to ${pomoPhase === 'work' ? 'Break' : 'Work'}</button>
-                <button class="btn" id="btn-reset-pomo">Reset</button>
-              </div>
-            `}
+              ` : `
+                <div class="timer-dial-box ${pomoRunning ? 'is-running' : ''} ${pomoPhase === 'break' ? 'is-break' : ''}">
+                  ${renderTimerDialSvg({
+                    mode: 'pomodoro',
+                    phase: pomoPhase,
+                    secondsLeft: pomoSecondsLeft,
+                    totalSeconds: pomoPhase === 'work' ? (settings.pomodoro_work_mins || 25) * 60 : (settings.pomodoro_break_mins || 5) * 60,
+                    stopwatchSecs: 0,
+                    isRunning: pomoRunning
+                  })}
+                  <div class="dial-center-content">
+                    <div class="dial-center-illustration" id="dial-plant-container">
+                      ${renderPlantSvg(
+                        pomoPhase === 'work' 
+                          ? (((settings.pomodoro_work_mins || 25) * 60 - pomoSecondsLeft) / ((settings.pomodoro_work_mins || 25) * 60)) * 100
+                          : 0,
+                        pomoPhase === 'break'
+                      )}
+                    </div>
+                    <span class="dial-phase-pill ${pomoPhase === 'break' ? 'break' : 'focus'}" id="pomo-phase-badge">
+                      ${pomoPhase === 'work' ? 'FOCUS' : 'BREAK'}
+                    </span>
+                    <div class="dial-time-digits" id="pomo-timer-display">
+                      ${formatMinutesSeconds(pomoSecondsLeft)}
+                    </div>
+                  </div>
+                </div>
+              `}
+            </div>
           </div>
         </div>
 
@@ -581,7 +829,7 @@ export function renderTrackerView(container) {
 
             <form id="manual-session-form">
               <!-- Paired Inputs: Subject & Date Side-by-Side -->
-              <div class="form-row-paired" style="margin-bottom: 14px;">
+              <div class="form-row-paired">
                 <div class="form-group">
                   <label class="form-label" for="manual-subject-select">Subject</label>
                   <select id="manual-subject-select" class="form-select">
@@ -601,7 +849,7 @@ export function renderTrackerView(container) {
               </div>
 
               <!-- Paired Inputs: Hours & Minutes Side-by-Side -->
-              <div class="form-row-paired" style="margin-bottom: 20px;">
+              <div class="form-row-paired">
                 <div class="form-group">
                   <label class="form-label" for="manual-hours">Hours</label>
                   <input type="number" id="manual-hours" class="form-input" min="0" max="24" value="1" placeholder="0">
@@ -612,7 +860,7 @@ export function renderTrackerView(container) {
                 </div>
               </div>
 
-              <button type="submit" class="btn btn-primary" style="width: 100%;">
+              <button type="submit" class="btn btn-primary" id="btn-submit-manual-log">
                 Log Study Session
               </button>
             </form>
@@ -830,29 +1078,41 @@ function attachTrackerEvents(container) {
         if (display) display.textContent = formatMinutesSeconds(pomoSecondsLeft);
       }
     });
+    // Target cycles input change
+    container.querySelector('#pomo-cycles-input')?.addEventListener('change', (e) => {
+      const val = Math.max(1, Math.min(12, parseInt(e.target.value, 10) || 4));
+      pomoTargetCycles = val;
+      renderTrackerView(container);
+    });
   }
 
-  // Cycle +/- adjust buttons
-  const decCycleBtn = container.querySelector('#btn-cycle-dec');
-  const incCycleBtn = container.querySelector('#btn-cycle-inc');
-  if (decCycleBtn) {
-    decCycleBtn.addEventListener('click', (e) => {
+  // Close more popovers on outside click
+  const pomoMoreBtn = container.querySelector('#btn-pomo-more');
+  const pomoMorePopover = container.querySelector('#pomo-more-popover');
+  if (pomoMoreBtn && pomoMorePopover) {
+    pomoMoreBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (pomoTargetCycles > 1) {
-        pomoTargetCycles--;
-        renderTrackerView(container);
-      }
+      pomoMorePopover.classList.toggle('open');
     });
   }
-  if (incCycleBtn) {
-    incCycleBtn.addEventListener('click', (e) => {
+
+  const stopwatchMoreBtn = container.querySelector('#btn-stopwatch-more');
+  const stopwatchMorePopover = container.querySelector('#stopwatch-more-popover');
+  if (stopwatchMoreBtn && stopwatchMorePopover) {
+    stopwatchMoreBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (pomoTargetCycles < 12) {
-        pomoTargetCycles++;
-        renderTrackerView(container);
-      }
+      stopwatchMorePopover.classList.toggle('open');
     });
   }
+
+  document.addEventListener('click', (e) => {
+    if (pomoMorePopover && !pomoMorePopover.contains(e.target) && pomoMoreBtn && !pomoMoreBtn.contains(e.target)) {
+      pomoMorePopover.classList.remove('open');
+    }
+    if (stopwatchMorePopover && !stopwatchMorePopover.contains(e.target) && stopwatchMoreBtn && !stopwatchMoreBtn.contains(e.target)) {
+      stopwatchMorePopover.classList.remove('open');
+    }
+  });
 
   // Target Subject select
   const timerSelect = container.querySelector('#timer-subject-select');
@@ -863,29 +1123,33 @@ function attachTrackerEvents(container) {
   }
 
   // --- STOPWATCH LOGIC ---
-  const startStopwatchBtn = container.querySelector('#btn-start-stopwatch');
-  const pauseStopwatchBtn = container.querySelector('#btn-pause-stopwatch');
+  const toggleStopwatchBtn = container.querySelector('#btn-toggle-stopwatch');
   const resetStopwatchBtn = container.querySelector('#btn-reset-stopwatch');
   const saveStopwatchBtn = container.querySelector('#btn-save-stopwatch');
 
-  if (startStopwatchBtn) {
-    startStopwatchBtn.addEventListener('click', () => {
-      stopwatchRunning = true;
-      clearInterval(stopwatchInterval);
-      stopwatchInterval = setInterval(() => {
-        stopwatchSeconds++;
-        const display = container.querySelector('#stopwatch-timer-display');
-        if (display) display.textContent = formatTime(stopwatchSeconds);
-      }, 1000);
-      renderTrackerView(container);
-    });
-  }
-
-  if (pauseStopwatchBtn) {
-    pauseStopwatchBtn.addEventListener('click', () => {
-      stopwatchRunning = false;
-      clearInterval(stopwatchInterval);
-      renderTrackerView(container);
+  if (toggleStopwatchBtn) {
+    toggleStopwatchBtn.addEventListener('click', () => {
+      if (stopwatchRunning) {
+        // Pause
+        stopwatchRunning = false;
+        clearInterval(stopwatchInterval);
+        renderTrackerView(container);
+      } else {
+        // Start / Resume
+        stopwatchRunning = true;
+        clearInterval(stopwatchInterval);
+        stopwatchInterval = setInterval(() => {
+          stopwatchSeconds++;
+          const display = container.querySelector('#stopwatch-timer-display');
+          if (display) display.textContent = formatTime(stopwatchSeconds);
+          const arc = container.querySelector('#timer-progress-arc');
+          if (arc) {
+            const fraction = (stopwatchSeconds % 60) / 60;
+            arc.style.strokeDashoffset = (603.19 * (1 - fraction)).toFixed(2);
+          }
+        }, 1000);
+        renderTrackerView(container);
+      }
     });
   }
 
@@ -923,66 +1187,77 @@ function attachTrackerEvents(container) {
   }
 
   // --- POMODORO LOGIC ---
-  const startPomoBtn = container.querySelector('#btn-start-pomo');
-  const pausePomoBtn = container.querySelector('#btn-pause-pomo');
+  const togglePomoBtn = container.querySelector('#btn-toggle-pomo');
   const skipPomoBtn = container.querySelector('#btn-skip-pomo');
   const resetPomoBtn = container.querySelector('#btn-reset-pomo');
+  const resetCyclesBtn = container.querySelector('#btn-reset-cycles');
 
-  if (startPomoBtn) {
-    startPomoBtn.addEventListener('click', () => {
+  if (togglePomoBtn) {
+    togglePomoBtn.addEventListener('click', () => {
       const workMins = Number(container.querySelector('#pomo-work-input')?.value) || (store.getSettings().pomodoro_work_mins || 25);
       const breakMins = Number(container.querySelector('#pomo-break-input')?.value) || (store.getSettings().pomodoro_break_mins || 5);
 
-      // Set initial seconds if starting from reset
-      if (pomoSecondsLeft === 25 * 60 || pomoSecondsLeft === 0) {
-        pomoSecondsLeft = pomoPhase === 'work' ? workMins * 60 : breakMins * 60;
-      }
-
-      pomoRunning = true;
-      clearInterval(pomoInterval);
-
-      pomoInterval = setInterval(() => {
-        if (pomoSecondsLeft > 0) {
-          pomoSecondsLeft--;
-          const display = container.querySelector('#pomo-timer-display');
-          if (display) display.textContent = formatMinutesSeconds(pomoSecondsLeft);
-        } else {
-          // Interval completed!
-          clearInterval(pomoInterval);
-          pomoRunning = false;
-          playChime();
-
-          if (pomoPhase === 'work') {
-            pomoSessionsCompleted++;
-            // Auto log study session (supports null subject_id)
-            store.saveSession({
-              subject_id: selectedSubjectId || null,
-              duration: workMins,
-              date: new Date().toISOString().split('T')[0]
-            });
-
-            const sub = selectedSubjectId ? store.getSubjectById(selectedSubjectId) : null;
-            window.avenApp?.showToast(`🎉 Focus block complete! Logged ${workMins}m${sub ? ` (${sub.name})` : ''}. Time for a ${breakMins}m break.`, 'success');
-            pomoPhase = 'break';
-            pomoSecondsLeft = breakMins * 60;
-          } else {
-            window.avenApp?.showToast(`☕ Break complete! Ready for your next focus session.`, 'info');
-            pomoPhase = 'work';
-            pomoSecondsLeft = workMins * 60;
-          }
-          renderTrackerView(container);
+      if (pomoRunning) {
+        // Pause
+        pomoRunning = false;
+        clearInterval(pomoInterval);
+        renderTrackerView(container);
+      } else {
+        // Start / Resume
+        if (pomoSecondsLeft === 25 * 60 || pomoSecondsLeft === 0) {
+          pomoSecondsLeft = pomoPhase === 'work' ? workMins * 60 : breakMins * 60;
         }
-      }, 1000);
 
-      renderTrackerView(container);
-    });
-  }
+        pomoRunning = true;
+        clearInterval(pomoInterval);
 
-  if (pausePomoBtn) {
-    pausePomoBtn.addEventListener('click', () => {
-      pomoRunning = false;
-      clearInterval(pomoInterval);
-      renderTrackerView(container);
+        pomoInterval = setInterval(() => {
+          if (pomoSecondsLeft > 0) {
+            pomoSecondsLeft--;
+            const display = container.querySelector('#pomo-timer-display');
+            if (display) display.textContent = formatMinutesSeconds(pomoSecondsLeft);
+
+            const totalSecs = pomoPhase === 'work' ? workMins * 60 : breakMins * 60;
+            const fraction = totalSecs > 0 ? (totalSecs - pomoSecondsLeft) / totalSecs : 0;
+            const arc = container.querySelector('#timer-progress-arc');
+            if (arc) {
+              arc.style.strokeDashoffset = (603.19 * (1 - fraction)).toFixed(2);
+            }
+
+            const plantContainer = container.querySelector('#dial-plant-container');
+            if (plantContainer) {
+              plantContainer.innerHTML = renderPlantSvg(fraction * 100, pomoPhase === 'break');
+            }
+          } else {
+            // Interval completed!
+            clearInterval(pomoInterval);
+            pomoRunning = false;
+            playChime();
+
+            if (pomoPhase === 'work') {
+              pomoSessionsCompleted++;
+              // Auto log study session (supports null subject_id)
+              store.saveSession({
+                subject_id: selectedSubjectId || null,
+                duration: workMins,
+                date: new Date().toISOString().split('T')[0]
+              });
+
+              const sub = selectedSubjectId ? store.getSubjectById(selectedSubjectId) : null;
+              window.avenApp?.showToast(`🎉 Focus block complete! Logged ${workMins}m${sub ? ` (${sub.name})` : ''}. Time for a ${breakMins}m break.`, 'success');
+              pomoPhase = 'break';
+              pomoSecondsLeft = breakMins * 60;
+            } else {
+              window.avenApp?.showToast(`☕ Break complete! Ready for your next focus session.`, 'info');
+              pomoPhase = 'work';
+              pomoSecondsLeft = workMins * 60;
+            }
+            renderTrackerView(container);
+          }
+        }, 1000);
+
+        renderTrackerView(container);
+      }
     });
   }
 
@@ -1011,6 +1286,14 @@ function attachTrackerEvents(container) {
       const workMins = Number(container.querySelector('#pomo-work-input')?.value) || (store.getSettings().pomodoro_work_mins || 25);
       pomoPhase = 'work';
       pomoSecondsLeft = workMins * 60;
+      renderTrackerView(container);
+    });
+  }
+
+  if (resetCyclesBtn) {
+    resetCyclesBtn.addEventListener('click', () => {
+      pomoSessionsCompleted = 0;
+      window.avenApp?.showToast('Pomodoro cycle counter reset', 'info');
       renderTrackerView(container);
     });
   }
