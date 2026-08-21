@@ -7,9 +7,316 @@
   <meta name="description" content="Aven is a unified, cohesive academic operating system for students organized around subjects, study tracking, weighted grades, and study plans.">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><rect width='24' height='24' rx='6'/><path d='M6 18L12 6L18 18H14L12 13L10 18H6Z' fill='white'/></svg>">
+  <script type="importmap">
+  {
+    "imports": {
+      "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
+    }
+  }
+  </script>
+  <script>
+    // Immediate theme bootstrap to eliminate startup flash
+    try {
+      var storedTheme = localStorage.getItem('aven_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', storedTheme);
+    } catch (e) {}
+  </script>
 </head>
 <body>
-  <div id="app">
+  <!-- Branded Startup Loading Screen with Dynamic Route-Aware Skeleton Backdrop -->
+  <div id="startup-loader" class="startup-loader" aria-label="Loading Aven">
+    <!-- App-Shell Skeleton Backdrop -->
+    <div class="startup-skeleton" id="startup-skeleton" aria-hidden="true">
+      <!-- Skeleton Sidebar -->
+      <div class="sk-sidebar">
+        <div>
+          <div class="sk-brand">
+            <div class="sk-block sk-brand-icon"></div>
+            <div class="sk-block sk-brand-text"></div>
+          </div>
+          <div class="sk-profile-card">
+            <div class="sk-block sk-avatar"></div>
+            <div class="sk-profile-info">
+              <div class="sk-block sk-profile-name"></div>
+              <div class="sk-block sk-profile-role"></div>
+            </div>
+          </div>
+          <div class="sk-nav" id="sk-nav-list">
+            <div class="sk-block sk-nav-item active" data-route="subjects"></div>
+            <div class="sk-block sk-nav-item" data-route="tracker"></div>
+            <div class="sk-block sk-nav-item" data-route="grades"></div>
+            <div class="sk-block sk-nav-item" data-route="plans"></div>
+            <div class="sk-block sk-nav-item" data-route="settings"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skeleton Main Content (Dynamically rendered per route) -->
+      <div class="sk-main" id="startup-skeleton-main"></div>
+    </div>
+
+    <script>
+      (function() {
+        window.renderStartupSkeleton = function(targetRoute) {
+          var route = targetRoute || window.location.hash.replace('#', '') || 'subjects';
+          var validRoutes = ['subjects', 'tracker', 'grades', 'plans', 'settings'];
+          if (validRoutes.indexOf(route) === -1) route = 'subjects';
+
+          // Highlight active nav item in skeleton sidebar
+          var navItems = document.querySelectorAll('#sk-nav-list .sk-nav-item');
+          var navIndices = { subjects: 0, tracker: 1, grades: 2, plans: 3, settings: 4 };
+          var activeIdx = navIndices[route] !== undefined ? navIndices[route] : 0;
+          navItems.forEach(function(item, idx) {
+            if (idx === activeIdx) item.classList.add('active');
+            else item.classList.remove('active');
+          });
+
+          var mainEl = document.getElementById('startup-skeleton-main');
+          if (!mainEl) return;
+
+          var html = '';
+          if (route === 'subjects') {
+            html = '<div class="sk-header">' +
+              '<div class="sk-header-titles">' +
+                '<div class="sk-block sk-title" style="width: 140px;"></div>' +
+                '<div class="sk-block sk-subtitle" style="width: 380px;"></div>' +
+              '</div>' +
+              '<div class="sk-header-actions">' +
+                '<div class="sk-block sk-badge" style="width: 110px;"></div>' +
+                '<div class="sk-block sk-btn" style="width: 120px;"></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="sk-body">' +
+              '<div class="sk-stats-row">' +
+                '<div class="sk-block sk-stat-card"></div>' +
+                '<div class="sk-block sk-stat-card"></div>' +
+                '<div class="sk-block sk-stat-card"></div>' +
+                '<div class="sk-block sk-stat-card"></div>' +
+              '</div>' +
+              '<div class="sk-cards-grid">' +
+                '<div class="sk-card">' +
+                  '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                    '<div class="sk-block" style="width:120px;height:18px;border-radius:4px;"></div>' +
+                    '<div class="sk-block" style="width:45px;height:18px;border-radius:12px;"></div>' +
+                  '</div>' +
+                  '<div class="sk-block" style="width:70%;height:12px;border-radius:4px;margin-top:6px;"></div>' +
+                  '<div class="sk-block" style="width:100%;height:8px;border-radius:4px;margin-top:16px;"></div>' +
+                  '<div style="display:flex;justify-content:space-between;margin-top:auto;">' +
+                    '<div class="sk-block" style="width:60px;height:12px;border-radius:4px;"></div>' +
+                    '<div class="sk-block" style="width:60px;height:12px;border-radius:4px;"></div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="sk-card">' +
+                  '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                    '<div class="sk-block" style="width:140px;height:18px;border-radius:4px;"></div>' +
+                    '<div class="sk-block" style="width:45px;height:18px;border-radius:12px;"></div>' +
+                  '</div>' +
+                  '<div class="sk-block" style="width:60%;height:12px;border-radius:4px;margin-top:6px;"></div>' +
+                  '<div class="sk-block" style="width:100%;height:8px;border-radius:4px;margin-top:16px;"></div>' +
+                  '<div style="display:flex;justify-content:space-between;margin-top:auto;">' +
+                    '<div class="sk-block" style="width:60px;height:12px;border-radius:4px;"></div>' +
+                    '<div class="sk-block" style="width:60px;height:12px;border-radius:4px;"></div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="sk-card">' +
+                  '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                    '<div class="sk-block" style="width:110px;height:18px;border-radius:4px;"></div>' +
+                    '<div class="sk-block" style="width:45px;height:18px;border-radius:12px;"></div>' +
+                  '</div>' +
+                  '<div class="sk-block" style="width:75%;height:12px;border-radius:4px;margin-top:6px;"></div>' +
+                  '<div class="sk-block" style="width:100%;height:8px;border-radius:4px;margin-top:16px;"></div>' +
+                  '<div style="display:flex;justify-content:space-between;margin-top:auto;">' +
+                    '<div class="sk-block" style="width:60px;height:12px;border-radius:4px;"></div>' +
+                    '<div class="sk-block" style="width:60px;height:12px;border-radius:4px;"></div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+          } else if (route === 'tracker') {
+            html = '<div class="sk-header">' +
+              '<div class="sk-header-titles">' +
+                '<div class="sk-block sk-title" style="width: 170px;"></div>' +
+                '<div class="sk-block sk-subtitle" style="width: 420px;"></div>' +
+              '</div>' +
+              '<div class="sk-header-actions">' +
+                '<div class="sk-block sk-badge" style="width: 90px;"></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="sk-body">' +
+              '<div class="sk-block sk-heatmap-block">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
+                  '<div class="sk-block" style="width:140px;height:14px;border-radius:4px;"></div>' +
+                  '<div class="sk-block" style="width:110px;height:24px;border-radius:6px;"></div>' +
+                  '<div class="sk-block" style="width:120px;height:14px;border-radius:4px;"></div>' +
+                '</div>' +
+                '<div class="sk-block" style="width:100%;height:95px;border-radius:6px;opacity:0.6;"></div>' +
+              '</div>' +
+              '<div class="sk-tracker-tools-row">' +
+                '<div class="sk-card" style="height: 240px;">' +
+                  '<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">' +
+                    '<div class="sk-block" style="width:120px;height:16px;border-radius:4px;"></div>' +
+                    '<div class="sk-block" style="width:130px;height:26px;border-radius:6px;"></div>' +
+                  '</div>' +
+                  '<div class="sk-block" style="width:100%;height:32px;border-radius:6px;margin:8px 0 4px 0;"></div>' +
+                  '<div class="sk-block" style="width:100%;height:75px;border-radius:8px;opacity:0.7;"></div>' +
+                  '<div style="display:flex;gap:10px;justify-content:center;margin-top:auto;">' +
+                    '<div class="sk-block" style="width:100px;height:32px;border-radius:6px;"></div>' +
+                    '<div class="sk-block" style="width:70px;height:32px;border-radius:6px;"></div>' +
+                    '<div class="sk-block" style="width:100px;height:32px;border-radius:6px;"></div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="sk-card" style="height: 240px;">' +
+                  '<div style="display:flex;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">' +
+                    '<div class="sk-block" style="width:140px;height:16px;border-radius:4px;"></div>' +
+                  '</div>' +
+                  '<div class="sk-block" style="width:100%;height:32px;border-radius:6px;margin:8px 0;"></div>' +
+                  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+                    '<div class="sk-block" style="height:32px;border-radius:6px;"></div>' +
+                    '<div class="sk-block" style="height:32px;border-radius:6px;"></div>' +
+                  '</div>' +
+                  '<div class="sk-block" style="width:100%;height:32px;border-radius:6px;margin:8px 0;"></div>' +
+                  '<div class="sk-block" style="width:100%;height:34px;border-radius:6px;margin-top:auto;"></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+          } else if (route === 'grades') {
+            html = '<div class="sk-header">' +
+              '<div class="sk-header-titles">' +
+                '<div class="sk-block sk-title" style="width: 130px;"></div>' +
+                '<div class="sk-block sk-subtitle" style="width: 440px;"></div>' +
+              '</div>' +
+              '<div class="sk-header-actions">' +
+                '<div class="sk-block sk-badge" style="width: 140px; height: 30px;"></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="sk-body">' +
+              '<div class="sk-grades-layout">' +
+                '<div class="sk-card" style="height: 380px; gap: 10px;">' +
+                  '<div class="sk-block" style="width:100px;height:16px;border-radius:4px;margin-bottom:6px;"></div>' +
+                  '<div class="sk-block" style="width:100%;height:44px;border-radius:6px;opacity:0.9;"></div>' +
+                  '<div class="sk-block" style="width:100%;height:44px;border-radius:6px;opacity:0.6;"></div>' +
+                  '<div class="sk-block" style="width:100%;height:44px;border-radius:6px;opacity:0.6;"></div>' +
+                  '<div class="sk-block" style="width:100%;height:44px;border-radius:6px;opacity:0.6;"></div>' +
+                '</div>' +
+                '<div style="display:flex;flex-direction:column;gap:18px;">' +
+                  '<div class="sk-card" style="height: 120px; display:flex; justify-content:space-between; align-items:center;">' +
+                    '<div style="display:flex;flex-direction:column;gap:8px;">' +
+                      '<div class="sk-block" style="width:140px;height:18px;border-radius:4px;"></div>' +
+                      '<div class="sk-block" style="width:220px;height:12px;border-radius:4px;"></div>' +
+                    '</div>' +
+                    '<div class="sk-block" style="width:80px;height:48px;border-radius:8px;"></div>' +
+                  '</div>' +
+                  '<div class="sk-card" style="height: 240px;">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                      '<div class="sk-block" style="width:130px;height:16px;border-radius:4px;"></div>' +
+                      '<div class="sk-block" style="width:80px;height:24px;border-radius:4px;"></div>' +
+                    '</div>' +
+                    '<div class="sk-block" style="width:100%;height:36px;border-radius:6px;margin-top:8px;"></div>' +
+                    '<div class="sk-block" style="width:100%;height:36px;border-radius:6px;"></div>' +
+                    '<div class="sk-block" style="width:100%;height:36px;border-radius:6px;"></div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+          } else if (route === 'plans') {
+            html = '<div class="sk-header">' +
+              '<div class="sk-header-titles">' +
+                '<div class="sk-block sk-title" style="width: 150px;"></div>' +
+                '<div class="sk-block sk-subtitle" style="width: 400px;"></div>' +
+              '</div>' +
+              '<div class="sk-header-actions">' +
+                '<div class="sk-block sk-btn" style="width: 130px;"></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="sk-body">' +
+              '<div class="sk-plans-layout">' +
+                '<div class="sk-card" style="height: 380px; gap: 10px;">' +
+                  '<div class="sk-block" style="width:110px;height:16px;border-radius:4px;margin-bottom:6px;"></div>' +
+                  '<div class="sk-block" style="width:100%;height:46px;border-radius:6px;opacity:0.9;"></div>' +
+                  '<div class="sk-block" style="width:100%;height:46px;border-radius:6px;opacity:0.6;"></div>' +
+                  '<div class="sk-block" style="width:100%;height:46px;border-radius:6px;opacity:0.6;"></div>' +
+                '</div>' +
+                '<div class="sk-card" style="height: 380px; padding: 24px;">' +
+                  '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+                    '<div class="sk-block" style="width:180px;height:20px;border-radius:4px;"></div>' +
+                    '<div class="sk-block" style="width:90px;height:28px;border-radius:6px;"></div>' +
+                  '</div>' +
+                  '<div class="sk-block" style="width:100%;height:180px;border-radius:8px;opacity:0.7;margin-bottom:16px;"></div>' +
+                  '<div class="sk-block" style="width:60%;height:14px;border-radius:4px;"></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+          } else if (route === 'settings') {
+            html = '<div class="sk-header">' +
+              '<div class="sk-header-titles">' +
+                '<div class="sk-block sk-title" style="width: 120px;"></div>' +
+                '<div class="sk-block sk-subtitle" style="width: 360px;"></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="sk-body">' +
+              '<div class="sk-settings-layout">' +
+                '<div class="sk-card" style="height: 140px;">' +
+                  '<div class="sk-block" style="width:160px;height:18px;border-radius:4px;margin-bottom:8px;"></div>' +
+                  '<div class="sk-block" style="width:240px;height:12px;border-radius:4px;margin-bottom:16px;"></div>' +
+                  '<div style="display:flex;gap:12px;">' +
+                    '<div class="sk-block" style="width:100px;height:36px;border-radius:6px;"></div>' +
+                    '<div class="sk-block" style="width:100px;height:36px;border-radius:6px;"></div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="sk-card" style="height: 140px;">' +
+                  '<div class="sk-block" style="width:180px;height:18px;border-radius:4px;margin-bottom:8px;"></div>' +
+                  '<div class="sk-block" style="width:280px;height:12px;border-radius:4px;margin-bottom:16px;"></div>' +
+                  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">' +
+                    '<div class="sk-block" style="height:34px;border-radius:6px;"></div>' +
+                    '<div class="sk-block" style="height:34px;border-radius:6px;"></div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="sk-card" style="height: 140px;">' +
+                  '<div class="sk-block" style="width:150px;height:18px;border-radius:4px;margin-bottom:8px;"></div>' +
+                  '<div class="sk-block" style="width:260px;height:12px;border-radius:4px;margin-bottom:16px;"></div>' +
+                  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">' +
+                    '<div class="sk-block" style="height:34px;border-radius:6px;"></div>' +
+                    '<div class="sk-block" style="height:34px;border-radius:6px;"></div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+          }
+          mainEl.innerHTML = html;
+        };
+
+        // Immediately render skeleton for the URL route before initial paint
+        try {
+          window.renderStartupSkeleton();
+        } catch (e) {}
+      })();
+    </script>
+
+    <!-- Centered Floating Logo & Loading Status Overlaid on Top -->
+    <div class="startup-loader-content">
+      <div class="startup-logo-container">
+        <div class="startup-brand-glow"></div>
+        <div class="startup-brand-icon">
+          <svg class="startup-brand-svg" width="38" height="38" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3L4.5 19.5H8.8L10.5 15.2H13.5L15.2 19.5H19.5L12 3ZM12 8.6L13.1 11.6H10.9L12 8.6Z" fill="white"/>
+          </svg>
+        </div>
+      </div>
+      <div class="startup-brand-title">Aven</div>
+      <div class="startup-brand-tagline">Academic Operating System</div>
+      
+      <div class="startup-indicator-area">
+        <div class="startup-pulse-dots">
+          <span class="startup-dot"></span>
+          <span class="startup-dot"></span>
+          <span class="startup-dot"></span>
+        </div>
+        <span class="startup-status-text" id="startup-status-text">Initializing workspace...</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="app" style="display: none;">
     <!-- Mobile Backdrop for Off-Canvas Sidebar Drawer -->
     <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
 
@@ -29,17 +336,22 @@
         <span class="brand-tag">v1.1</span>
       </a>
 
-      <button class="btn-ghost btn-icon mobile-quick-theme-btn" id="mobile-theme-btn" aria-label="Toggle Theme">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="5"></circle>
-          <line x1="12" y1="1" x2="12" y2="3"></line>
-          <line x1="12" y1="21" x2="12" y2="23"></line>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-          <line x1="1" y1="12" x2="3" y2="12"></line>
-          <line x1="21" y1="12" x2="23" y2="12"></line>
-        </svg>
-      </button>
+      <div class="mobile-top-actions">
+        <button class="mobile-sync-badge sync-synced" id="mobile-sync-badge" aria-label="Cloud sync status">
+          <span class="sync-status-dot mini" id="mobile-sync-dot"></span>
+        </button>
+        <button class="btn-ghost btn-icon mobile-quick-theme-btn" id="mobile-theme-btn" aria-label="Toggle Theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <!-- Fixed Left Sidebar (Pinned on Desktop, Slide-out Drawer on Mobile) -->
@@ -52,6 +364,40 @@
           <span class="brand-tag">v1.1</span>
         </a>
 
+        <!-- Gradient User Profile Header Block -->
+        <div class="sidebar-user-block" id="sidebar-user-block">
+          <button class="user-profile-btn" id="user-profile-btn" aria-label="Open User Menu" aria-haspopup="true">
+            <div class="user-avatar" id="user-avatar">AR</div>
+            <div class="user-info">
+              <span class="user-name" id="user-name">Alex Rivera</span>
+              <span class="user-role" id="user-role">1st Year · Student</span>
+            </div>
+            <svg class="user-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          <!-- User Dropdown Popover connected to this top block -->
+          <div class="user-popover" id="user-popover">
+            <button class="popover-item" id="sync-cloud-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <polyline points="23 20 23 14 17 14"></polyline>
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+              </svg>
+              Sync Cloud Data
+            </button>
+            <div style="height: 1px; background: var(--border-subtle); margin: 2px 0;"></div>
+            <button class="popover-item danger" id="logout-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              Log Out
+            </button>
+          </div>
+        </div>
 
         <!-- Page Navigation List -->
         <nav>
@@ -127,11 +473,6 @@
               </a>
               <ul class="nav-submenu" id="settings-submenu">
                 <li>
-                  <a class="nav-sublink" data-section="settings-appearance">
-                    <span>Appearance</span>
-                  </a>
-                </li>
-                <li>
                   <a class="nav-sublink" data-section="settings-academic">
                     <span>Academic Defaults</span>
                   </a>
@@ -156,54 +497,6 @@
           </ul>
         </nav>
       </div>
-
-      <!-- User Profile Row Pinned at Bottom -->
-      <div class="sidebar-bottom">
-        <div class="user-popover" id="user-popover">
-          <button class="popover-item" id="toggle-theme-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="5"></circle>
-              <line x1="12" y1="1" x2="12" y2="3"></line>
-              <line x1="12" y1="21" x2="12" y2="23"></line>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-              <line x1="1" y1="12" x2="3" y2="12"></line>
-              <line x1="21" y1="12" x2="23" y2="12"></line>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-            </svg>
-            Toggle Light / Dark Mode
-          </button>
-          <button class="popover-item" id="reset-demo-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="1 4 1 10 7 10"></polyline>
-              <polyline points="23 20 23 14 17 14"></polyline>
-              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-            </svg>
-            Reset Demo Dataset
-          </button>
-          <div style="height: 1px; background: var(--border-subtle); margin: 2px 0;"></div>
-          <button class="popover-item danger" id="logout-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-            Log Out
-          </button>
-        </div>
-
-        <button class="user-profile-btn" id="user-profile-btn" aria-label="Open User Menu">
-          <div class="user-avatar" id="user-avatar">AR</div>
-          <div class="user-info">
-            <span class="user-name" id="user-name">Alex Rivera</span>
-            <span class="user-email" id="user-email">alex.rivera@university.edu</span>
-          </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left: auto; color: var(--text-muted);">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </button>
-      </div>
     </aside>
 
     <!-- Main Content Viewport (Scrolls Independently) -->
@@ -214,7 +507,72 @@
           <h1 class="page-title" id="page-title">Subjects</h1>
           <p class="page-subtitle" id="page-subtitle">Track your enrolled courses, study progress, and academic standing at a glance.</p>
         </div>
-      </header>
+
+        <div class="header-actions-group">
+          <!-- Global Theme Toggle Button -->
+          <button type="button" class="btn-ghost btn-icon app-theme-toggle" id="app-theme-btn" aria-label="Toggle Light/Dark Theme" title="Toggle Theme">
+            <svg class="icon-theme-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="icon-theme-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+
+          <!-- Global Sync / Offline Status Indicator (Upper Right Corner) -->
+          <div class="global-sync-container" id="global-sync-container">
+            <button class="global-sync-badge sync-synced" id="global-sync-badge" aria-label="Connection and cloud sync status" aria-expanded="false">
+              <span class="sync-status-dot" id="global-sync-dot"></span>
+              <span class="sync-status-label" id="global-sync-label">Synced</span>
+              <svg class="sync-chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+          <!-- Interactive Sync Popover Card -->
+          <div class="global-sync-popover" id="global-sync-popover" role="dialog" aria-hidden="true">
+            <div class="sync-popover-header">
+              <div class="sync-popover-title-row">
+                <span class="sync-popover-dot" id="popover-status-dot"></span>
+                <span class="sync-popover-title" id="popover-status-title">Supabase Cloud Connected</span>
+              </div>
+              <span class="sync-popover-state-pill" id="popover-state-pill">Live</span>
+            </div>
+
+            <div class="sync-popover-body">
+              <div class="sync-meta-row">
+                <span class="sync-meta-label">Last synchronized:</span>
+                <span class="sync-meta-value" id="popover-last-synced">Just now</span>
+              </div>
+              <div class="sync-meta-row">
+                <span class="sync-meta-label">Storage mode:</span>
+                <span class="sync-meta-value" id="popover-storage-mode">Cloud-backed</span>
+              </div>
+              <p class="sync-popover-desc" id="popover-status-desc">Your subjects, study timer sessions, grades, and study plans are synchronized across all devices.</p>
+            </div>
+
+            <div class="sync-popover-footer">
+              <button type="button" class="btn btn-secondary btn-sm sync-now-btn" id="global-sync-now-btn">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="1 4 1 10 7 10"></polyline>
+                  <polyline points="23 20 23 14 17 14"></polyline>
+                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                </svg>
+                <span>Sync Now</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
 
       <!-- Dynamic Page Content Container -->
       <section id="view-content" class="view-content-area">
@@ -228,6 +586,18 @@
     <!-- Global Modal Portal (Attached at root of body for true full-viewport centering & dimming) -->
     <div id="modal-portal"></div>
   </div>
+
+  <!-- Public Marketing Landing Page (Shown at root before login) -->
+  <div id="landing-screen" class="landing-screen hidden"></div>
+
+  <!-- Full-Screen Auth View (Visible when navigating to signin / signup) -->
+  <div id="auth-screen" class="auth-screen hidden"></div>
+
+  <!-- SheetJS Spreadsheet Library for Excel Exports -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Environment Variables Script (Served by Node server or fallback) -->
+  <script src="/env.js"></script>
 
   <!-- Main JavaScript Module -->
   <script type="module" src="js/app.js"></script>

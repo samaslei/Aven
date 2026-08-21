@@ -6,10 +6,10 @@
  */
 
 import { store, events, YEAR_LEVELS, DEFAULT_COLOR_SWATCHES } from './store.js';
+import { exportAllSubjectsGradesToExcel } from './export-excel.js';
 
 
 export function renderSettingsView(container) {
-  const currentTheme = store.getTheme();
   const settings = store.getSettings();
   const user = store.getUserProfile();
   const scale = store.getGradingScale();
@@ -17,27 +17,7 @@ export function renderSettingsView(container) {
 
   container.innerHTML = `
     <div class="settings-container">
-      <!-- 1. Appearance Section -->
-      <div class="settings-section" id="settings-appearance">
-        <div class="settings-section-header">
-          <h3 class="settings-section-title">Appearance</h3>
-        </div>
-        <div class="settings-card">
-          <div class="settings-row compact">
-            <div class="setting-info">
-              <strong class="setting-title">Dark Theme</strong>
-            </div>
-            <div class="setting-control">
-              <label class="switch-toggle" title="Toggle Dark / Light Theme">
-                <input type="checkbox" id="theme-switch-toggle" ${currentTheme === 'dark' ? 'checked' : ''}>
-                <span class="switch-slider"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. Academic Defaults Section -->
+      <!-- 1. Academic Defaults Section -->
       <div class="settings-section" id="settings-academic">
         <div class="settings-section-header">
           <h3 class="settings-section-title">Academic Defaults</h3>
@@ -141,17 +121,26 @@ export function renderSettingsView(container) {
           <h3 class="settings-section-title">Account</h3>
           <span class="inline-save-badge" id="account-save-indicator">Saved ✓</span>
         </div>
-        <div class="settings-card">
+        <div class="settings-card" style="padding: 0; overflow: hidden;">
+          <!-- Profile Gradient Hero Banner Block (Echoing Sidebar Gradient Profile Block) -->
+          <div class="settings-profile-hero">
+            <div class="settings-profile-avatar" id="settings-avatar-preview" style="background-color: ${user.avatar_color || '#6366f1'};">
+              ${user.avatar || 'AR'}
+            </div>
+            <div class="settings-profile-info">
+              <strong class="settings-profile-name" id="settings-hero-name">${user.name || 'Student'}</strong>
+              <span class="settings-profile-email" id="settings-hero-email">${user.email || 'student@university.edu'}</span>
+              <span class="settings-profile-badge" id="settings-hero-badge">${user.year_level || '1st Year'} · ${user.institution || 'Aven Academic OS'}</span>
+            </div>
+          </div>
+
           <!-- Display Name -->
           <div class="settings-row">
             <div class="setting-info">
               <strong class="setting-title">Display Name</strong>
               <p class="setting-desc">Student profile name displayed across the app</p>
             </div>
-            <div class="setting-control" style="gap: 10px;">
-              <div class="user-avatar" id="settings-avatar-preview" style="width: 32px; height: 32px; font-size: 12px; font-weight: 700; background-color: ${user.avatar_color || '#6366f1'}; flex-shrink: 0;" title="Initials auto-generate from your display name">
-                ${user.avatar || 'AR'}
-              </div>
+            <div class="setting-control">
               <input type="text" id="setting-user-name" class="form-input auto-save-input" value="${user.name || ''}" placeholder="Alex Rivera" style="width: 220px; font-size: 13px;">
             </div>
           </div>
@@ -236,12 +225,12 @@ export function renderSettingsView(container) {
       <div class="settings-section" id="settings-data">
         <div class="settings-section-header">
           <h3 class="settings-section-title">Data Management</h3>
-          <span class="storage-usage-badge">${storageUsage} used</span>
+          <span class="storage-usage-badge">${storageUsage}</span>
         </div>
         <div class="settings-card">
           <div class="settings-row">
             <div class="setting-info">
-              <strong class="setting-title">Export Workspace</strong>
+              <strong class="setting-title">Export Workspace (JSON)</strong>
               <p class="setting-desc">Download a complete JSON backup of your subjects, grades, and study logs</p>
             </div>
             <div class="setting-control">
@@ -252,6 +241,24 @@ export function renderSettingsView(container) {
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
                 Export JSON
+              </button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="setting-info">
+              <strong class="setting-title">Export Grades (Excel)</strong>
+              <p class="setting-desc">Download a formatted spreadsheet (.xlsx) with all enrolled subjects, grade categories, itemized scores, and GPA</p>
+            </div>
+            <div class="setting-control">
+              <button class="btn btn-secondary" id="btn-export-excel-all">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Export Excel
               </button>
             </div>
           </div>
@@ -397,6 +404,13 @@ function attachSettingsEvents(container) {
       avatarPreview.textContent = updated.avatar;
       avatarPreview.style.backgroundColor = updated.avatar_color;
     }
+    const heroName = container.querySelector('#settings-hero-name');
+    const heroEmail = container.querySelector('#settings-hero-email');
+    const heroBadge = container.querySelector('#settings-hero-badge');
+    if (heroName) heroName.textContent = updated.name || 'Student';
+    if (heroEmail) heroEmail.textContent = updated.email || 'student@university.edu';
+    if (heroBadge) heroBadge.textContent = `${updated.year_level || '1st Year'} · ${updated.institution || 'Aven Academic OS'}`;
+    
     showInlineSaved(accountBadge);
   };
 
@@ -417,16 +431,7 @@ function attachSettingsEvents(container) {
   });
 
 
-  // 2. Theme Pill Switch Toggle
-  const themeSwitch = container.querySelector('#theme-switch-toggle');
-  themeSwitch?.addEventListener('change', () => {
-    const targetTheme = themeSwitch.checked ? 'dark' : 'light';
-    store.setTheme(targetTheme);
-    window.avenApp?.showToast(`Theme switched to ${targetTheme} mode`, 'info');
-    renderSettingsView(container);
-  });
-
-  // 3. Default Term Weight Split Auto-save on blur
+  // 2. Default Term Weight Split Auto-save on blur
   const mWeightInput = container.querySelector('#setting-midterm-weight');
   const fWeightInput = container.querySelector('#setting-final-weight');
   const weightsBadge = container.querySelector('#weights-save-indicator');
@@ -514,6 +519,18 @@ function attachSettingsEvents(container) {
     window.avenApp?.showToast('Workspace backup exported', 'success');
   });
 
+  // 8b. Export Grades to Excel (.xlsx)
+  container.querySelector('#btn-export-excel-all')?.addEventListener('click', async () => {
+    try {
+      window.avenApp?.showToast('Generating Excel report for all subjects...', 'info');
+      const filename = await exportAllSubjectsGradesToExcel();
+      window.avenApp?.showToast(`Exported ${filename}`, 'success');
+    } catch (err) {
+      console.error(err);
+      window.avenApp?.showToast(err.message || 'Failed to export Excel report', 'error');
+    }
+  });
+
   // 9. Import Data JSON
   const triggerImportBtn = container.querySelector('#btn-trigger-import');
   const importFileInput = container.querySelector('#import-file-input');
@@ -524,14 +541,20 @@ function attachSettingsEvents(container) {
       const file = e.target.files[0];
       if (!file) return;
 
+      window.avenApp?.showToast('Importing backup to Supabase Cloud...', 'info');
+
       const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = store.importAllDataJSON(event.target.result);
-        if (result.success) {
-          window.avenApp?.showToast(`Imported ${result.count} subjects successfully`, 'success');
-          renderSettingsView(container);
-        } else {
-          window.avenApp?.showToast(`Import failed: ${result.error}`, 'danger');
+      reader.onload = async (event) => {
+        try {
+          const result = await store.importAllDataJSON(event.target.result);
+          if (result.success) {
+            window.avenApp?.showToast(`Successfully imported ${result.count} subjects to Supabase`, 'success');
+            renderSettingsView(container);
+          } else {
+            window.avenApp?.showToast(`Import failed: ${result.error}`, 'danger');
+          }
+        } catch (err) {
+          window.avenApp?.showToast(`Import error: ${err.message}`, 'danger');
         }
       };
       reader.readAsText(file);
@@ -552,10 +575,12 @@ function attachSettingsEvents(container) {
   });
 
   if (confirmWipeBtn) {
-    confirmWipeBtn.addEventListener('click', () => {
-      store.clearAllData();
+    confirmWipeBtn.addEventListener('click', async () => {
+      confirmWipeBtn.disabled = true;
+      await store.clearAllData();
+      confirmWipeBtn.disabled = false;
       clearModal.classList.remove('open');
-      window.avenApp?.showToast('Workspace cleared', 'info');
+      window.avenApp?.showToast('Cloud workspace cleared', 'info');
       renderSettingsView(container);
     });
   }

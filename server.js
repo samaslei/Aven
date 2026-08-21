@@ -22,8 +22,45 @@ const MIME_TYPES = {
   '.ttf': 'font/ttf'
 };
 
+function parseEnvFile() {
+  const envPath = path.join(__dirname, '.env');
+  const env = {};
+  if (fs.existsSync(envPath)) {
+    try {
+      const lines = fs.readFileSync(envPath, 'utf-8').split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const idx = trimmed.indexOf('=');
+        if (idx !== -1) {
+          const key = trimmed.slice(0, idx).trim();
+          let val = trimmed.slice(idx + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          env[key] = val;
+        }
+      }
+    } catch (e) {
+      console.error('Error reading .env file:', e);
+    }
+  }
+  return env;
+}
+
 const server = http.createServer((req, res) => {
   let reqUrl = req.url.split('?')[0];
+
+  if (reqUrl === '/env.js') {
+    const envData = parseEnvFile();
+    res.writeHead(200, {
+      'Content-Type': 'text/javascript; charset=UTF-8',
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
+    });
+    res.end(`window.__ENV__ = ${JSON.stringify(envData)};`, 'utf-8');
+    return;
+  }
+
   if (reqUrl === '/') reqUrl = '/index.html';
 
   const filePath = path.join(__dirname, reqUrl);

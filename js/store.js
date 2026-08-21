@@ -1,18 +1,11 @@
 /**
- * Aven - Central Reactive Store
+ * Aven - Central Reactive Store (Supabase Cloud Synced)
  * Single source of truth. All entities reference Subject by subject_id.
+ * Backed purely by Supabase Cloud with responsive in-memory reactivity.
+ * (Zero localStorage usage)
  */
 
-const STORAGE_KEYS = {
-  SUBJECTS: 'aven_subjects_v1',
-  SESSIONS: 'aven_sessions_v1',
-  GRADES: 'aven_grades_v1',
-  GRADE_CONFIGS: 'aven_grade_configs_v1',
-  PLANS: 'aven_plans_v1',
-  USER: 'aven_user_v1',
-  THEME: 'aven_theme_v1',
-  SETTINGS: 'aven_settings_v1'
-};
+import { supabase, getCurrentUser } from './supabase.js';
 
 // Available Year Levels & Semesters
 export const YEAR_LEVELS = [
@@ -81,13 +74,6 @@ export function getPhilippineGrade(percentage) {
   return { grade: '5.00', desc: 'Failed' };
 }
 
-/**
- * Color-code grade percentages by academic standing tier:
- * - 85%+ : Green (var(--success)) - Comfortably passing / Excellent to Very Good
- * - 75-84.99% : Blue/Indigo (var(--accent)) - Solid passing
- * - 60-74.99% : Amber/Orange (var(--warning)) - Near passing cutoff / At-risk
- * - < 60% : Red (var(--danger)) - Failing
- */
 export function getGradeStandingTier(percentage) {
   if (percentage === null || percentage === undefined || percentage === '' || isNaN(Number(percentage))) {
     return {
@@ -134,7 +120,14 @@ export function getStandingColor(percentage) {
   return getGradeStandingTier(percentage).colorVar;
 }
 
-
+export function getStandingClass(percentage) {
+  if (percentage === null || percentage === undefined || isNaN(percentage) || percentage === '—') return 'grade-none';
+  const val = parseFloat(percentage);
+  if (isNaN(val)) return 'grade-none';
+  if (val >= 75) return 'grade-pass';
+  if (val >= 60) return 'grade-warn';
+  return 'grade-danger';
+}
 
 // Event Bus for reactivity
 class EventBus {
@@ -167,442 +160,316 @@ export function generateId(prefix = 'id') {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 7)}`;
 }
 
-// Initial Realistic Demo Data with Interactive Study Plan
-function getInitialData() {
-  const subjects = [
-    {
-      id: 'sub_cs102',
-      name: 'Data Structures & Algorithms',
-      code: 'CS 102',
-      year_level: '2nd Year',
-      semester: '1st Semester',
-      color: '#6366f1',
-      instructor: 'Dr. Elena Santos',
-      archived: false,
-      created_at: new Date(Date.now() - 30 * 86400000).toISOString()
-    },
-    {
-      id: 'sub_cs201',
-      name: 'Computer Systems & Architecture',
-      code: 'CS 201',
-      year_level: '2nd Year',
-      semester: '1st Semester',
-      color: '#3b82f6',
-      instructor: 'Prof. Marcus Chen',
-      archived: false,
-      created_at: new Date(Date.now() - 28 * 86400000).toISOString()
-    },
-    {
-      id: 'sub_math120',
-      name: 'Discrete Mathematics & Graph Theory',
-      code: 'MATH 120',
-      year_level: '2nd Year',
-      semester: '1st Semester',
-      color: '#10b981',
-      instructor: 'Dr. Ramon Alvarez',
-      archived: false,
-      created_at: new Date(Date.now() - 25 * 86400000).toISOString()
-    },
-    {
-      id: 'sub_eng105',
-      name: 'Technical Writing & Ethics',
-      code: 'ENG 105',
-      year_level: '2nd Year',
-      semester: '1st Semester',
-      color: '#f97316',
-      instructor: 'Prof. Clara Reyes',
-      archived: false,
-      created_at: new Date(Date.now() - 20 * 86400000).toISOString()
-    },
-    {
-      id: 'sub_phy101',
-      name: 'Engineering Physics I',
-      code: 'PHY 101',
-      year_level: '1st Year',
-      semester: '2nd Semester',
-      color: '#a855f7',
-      instructor: 'Dr. Victor Morales',
-      archived: true,
-      created_at: new Date(Date.now() - 120 * 86400000).toISOString()
-    }
-  ];
-
-  const pastDays = (d) => {
-    const dt = new Date(Date.now() - d * 86400000);
-    return dt.toISOString().split('T')[0];
-  };
-
-  const sessions = [
-    { id: generateId('ses'), subject_id: 'sub_cs102', duration: 90, date: pastDays(0), notes: 'Implemented Red-Black Tree rotation & AVL rebalancing', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_math120', duration: 60, date: pastDays(0), notes: 'Graph coloring theorems & Eulerian paths', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_cs201', duration: 120, date: pastDays(1), notes: 'RISC-V assembly pipeline hazards & forwarding logic', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_cs102', duration: 75, date: pastDays(2), notes: 'Dijkstra shortest path & Prim minimum spanning tree', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_math120', duration: 45, date: pastDays(3), notes: 'Combinatorics practice problem set 4', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_cs201', duration: 90, date: pastDays(4), notes: 'Cache memory direct mapping vs 4-way set associative', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_eng105', duration: 60, date: pastDays(5), notes: 'Drafted ACM ethics case study paper', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_cs102', duration: 110, date: pastDays(6), notes: 'Dynamic programming: Knapsack and Longest Common Subsequence', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_math120', duration: 80, date: pastDays(7), notes: 'Recurrence relations and Master Theorem proofs', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_cs201', duration: 100, date: pastDays(8), notes: 'Virtual memory page tables and TLB miss handling', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_cs102', duration: 60, date: pastDays(9), notes: 'Heap sort & Priority Queue implementations', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_cs102', duration: 90, date: pastDays(12), notes: 'B-Trees and external memory index structures', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_math120', duration: 50, date: pastDays(13), notes: 'Modular arithmetic & RSA encryption fundamentals', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_cs201', duration: 130, date: pastDays(15), notes: 'Interrupt handling & DMA bus architecture', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_eng105', duration: 45, date: pastDays(18), notes: 'IEEE formatting and citation review', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_cs102', duration: 120, date: pastDays(21), notes: 'Graph traversal: BFS, DFS, and topological sort', created_at: new Date().toISOString() },
-    { id: generateId('ses'), subject_id: 'sub_math120', duration: 75, date: pastDays(24), notes: 'Mathematical induction & structural induction', created_at: new Date().toISOString() }
-  ];
-
-  const grades = [
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs102',
-      term: 'Midterm',
-      category: 'Quizzes',
-      weight: 20,
-      entries: [
-        { id: generateId('ent'), name: 'Quiz 1: Array & Linked Lists', score: 19, out_of: 20 },
-        { id: generateId('ent'), name: 'Quiz 2: Stacks & Queues', score: 20, out_of: 20 },
-        { id: generateId('ent'), name: 'Quiz 3: Binary Search Trees', score: 17, out_of: 20 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs102',
-      term: 'Midterm',
-      category: 'Laboratory',
-      weight: 25,
-      entries: [
-        { id: generateId('ent'), name: 'Lab 1: Generic Doubly Linked List', score: 48, out_of: 50 },
-        { id: generateId('ent'), name: 'Lab 2: Expression Evaluator', score: 50, out_of: 50 },
-        { id: generateId('ent'), name: 'Lab 3: AVL Tree Auto-balancer', score: 45, out_of: 50 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs102',
-      term: 'Midterm',
-      category: 'Long Quizzes',
-      weight: 20,
-      entries: [
-        { id: generateId('ent'), name: 'Long Quiz 1: Trees & Balancing', score: 88, out_of: 100 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs102',
-      term: 'Midterm',
-      category: 'Term Exams',
-      weight: 30,
-      entries: [
-        { id: generateId('ent'), name: 'Midterm Exam: Theory & Code', score: 92, out_of: 100 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs102',
-      term: 'Midterm',
-      category: 'Attendance',
-      weight: 5,
-      entries: [
-        { id: generateId('ent'), name: 'Midterm Attendance & Recitation', score: 100, out_of: 100 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs102',
-      term: 'Final',
-      category: 'Quizzes',
-      weight: 20,
-      entries: [
-        { id: generateId('ent'), name: 'Quiz 4: Heaps & Priority Queues', score: 18, out_of: 20 },
-        { id: generateId('ent'), name: 'Quiz 5: Graph Algorithms', score: 19, out_of: 20 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs102',
-      term: 'Final',
-      category: 'Laboratory',
-      weight: 25,
-      entries: [
-        { id: generateId('ent'), name: 'Lab 4: Dijkstra Shortest Path Visualizer', score: 49, out_of: 50 },
-        { id: generateId('ent'), name: 'Lab 5: Dynamic Programming DP-Table', score: 47, out_of: 50 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs102',
-      term: 'Final',
-      category: 'Long Quizzes',
-      weight: 20,
-      entries: [
-        { id: generateId('ent'), name: 'Long Quiz 2: Graphs & Dynamic Programming', score: 94, out_of: 100 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs102',
-      term: 'Final',
-      category: 'Term Exams',
-      weight: 30,
-      entries: [
-        { id: generateId('ent'), name: 'Final Comprehensive Exam', score: 91, out_of: 100 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs102',
-      term: 'Final',
-      category: 'Attendance',
-      weight: 5,
-      entries: [
-        { id: generateId('ent'), name: 'Final Attendance & Code Reviews', score: 100, out_of: 100 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs201',
-      term: 'Midterm',
-      category: 'Quizzes',
-      weight: 25,
-      entries: [
-        { id: generateId('ent'), name: 'Quiz 1: Logic Gates & ALU', score: 28, out_of: 30 },
-        { id: generateId('ent'), name: 'Quiz 2: RISC-V Instruction Formats', score: 26, out_of: 30 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs201',
-      term: 'Midterm',
-      category: 'Laboratory',
-      weight: 35,
-      entries: [
-        { id: generateId('ent'), name: 'Lab 1: 4-bit Ripple Carry Adder', score: 95, out_of: 100 },
-        { id: generateId('ent'), name: 'Lab 2: Single-Cycle Datapath CPU', score: 90, out_of: 100 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_cs201',
-      term: 'Midterm',
-      category: 'Term Exams',
-      weight: 40,
-      entries: [
-        { id: generateId('ent'), name: 'Midterm Examination', score: 84, out_of: 100 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_math120',
-      term: 'Midterm',
-      category: 'Quizzes',
-      weight: 30,
-      entries: [
-        { id: generateId('ent'), name: 'Quiz 1: Propositional Logic', score: 45, out_of: 50 },
-        { id: generateId('ent'), name: 'Quiz 2: Set Theory & Relations', score: 48, out_of: 50 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_math120',
-      term: 'Midterm',
-      category: 'Term Exams',
-      weight: 70,
-      entries: [
-        { id: generateId('ent'), name: 'Midterm Departmental Exam', score: 90, out_of: 100 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_eng105',
-      term: 'Midterm',
-      category: 'Quizzes',
-      weight: 40,
-      entries: [
-        { id: generateId('ent'), name: 'Paper 1: Tech Memo', score: 88, out_of: 100 }
-      ]
-    },
-    {
-      id: generateId('cat'),
-      subject_id: 'sub_eng105',
-      term: 'Midterm',
-      category: 'Term Exams',
-      weight: 60,
-      entries: [
-        { id: generateId('ent'), name: 'Oral Defense / Ethics Analysis', score: 92, out_of: 100 }
-      ]
-    }
-  ];
-
-  const gradeConfigs = [
-    { subject_id: 'sub_cs102', midterm_weight: 50, final_weight: 50 },
-    { subject_id: 'sub_cs201', midterm_weight: 50, final_weight: 50 },
-    { subject_id: 'sub_math120', midterm_weight: 50, final_weight: 50 },
-    { subject_id: 'sub_eng105', midterm_weight: 50, final_weight: 50 },
-    { subject_id: 'sub_phy101', midterm_weight: 50, final_weight: 50 }
-  ];
-
-  const samplePlanHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; padding: 24px; max-width: 800px; margin: 0 auto; background: #ffffff; }
-    h1 { color: #4338ca; border-bottom: 2px solid #e0e7ff; padding-bottom: 8px; font-size: 22px; }
-    h2 { color: #3730a3; margin-top: 24px; font-size: 17px; }
-    .badge { display: inline-block; background: #e0e7ff; color: #3730a3; padding: 4px 10px; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; }
-    .progress-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0; }
-    .progress-bar-bg { background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 8px; }
-    .progress-bar-fill { background: #4f46e5; height: 100%; width: 50%; transition: width 0.3s ease; }
-    .timeline { border-left: 3px solid #6366f1; padding-left: 16px; margin-left: 8px; }
-    .week-item { margin-bottom: 20px; position: relative; }
-    .week-item::before { content: ''; position: absolute; left: -22px; top: 6px; width: 10px; height: 10px; background: #6366f1; border-radius: 50%; }
-    .week-title { font-weight: 700; color: #0f172a; cursor: pointer; }
-    .task-item { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 13.5px; }
-    .task-item input[type="checkbox"] { cursor: pointer; accent-color: #4f46e5; width: 16px; height: 16px; }
-    .task-item.done { text-decoration: line-through; color: #94a3b8; }
-  </style>
-</head>
-<body>
-  <h1>CS 102: Data Structures & Algorithms — Interactive Roadmap</h1>
-  <p><span class="badge">Term: 1st Semester</span> <span class="badge">Interactive Progress Tracker</span></p>
-
-  <div class="progress-box">
-    <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 13px;">
-      <span>Syllabus Completion</span>
-      <span id="progress-text">50% Completed</span>
-    </div>
-    <div class="progress-bar-bg">
-      <div class="progress-bar-fill" id="progress-fill"></div>
-    </div>
-  </div>
-
-  <h2>Midterm Roadmap (Weeks 1 – 9)</h2>
-  <div class="timeline">
-    <div class="week-item">
-      <div class="week-title">Week 1-2: Asymptotic Analysis & Memory Management</div>
-      <div class="task-item done"><input type="checkbox" checked onchange="updateProgress()"> Big-O, Big-Omega, Big-Theta rigorous proofs</div>
-      <div class="task-item done"><input type="checkbox" checked onchange="updateProgress()"> Dynamic pointers & reference semantics in C++</div>
-    </div>
-    <div class="week-item">
-      <div class="week-title">Week 3-4: Stacks, Queues & Monotonic Patterns</div>
-      <div class="task-item done"><input type="checkbox" checked onchange="updateProgress()"> Circular ring buffer queue implementation</div>
-      <div class="task-item done"><input type="checkbox" checked onchange="updateProgress()"> Monotonic stack next-greater-element drill</div>
-    </div>
-    <div class="week-item">
-      <div class="week-title">Week 5-7: Binary Search Trees & AVL Balancing</div>
-      <div class="task-item"><input type="checkbox" onchange="updateProgress()"> Single & double rotation invariants</div>
-      <div class="task-item"><input type="checkbox" onchange="updateProgress()"> Red-Black Tree insertion recoloring rules</div>
-    </div>
-  </div>
-
-  <h2>Final Roadmap (Weeks 10 – 18)</h2>
-  <div class="timeline">
-    <div class="week-item">
-      <div class="week-title">Week 10-12: Heaps, Priority Queues & Disjoint Sets</div>
-      <div class="task-item"><input type="checkbox" onchange="updateProgress()"> Binary Heap sift-up / sift-down array representation</div>
-      <div class="task-item"><input type="checkbox" onchange="updateProgress()"> Union-Find with rank & path compression</div>
-    </div>
-    <div class="week-item">
-      <div class="week-title">Week 13-15: Graph Search & Shortest Path Paradigms</div>
-      <div class="task-item"><input type="checkbox" onchange="updateProgress()"> Dijkstra & A* shortest path implementations</div>
-      <div class="task-item"><input type="checkbox" onchange="updateProgress()"> Prim & Kruskal minimum spanning trees</div>
-    </div>
-  </div>
-
-  <script>
-    function updateProgress() {
-      const allBoxes = document.querySelectorAll('input[type="checkbox"]');
-      const checkedBoxes = document.querySelectorAll('input[type="checkbox"]:checked');
-      const pct = Math.round((checkedBoxes.length / allBoxes.length) * 100);
-      document.getElementById('progress-fill').style.width = pct + '%';
-      document.getElementById('progress-text').textContent = pct + '% Completed (' + checkedBoxes.length + '/' + allBoxes.length + ' milestones)';
-      allBoxes.forEach(box => {
-        box.parentElement.classList.toggle('done', box.checked);
-      });
-    }
-    updateProgress();
-  </script>
-</body>
-</html>`;
-
-  const plans = [
-    {
-      id: generateId('plan'),
-      subject_id: 'sub_cs102',
-      title: 'CS 102 Interactive Mastery Syllabus',
-      html_content: samplePlanHtml,
-      updated_at: new Date(Date.now() - 2 * 86400000).toISOString()
-    }
-  ];
-
-  const user = {
-    name: 'Alex Rivera',
-    email: 'alex.rivera@university.edu',
-    avatar: 'AR',
-    avatar_color: '#4f46e5'
-  };
-
-  const settings = {
-    default_midterm_weight: 50,
-    default_final_weight: 50,
-    default_timer_mode: 'stopwatch',
-    pomodoro_work_mins: 25,
-    pomodoro_break_mins: 5,
-    subjects_view_mode: 'grid'
-  };
-
-  return { subjects, sessions, grades, gradeConfigs, plans, user, settings };
-}
-
 // Store Class
 class Store {
   constructor() {
-    this.init();
+    this.currentUserId = null;
+    this.isSyncing = false;
+    this.isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+    this.lastSyncedAt = null;
+    this.activeCloudOperations = 0;
+    this.syncStatusState = { status: 'idle', message: '', error: null, timestamp: Date.now() };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => this.handleNetworkChange(true));
+      window.addEventListener('offline', () => this.handleNetworkChange(false));
+    }
+
+    this.resetState();
   }
 
-  init() {
-    if (!localStorage.getItem(STORAGE_KEYS.SUBJECTS)) {
-      const initial = getInitialData();
-      localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(initial.subjects));
-      localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(initial.sessions));
-      localStorage.setItem(STORAGE_KEYS.GRADES, JSON.stringify(initial.grades));
-      localStorage.setItem(STORAGE_KEYS.GRADE_CONFIGS, JSON.stringify(initial.gradeConfigs));
-      localStorage.setItem(STORAGE_KEYS.PLANS, JSON.stringify(initial.plans));
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(initial.user));
-      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(initial.settings));
+  handleNetworkChange(isOnline) {
+    this.isOnline = isOnline;
+    if (!isOnline) {
+      this.setSyncStatus('offline', 'Network offline');
+    } else {
+      this.setSyncStatus('synced', 'Connected to Supabase Cloud');
+      if (this.currentUserId) {
+        this.syncFromCloud(this.currentUserId);
+      }
+    }
+    events.emit('sync:connection', this.getConnectionStatus());
+  }
+
+  resetState() {
+    let savedGradesSort = 'year-sem-grouped';
+    let savedSubjectsSort = 'recent-desc';
+    let savedTheme = 'dark';
+    try {
+      if (typeof localStorage !== 'undefined') {
+        savedGradesSort = localStorage.getItem('aven_grades_sidebar_sort') || 'year-sem-grouped';
+        savedSubjectsSort = localStorage.getItem('aven_subjects_sort') || 'recent-desc';
+        savedTheme = localStorage.getItem('aven_theme') || 'dark';
+      }
+    } catch (e) {}
+
+    this.state = {
+      subjects: [],
+      sessions: [],
+      grades: [],
+      grade_configs: [],
+      plans: [],
+      user: this.getDefaultUser(),
+      settings: this.getDefaultSettings(),
+      grading_scale: JSON.parse(JSON.stringify(PHILIPPINE_GRADE_SCALE)),
+      subjects_sort: savedSubjectsSort,
+      grades_sidebar_sort: savedGradesSort,
+      theme: savedTheme
+    };
+  }
+
+  getDefaultUser() {
+    return {
+      name: 'Student',
+      email: '',
+      year_level: '1st Year',
+      institution: '',
+      program: '',
+      avatar: 'ST',
+      avatar_color: '#6366f1'
+    };
+  }
+
+  getDefaultSettings() {
+    return {
+      default_midterm_weight: 50,
+      default_final_weight: 50,
+      default_timer_mode: 'stopwatch',
+      pomodoro_work_mins: 25,
+      pomodoro_break_mins: 5,
+      sound_notifications: true,
+      subjects_view_mode: 'grid'
+    };
+  }
+
+  /**
+   * Synchronize all data from Supabase Cloud to in-memory state
+   */
+  async syncFromCloud(userId, isFreshLogin = false) {
+    if (!userId) return;
+    this.currentUserId = userId;
+    this.isSyncing = true;
+    if (!this.isOnline) {
+      this.setSyncStatus('offline', 'Cannot sync while offline');
+      return;
+    }
+    this.setSyncStatus('saving', 'Syncing workspace data...');
+
+    try {
+      // 1. Fetch Profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (profile) {
+        const name = profile.display_name || 'Student';
+        const initials = name.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase() || 'ST';
+        this.state.user = {
+          name,
+          email: profile.email || '',
+          bio: profile.bio || '',
+          year_level: profile.year_level || '1st Year',
+          institution: profile.school || '',
+          program: profile.program || '',
+          avatar: initials,
+          avatar_color: profile.avatar_color || '#6366f1'
+        };
+        events.emit('user:updated', this.state.user);
+      }
+
+      // 2. Fetch Settings
+      const { data: settingsRow } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (settingsRow) {
+        this.state.settings = {
+          default_midterm_weight: Number(settingsRow.term_weight_default || 50),
+          default_final_weight: 100 - Number(settingsRow.term_weight_default || 50),
+          default_timer_mode: settingsRow.timer_mode_default || 'stopwatch',
+          pomodoro_work_mins: settingsRow.pomodoro_work || 25,
+          pomodoro_break_mins: settingsRow.pomodoro_break || 5,
+          sound_notifications: settingsRow.notification_sound !== false,
+          subjects_view_mode: settingsRow.subjects_view_mode || 'grid'
+        };
+
+        if (isFreshLogin) {
+          // Carry over the active landing page theme choice into the app and persist to Supabase
+          const activeTheme = this.state.theme || 'dark';
+          document.documentElement.setAttribute('data-theme', activeTheme);
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('aven_theme', activeTheme);
+            }
+          } catch (e) {}
+
+          if (settingsRow.theme !== activeTheme) {
+            await supabase.from('settings').upsert({
+              user_id: userId,
+              theme: activeTheme
+            }, { onConflict: 'user_id' });
+          }
+        } else if (settingsRow.theme) {
+          this.state.theme = settingsRow.theme;
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('aven_theme', settingsRow.theme);
+            }
+          } catch (e) {}
+          document.documentElement.setAttribute('data-theme', settingsRow.theme);
+        }
+      } else {
+        // First-time sign-up / no settings row exists yet
+        const activeTheme = this.state.theme || 'dark';
+        document.documentElement.setAttribute('data-theme', activeTheme);
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('aven_theme', activeTheme);
+          }
+        } catch (e) {}
+
+        await supabase.from('settings').upsert({
+          user_id: userId,
+          theme: activeTheme,
+          term_weight_default: 50,
+          timer_mode_default: 'stopwatch',
+          pomodoro_work: 25,
+          pomodoro_break: 5,
+          notification_sound: true,
+          subjects_view_mode: 'grid'
+        }, { onConflict: 'user_id' });
+      }
+
+      // 3. Fetch Subjects
+      const { data: subjects } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      this.state.subjects = subjects || [];
+
+      // 4. Fetch Subject Grade Configs
+      const { data: configs } = await supabase
+        .from('subject_grade_configs')
+        .select('*')
+        .eq('user_id', userId);
+
+      this.state.grade_configs = configs || [];
+
+      // 5. Fetch Study Sessions
+      const { data: sessions } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      this.state.sessions = sessions || [];
+
+      // 6. Fetch Grade Categories & Entries
+      let { data: categories, error: catFetchErr } = await supabase
+        .from('grade_categories')
+        .select('*')
+        .eq('user_id', userId)
+        .order('sort_index', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      if (catFetchErr) {
+        console.warn('Grade categories sort_index order query warning, falling back to natural order:', catFetchErr.message);
+        const fallbackRes = await supabase
+          .from('grade_categories')
+          .select('*')
+          .eq('user_id', userId);
+        categories = fallbackRes.data;
+      }
+
+      const { data: entries } = await supabase
+        .from('grade_entries')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (categories) {
+        const entriesByCat = {};
+        (entries || []).forEach(e => {
+          if (!entriesByCat[e.category_id]) entriesByCat[e.category_id] = [];
+          entriesByCat[e.category_id].push({
+            id: e.id,
+            name: e.name,
+            score: Number(e.score),
+            out_of: Number(e.out_of)
+          });
+        });
+
+        this.state.grades = categories.map((cat, idx) => ({
+          ...cat,
+          sort_index: cat.sort_index !== undefined && cat.sort_index !== null ? Number(cat.sort_index) : idx,
+          entries: entriesByCat[cat.id] || []
+        }));
+      } else {
+        this.state.grades = [];
+      }
+
+      // 7. Fetch Study Plans
+      const { data: plans } = await supabase
+        .from('study_plans')
+        .select('*')
+        .eq('user_id', userId);
+
+      this.state.plans = plans || [];
+
+      this.lastSyncedAt = Date.now();
+      this.setSyncStatus('synced', 'Workspace synchronized');
+      events.emit('store:synced');
+      events.emit('store:changed', { type: 'cloud_sync' });
+      events.emit('sync:connection', this.getConnectionStatus());
+    } catch (err) {
+      console.error('Error syncing from Supabase:', err);
+      if (!this.isOnline || (err && err.message && err.message.toLowerCase().includes('failed to fetch'))) {
+        this.setSyncStatus('offline', 'Network unreachable');
+      } else {
+        this.setSyncStatus('error', err.message || 'Sync failed');
+      }
+    } finally {
+      this.isSyncing = false;
+      events.emit('sync:connection', this.getConnectionStatus());
     }
   }
 
   // --- SETTINGS ---
   getSettings() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-      const defaults = {
-        default_midterm_weight: 50,
-        default_final_weight: 50,
-        default_timer_mode: 'stopwatch',
-        sound_notifications: true,
-        subjects_view_mode: 'grid'
-      };
-      return raw ? { ...defaults, ...JSON.parse(raw) } : defaults;
-    } catch (e) {
-      return {
-        default_midterm_weight: 50,
-        default_final_weight: 50,
-        default_timer_mode: 'stopwatch',
-        sound_notifications: true,
-        subjects_view_mode: 'grid'
-      };
-    }
+    return { ...this.getDefaultSettings(), ...(this.state.settings || {}) };
   }
 
   saveSettings(partial) {
     const current = this.getSettings();
     const updated = { ...current, ...partial };
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
+    this.state.settings = updated;
     events.emit('settings:updated', updated);
     events.emit('store:changed', { type: 'settings' });
+
+    // Supabase Cloud sync
+    getCurrentUser().then(user => {
+      if (user) {
+        supabase.from('settings').upsert({
+          user_id: user.id,
+          theme: this.state.theme || 'dark',
+          term_weight_default: updated.default_midterm_weight,
+          timer_mode_default: updated.default_timer_mode,
+          pomodoro_work: updated.pomodoro_work_mins,
+          pomodoro_break: updated.pomodoro_break_mins,
+          notification_sound: updated.sound_notifications,
+          subjects_view_mode: updated.subjects_view_mode,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' }).then(({ error }) => {
+          if (error) console.warn('Supabase settings sync error:', error);
+        });
+      }
+    });
+
     return updated;
   }
 
@@ -614,53 +481,93 @@ class Store {
     this.saveSettings({ subjects_view_mode: mode });
   }
 
-  // --- GRADING SCALE CUSTOMIZATION ---
-  getGradingScale() {
+  getSubjectsSort() {
+    if (!this.state.subjects_sort || this.state.subjects_sort === 'recent-desc') {
+      try {
+        const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('aven_subjects_sort') : null;
+        if (stored) this.state.subjects_sort = stored;
+      } catch (e) {}
+    }
+    return this.state.subjects_sort || 'recent-desc';
+  }
+
+  setSubjectsSort(sortKey) {
+    this.state.subjects_sort = sortKey;
     try {
-      const raw = localStorage.getItem('aven_grading_scale_v1');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('aven_subjects_sort', sortKey);
       }
     } catch (e) {}
-    return JSON.parse(JSON.stringify(PHILIPPINE_GRADE_SCALE));
+  }
+
+  getGradesSidebarSort() {
+    if (!this.state.grades_sidebar_sort || this.state.grades_sidebar_sort === 'year-sem-grouped') {
+      try {
+        const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('aven_grades_sidebar_sort') : null;
+        if (stored) this.state.grades_sidebar_sort = stored;
+      } catch (e) {}
+    }
+    return this.state.grades_sidebar_sort || 'year-sem-grouped';
+  }
+
+  setGradesSidebarSort(sortKey) {
+    this.state.grades_sidebar_sort = sortKey;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('aven_grades_sidebar_sort', sortKey);
+      }
+    } catch (e) {}
+  }
+
+  // --- GRADING SCALE CUSTOMIZATION ---
+  getGradingScale() {
+    return this.state.grading_scale || JSON.parse(JSON.stringify(PHILIPPINE_GRADE_SCALE));
   }
 
   saveGradingScale(scale) {
-    localStorage.setItem('aven_grading_scale_v1', JSON.stringify(scale));
+    this.state.grading_scale = scale;
     events.emit('scale:updated', scale);
     events.emit('store:changed', { type: 'scale' });
     return scale;
   }
 
   resetGradingScale() {
-    localStorage.removeItem('aven_grading_scale_v1');
-    events.emit('scale:updated', PHILIPPINE_GRADE_SCALE);
+    this.state.grading_scale = JSON.parse(JSON.stringify(PHILIPPINE_GRADE_SCALE));
+    events.emit('scale:updated', this.state.grading_scale);
     events.emit('store:changed', { type: 'scale' });
-    return JSON.parse(JSON.stringify(PHILIPPINE_GRADE_SCALE));
+    return this.state.grading_scale;
   }
 
-  // --- STORAGE USAGE CALCULATION ---
+  // --- STORAGE USAGE CALCULATION (SUPABASE RECORD COUNTS) ---
+  getStorageUsageSummary() {
+    const subjects = this.getSubjects(true);
+    const sessions = this.getSessions();
+    const grades = this.getGrades();
+    let totalGradeEntries = 0;
+    grades.forEach(g => {
+      totalGradeEntries += (g.entries || []).length;
+    });
+    const plans = this.getStudyPlans();
+
+    return {
+      subjectsCount: subjects.length,
+      sessionsCount: sessions.length,
+      gradeCategoriesCount: grades.length,
+      gradeEntriesCount: totalGradeEntries,
+      plansCount: plans.length,
+      summaryText: `${subjects.length} subjects · ${sessions.length} sessions · ${totalGradeEntries} grade entries · ${plans.length} study plans`
+    };
+  }
+
   getStorageUsage() {
-    let totalBytes = 0;
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key) {
-        const val = localStorage.getItem(key) || '';
-        totalBytes += (key.length + val.length) * 2;
-      }
-    }
-    if (totalBytes < 1024) return `${totalBytes} B`;
-    const kb = (totalBytes / 1024).toFixed(1);
-    if (Number(kb) < 1024) return `${kb} KB`;
-    return `${(Number(kb) / 1024).toFixed(2)} MB`;
+    const summary = this.getStorageUsageSummary();
+    return summary.summaryText;
   }
-
 
   // --- DATA BACKUP, EXPORT, IMPORT, CLEAR ---
   exportAllDataJSON() {
     const data = {
-      version: '1.0',
+      version: '1.2-supabase',
       exported_at: new Date().toISOString(),
       subjects: this.getSubjects(true),
       sessions: this.getSessions(),
@@ -673,19 +580,160 @@ class Store {
     return JSON.stringify(data, null, 2);
   }
 
-  importAllDataJSON(jsonStr) {
+  async importAllDataJSON(jsonStr) {
     try {
       const data = JSON.parse(jsonStr);
       if (!Array.isArray(data.subjects)) {
-        throw new Error('Invalid backup format: subjects missing');
+        throw new Error('Invalid backup format: subjects array is missing');
       }
-      localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(data.subjects || []));
-      localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(data.sessions || []));
-      localStorage.setItem(STORAGE_KEYS.GRADES, JSON.stringify(data.grades || []));
-      localStorage.setItem(STORAGE_KEYS.GRADE_CONFIGS, JSON.stringify(data.grade_configs || []));
-      localStorage.setItem(STORAGE_KEYS.PLANS, JSON.stringify(data.plans || []));
-      if (data.user) localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.user));
-      if (data.settings) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(data.settings));
+
+      const user = await getCurrentUser();
+      if (!user || !user.id) {
+        throw new Error('You must be signed in to import data to Supabase');
+      }
+      const userId = user.id;
+
+      // 1. Sync Profile & Settings
+      if (data.user) {
+        const u = data.user;
+        await supabase
+          .from('profiles')
+          .upsert({
+            user_id: userId,
+            display_name: u.name || user.email?.split('@')[0],
+            email: user.email,
+            bio: u.bio || '',
+            year_level: u.year_level || '1st Year',
+            school: u.institution || '',
+            program: u.program || '',
+            avatar_color: u.avatar_color || '#6366f1',
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
+      }
+
+      if (data.settings) {
+        const s = data.settings;
+        await supabase
+          .from('settings')
+          .upsert({
+            user_id: userId,
+            theme: this.state.theme || 'dark',
+            term_weight_default: s.default_midterm_weight || 50,
+            timer_mode_default: s.default_timer_mode || 'stopwatch',
+            pomodoro_work: s.pomodoro_work_mins || 25,
+            pomodoro_break: s.pomodoro_break_mins || 5,
+            notification_sound: s.sound_notifications !== false,
+            subjects_view_mode: s.subjects_view_mode || 'grid',
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
+      }
+
+      // 2. Sync Subjects
+      if (Array.isArray(data.subjects) && data.subjects.length > 0) {
+        const subjectRows = data.subjects.map(sub => ({
+          id: sub.id || generateId('sub'),
+          user_id: userId,
+          name: sub.name,
+          code: sub.code || '',
+          year_level: sub.year_level || '1st Year',
+          semester: sub.semester || '1st Semester',
+          color: sub.color || '#6366f1',
+          instructor: sub.instructor || '',
+          archived: Boolean(sub.archived),
+          archive_reason: sub.archive_reason || null,
+          archived_at: sub.archived_at || null,
+          created_at: sub.created_at || new Date().toISOString()
+        }));
+
+        const { error: sErr } = await supabase.from('subjects').upsert(subjectRows, { onConflict: 'id' });
+        if (sErr) throw new Error(`Failed importing subjects: ${sErr.message}`);
+      }
+
+      // 3. Sync Grade Configs
+      if (Array.isArray(data.grade_configs) && data.grade_configs.length > 0) {
+        const cfgRows = data.grade_configs.map(cfg => ({
+          subject_id: cfg.subject_id,
+          user_id: userId,
+          midterm_weight: Number(cfg.midterm_weight) || 50,
+          final_weight: Number(cfg.final_weight) || 50
+        }));
+
+        await supabase.from('subject_grade_configs').upsert(cfgRows, { onConflict: 'subject_id,user_id' });
+      }
+
+      // 4. Sync Sessions
+      if (Array.isArray(data.sessions) && data.sessions.length > 0) {
+        const sessionRows = data.sessions.map(ses => ({
+          id: ses.id || generateId('ses'),
+          user_id: userId,
+          subject_id: ses.subject_id,
+          duration: Number(ses.duration || 0),
+          date: ses.date || new Date().toISOString().split('T')[0],
+          notes: ses.notes || '',
+          created_at: ses.created_at || new Date().toISOString()
+        }));
+
+        const { error: sesErr } = await supabase.from('study_sessions').upsert(sessionRows, { onConflict: 'id' });
+        if (sesErr) console.warn('Sessions import warning:', sesErr.message);
+      }
+
+      // 5. Sync Grade Categories & Entries
+      if (Array.isArray(data.grades) && data.grades.length > 0) {
+        const categoryRows = [];
+        const entryRows = [];
+
+        data.grades.forEach((cat, idx) => {
+          const catId = cat.id || generateId('cat');
+          categoryRows.push({
+            id: catId,
+            user_id: userId,
+            subject_id: cat.subject_id,
+            term: cat.term || 'Midterm',
+            category: cat.category || 'Quizzes',
+            weight: Number(cat.weight || 0),
+            sort_index: cat.sort_index !== undefined && cat.sort_index !== null ? Number(cat.sort_index) : idx,
+            created_at: cat.created_at || new Date().toISOString()
+          });
+
+          if (Array.isArray(cat.entries)) {
+            cat.entries.forEach(ent => {
+              entryRows.push({
+                id: ent.id || generateId('ent'),
+                user_id: userId,
+                category_id: catId,
+                name: ent.name || 'Assessment',
+                score: Number(ent.score || 0),
+                out_of: Number(ent.out_of || 100),
+                created_at: ent.created_at || new Date().toISOString()
+              });
+            });
+          }
+        });
+
+        if (categoryRows.length > 0) {
+          await supabase.from('grade_categories').upsert(categoryRows, { onConflict: 'id' });
+        }
+        if (entryRows.length > 0) {
+          await supabase.from('grade_entries').upsert(entryRows, { onConflict: 'id' });
+        }
+      }
+
+      // 6. Sync Study Plans
+      if (Array.isArray(data.plans) && data.plans.length > 0) {
+        const planRows = data.plans.map(p => ({
+          id: p.id || generateId('plan'),
+          user_id: userId,
+          subject_id: p.subject_id,
+          title: p.title || 'Study Plan',
+          html_content: p.html_content || '',
+          updated_at: p.updated_at || new Date().toISOString()
+        }));
+
+        await supabase.from('study_plans').upsert(planRows, { onConflict: 'id' });
+      }
+
+      // Re-fetch everything cleanly from Supabase
+      await this.syncFromCloud(userId);
 
       events.emit('store:imported');
       events.emit('store:changed', { type: 'import' });
@@ -696,27 +744,31 @@ class Store {
     }
   }
 
-  clearAllData() {
-    localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify([]));
-    localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify([]));
-    localStorage.setItem(STORAGE_KEYS.GRADES, JSON.stringify([]));
-    localStorage.setItem(STORAGE_KEYS.GRADE_CONFIGS, JSON.stringify([]));
-    localStorage.setItem(STORAGE_KEYS.PLANS, JSON.stringify([]));
+  async clearAllData() {
+    this.state.subjects = [];
+    this.state.sessions = [];
+    this.state.grades = [];
+    this.state.grade_configs = [];
+    this.state.plans = [];
+
+    const user = await getCurrentUser();
+    if (user) {
+      await supabase.from('subjects').delete().eq('user_id', user.id);
+      await supabase.from('study_sessions').delete().eq('user_id', user.id);
+      await supabase.from('grade_categories').delete().eq('user_id', user.id);
+      await supabase.from('study_plans').delete().eq('user_id', user.id);
+      await supabase.from('subject_grade_configs').delete().eq('user_id', user.id);
+    }
+
     events.emit('store:cleared');
     events.emit('store:changed', { type: 'clear' });
   }
 
   // --- SUBJECTS CRUD ---
   getSubjects(includeArchived = true) {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.SUBJECTS);
-      const list = raw ? JSON.parse(raw) : [];
-      if (includeArchived) return list;
-      return list.filter(s => !s.archived);
-    } catch (e) {
-      console.error('Error getting subjects', e);
-      return [];
-    }
+    const list = this.state.subjects || [];
+    if (includeArchived) return list;
+    return list.filter(s => !s.archived);
   }
 
   getSubjectById(id) {
@@ -727,7 +779,9 @@ class Store {
   saveSubject(subjectData) {
     const subjects = this.getSubjects(true);
     let subject;
-    if (subjectData.id) {
+    const isNew = !subjectData.id;
+
+    if (!isNew) {
       const idx = subjects.findIndex(s => s.id === subjectData.id);
       if (idx !== -1) {
         subjects[idx] = { ...subjects[idx], ...subjectData };
@@ -747,12 +801,34 @@ class Store {
         created_at: new Date().toISOString()
       };
       subjects.unshift(subject);
-
       this.saveSubjectGradeConfig(subject.id, settings.default_midterm_weight, settings.default_final_weight);
     }
-    localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
+
     events.emit('subject:saved', subject);
     events.emit('store:changed', { type: 'subject' });
+
+    // Supabase Cloud sync
+    getCurrentUser().then(user => {
+      if (user && subject) {
+        supabase.from('subjects').upsert({
+          id: subject.id,
+          user_id: user.id,
+          name: subject.name,
+          code: subject.code,
+          year_level: subject.year_level,
+          semester: subject.semester,
+          color: subject.color,
+          instructor: subject.instructor,
+          archived: subject.archived,
+          archive_reason: subject.archive_reason || null,
+          archived_at: subject.archived_at || null,
+          created_at: subject.created_at
+        }, { onConflict: 'id' }).then(({ error }) => {
+          if (error) console.warn('Supabase subject sync error:', error);
+        });
+      }
+    });
+
     return subject;
   }
 
@@ -763,9 +839,18 @@ class Store {
       item.archived = true;
       item.archive_reason = (reason === 'Other' && note.trim()) ? `Other: ${note.trim()}` : (reason || 'Semester ended');
       item.archived_at = new Date().toISOString();
-      localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
       events.emit('subject:archived', item);
       events.emit('store:changed', { type: 'subject' });
+
+      getCurrentUser().then(user => {
+        if (user) {
+          supabase.from('subjects').update({
+            archived: true,
+            archive_reason: item.archive_reason,
+            archived_at: item.archived_at
+          }).eq('id', id).eq('user_id', user.id).then();
+        }
+      });
     }
     return item;
   }
@@ -777,9 +862,18 @@ class Store {
       item.archived = false;
       item.archive_reason = null;
       item.archived_at = null;
-      localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
       events.emit('subject:archived', item);
       events.emit('store:changed', { type: 'subject' });
+
+      getCurrentUser().then(user => {
+        if (user) {
+          supabase.from('subjects').update({
+            archived: false,
+            archive_reason: null,
+            archived_at: null
+          }).eq('id', id).eq('user_id', user.id).then();
+        }
+      });
     }
     return item;
   }
@@ -800,45 +894,35 @@ class Store {
     });
 
     if (count > 0) {
-      localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
-      events.emit('subjects:bulk_archived', { count, subjectIds });
       events.emit('store:changed', { type: 'subject' });
+
+      getCurrentUser().then(user => {
+        if (user) {
+          supabase.from('subjects')
+            .update({ archived: true, archive_reason: reason, archived_at: now })
+            .in('id', subjectIds)
+            .eq('user_id', user.id).then();
+        }
+      });
     }
     return count;
   }
 
-  toggleArchiveSubject(id, reason = 'Semester ended') {
-    const subjects = this.getSubjects(true);
-    const item = subjects.find(s => s.id === id);
-    if (item) {
-      if (item.archived) {
-        return this.unarchiveSubject(id);
-      } else {
-        return this.archiveSubject(id, reason);
+  deleteSubject(id) {
+    this.state.subjects = (this.state.subjects || []).filter(s => s.id !== id);
+    this.state.sessions = (this.state.sessions || []).filter(s => s.subject_id !== id);
+    this.state.grades = (this.state.grades || []).filter(g => g.subject_id !== id);
+    this.state.grade_configs = (this.state.grade_configs || []).filter(c => c.subject_id !== id);
+    this.state.plans = (this.state.plans || []).filter(p => p.subject_id !== id);
+
+    events.emit('subject:deleted', id);
+    events.emit('store:changed', { type: 'subject' });
+
+    getCurrentUser().then(user => {
+      if (user) {
+        supabase.from('subjects').delete().eq('id', id).eq('user_id', user.id).then();
       }
-    }
-    return item;
-  }
-
-
-  deleteSubject(subjectId) {
-    let subjects = this.getSubjects(true).filter(s => s.id !== subjectId);
-    localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
-
-    let sessions = this.getSessions().filter(s => s.subject_id !== subjectId);
-    localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessions));
-
-    let grades = this.getGrades().filter(g => g.subject_id !== subjectId);
-    localStorage.setItem(STORAGE_KEYS.GRADES, JSON.stringify(grades));
-
-    let gradeConfigs = this.getGradeConfigs().filter(c => c.subject_id !== subjectId);
-    localStorage.setItem(STORAGE_KEYS.GRADE_CONFIGS, JSON.stringify(gradeConfigs));
-
-    let plans = this.getStudyPlans().filter(p => p.subject_id !== subjectId);
-    localStorage.setItem(STORAGE_KEYS.PLANS, JSON.stringify(plans));
-
-    events.emit('subject:deleted', subjectId);
-    events.emit('store:changed', { type: 'cascade_delete', subjectId });
+    });
   }
 
   getCascadeStats(subjectId) {
@@ -857,46 +941,76 @@ class Store {
     };
   }
 
-  // --- STUDY SESSIONS ---
-  getSessions() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.SESSIONS);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      console.error('Error getting sessions', e);
-      return [];
+  // --- STUDY SESSIONS CRUD ---
+  getSessions(filterSubjectId = null) {
+    const list = this.state.sessions || [];
+    if (filterSubjectId) {
+      return list.filter(s => s.subject_id === filterSubjectId);
     }
+    return list;
+  }
+
+  getSessionById(id) {
+    const sessions = this.getSessions();
+    return sessions.find(s => s.id === id) || null;
   }
 
   saveSession(sessionData) {
-    const sessions = this.getSessions();
-    const session = {
-      id: sessionData.id || generateId('ses'),
-      subject_id: sessionData.subject_id,
-      duration: Math.max(1, parseInt(sessionData.duration, 10) || 0),
-      date: sessionData.date || new Date().toISOString().split('T')[0],
-      notes: sessionData.notes ? sessionData.notes.trim() : '',
-      created_at: sessionData.created_at || new Date().toISOString()
-    };
+    const sessions = this.state.sessions;
+    let session;
+    const cleanSubjectId = sessionData.subject_id && sessionData.subject_id.trim() ? sessionData.subject_id.trim() : null;
 
     if (sessionData.id) {
       const idx = sessions.findIndex(s => s.id === sessionData.id);
-      if (idx !== -1) sessions[idx] = session;
+      if (idx !== -1) {
+        sessions[idx] = { ...sessions[idx], ...sessionData, subject_id: cleanSubjectId };
+        session = sessions[idx];
+      }
     } else {
+      session = {
+        id: generateId('ses'),
+        subject_id: cleanSubjectId,
+        duration: Math.max(1, parseInt(sessionData.duration, 10) || 0),
+        date: sessionData.date || new Date().toISOString().split('T')[0],
+        notes: sessionData.notes ? sessionData.notes.trim() : '',
+        created_at: new Date().toISOString()
+      };
       sessions.unshift(session);
     }
 
-    localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessions));
     events.emit('session:saved', session);
     events.emit('store:changed', { type: 'session' });
+
+    // Supabase Cloud sync
+    getCurrentUser().then(user => {
+      if (user && session) {
+        supabase.from('study_sessions').upsert({
+          id: session.id,
+          user_id: user.id,
+          subject_id: session.subject_id,
+          duration: session.duration,
+          date: session.date,
+          notes: session.notes,
+          created_at: session.created_at
+        }, { onConflict: 'id' }).then(({ error }) => {
+          if (error) console.warn('Supabase session sync error:', error);
+        });
+      }
+    });
+
     return session;
   }
 
-  deleteSession(sessionId) {
-    let sessions = this.getSessions().filter(s => s.id !== sessionId);
-    localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessions));
-    events.emit('session:deleted', sessionId);
+  deleteSession(id) {
+    this.state.sessions = (this.state.sessions || []).filter(s => s.id !== id);
+    events.emit('session:deleted', id);
     events.emit('store:changed', { type: 'session' });
+
+    getCurrentUser().then(user => {
+      if (user) {
+        supabase.from('study_sessions').delete().eq('id', id).eq('user_id', user.id).then();
+      }
+    });
   }
 
   getSubjectTotalStudyMinutes(subjectId) {
@@ -906,6 +1020,7 @@ class Store {
 
   getWeeklyStudyHours() {
     const sessions = this.getSessions();
+    if (!sessions || sessions.length === 0) return '0.0';
     const now = new Date();
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? -6 : 1);
@@ -925,8 +1040,8 @@ class Store {
 
   getStreakStats() {
     const sessions = this.getSessions();
-    if (sessions.length === 0) {
-      return { currentStreak: 0, longestStreak: 0, totalHours: 0, totalSessions: 0 };
+    if (!sessions || sessions.length === 0) {
+      return { currentStreak: 0, longestStreak: 0, totalHours: '0.0', totalSessions: 0 };
     }
 
     const dateMap = {};
@@ -936,7 +1051,7 @@ class Store {
 
     const uniqueDates = Object.keys(dateMap).sort().reverse();
     if (uniqueDates.length === 0) {
-      return { currentStreak: 0, longestStreak: 0, totalHours: 0, totalSessions: 0 };
+      return { currentStreak: 0, longestStreak: 0, totalHours: '0.0', totalSessions: 0 };
     }
 
     const today = new Date().toISOString().split('T')[0];
@@ -1001,8 +1116,72 @@ class Store {
     };
   }
 
+  getTodayStudyDuration() {
+    const today = new Date().toISOString().split('T')[0];
+    const sessions = this.getSessions();
+    return sessions
+      .filter(s => s.date === today)
+      .reduce((sum, s) => sum + Number(s.duration || 0), 0);
+  }
+
+  getWeeklyStudyStats() {
+    const sessions = this.getSessions();
+    const days = [];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const now = new Date();
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const daySessions = sessions.filter(s => s.date === dateStr);
+      const totalMins = daySessions.reduce((acc, s) => acc + Number(s.duration || 0), 0);
+      days.push({
+        date: dateStr,
+        dayName: dayNames[d.getDay()],
+        minutes: totalMins,
+        sessionsCount: daySessions.length
+      });
+    }
+    return days;
+  }
+
+  getMonthlyStudyStats() {
+    const sessions = this.getSessions();
+    const weeks = [0, 0, 0, 0];
+    const now = new Date();
+
+    sessions.forEach(s => {
+      const sDate = new Date(s.date);
+      const diffDays = Math.floor((now - sDate) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays < 28) {
+        const weekIdx = Math.floor(diffDays / 7);
+        if (weekIdx >= 0 && weekIdx < 4) {
+          weeks[3 - weekIdx] += Number(s.duration || 0);
+        }
+      }
+    });
+
+    return [
+      { label: '3 wks ago', minutes: weeks[0] },
+      { label: '2 wks ago', minutes: weeks[1] },
+      { label: 'Last week', minutes: weeks[2] },
+      { label: 'This week', minutes: weeks[3] }
+    ];
+  }
+
+  getStudyHeatmapData(year = new Date().getFullYear()) {
+    const sessions = this.getSessions();
+    const map = {};
+    sessions.forEach(s => {
+      if (s.date && s.date.startsWith(String(year))) {
+        map[s.date] = (map[s.date] || 0) + Number(s.duration || 0);
+      }
+    });
+    return map;
+  }
+
   getLeetCodeCalendarMatrix(weeksCount = 52) {
-    // Legacy shim — delegates to current year view
     return this.getYearCalendarMatrix(new Date().getFullYear());
   }
 
@@ -1014,11 +1193,11 @@ class Store {
     sessions.forEach(s => {
       dateMap[s.date] = (dateMap[s.date] || 0) + (s.duration || 0);
       if (!subjectsMap[s.date]) subjectsMap[s.date] = [];
-      const sub = this.getSubjectById(s.subject_id);
+      const sub = s.subject_id ? this.getSubjectById(s.subject_id) : null;
       subjectsMap[s.date].push({
-        subjectName: sub ? sub.name : 'Unknown Subject',
+        subjectName: sub ? sub.name : 'General Study',
         subjectCode: sub ? sub.code : '',
-        color: sub ? sub.color : '#6366f1',
+        color: sub ? sub.color : '#94a3b8',
         duration: s.duration
       });
     });
@@ -1030,7 +1209,6 @@ class Store {
     for (let m = 0; m < 12; m++) {
       const firstDay = new Date(year, m, 1);
       const lastDayNum = new Date(year, m + 1, 0).getDate();
-      // Sunday=0 offset so week columns start on Sunday
       const startOffset = firstDay.getDay();
 
       const weeks = [];
@@ -1058,17 +1236,14 @@ class Store {
         }
       }
 
-      // Pad last partial week
       if (currentWeek.length > 0) {
         while (currentWeek.length < 7) currentWeek.push(null);
         weeks.push(currentWeek);
       }
 
-      // Count total sessions for this year (for the stats line)
       months.push({ name: MONTH_NAMES[m], monthIndex: m, weeks });
     }
 
-    // Total sessions / hours for display
     const yearSessions = sessions.filter(s => s.date && s.date.startsWith(String(year)));
     const totalMins = yearSessions.reduce((a, s) => a + (s.duration || 0), 0);
 
@@ -1080,127 +1255,477 @@ class Store {
     };
   }
 
+  getStudyStreak() {
+    const sessions = this.getSessions();
+    if (!sessions || sessions.length === 0) return 0;
 
-  // --- GRADES ---
-  getGrades() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.GRADES);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      console.error('Error getting grades', e);
-      return [];
+    const dates = [...new Set(sessions.map(s => s.date))].sort().reverse();
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+    if (!dates.includes(today) && !dates.includes(yesterday)) {
+      return 0;
     }
-  }
 
-  getGradeConfigs() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.GRADE_CONFIGS);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      console.error('Error getting grade configs', e);
-      return [];
+    let streak = 0;
+    let checkDate = new Date();
+    if (!dates.includes(today)) {
+      checkDate.setDate(checkDate.getDate() - 1);
     }
-  }
 
-  getSubjectGradeConfig(subjectId) {
-    const configs = this.getGradeConfigs();
-    const config = configs.find(c => c.subject_id === subjectId);
-    const settings = this.getSettings();
-    return config || {
-      subject_id: subjectId,
-      midterm_weight: settings.default_midterm_weight,
-      final_weight: settings.default_final_weight
-    };
-  }
-
-  saveSubjectGradeConfig(subjectId, midtermWeight, finalWeight) {
-    let configs = this.getGradeConfigs();
-    const idx = configs.findIndex(c => c.subject_id === subjectId);
-    const newConfig = {
-      subject_id: subjectId,
-      midterm_weight: Number(midtermWeight) || 50,
-      final_weight: Number(finalWeight) || 50
-    };
-    if (idx !== -1) {
-      configs[idx] = newConfig;
-    } else {
-      configs.push(newConfig);
+    while (true) {
+      const dStr = checkDate.toISOString().split('T')[0];
+      if (dates.includes(dStr)) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
     }
-    localStorage.setItem(STORAGE_KEYS.GRADE_CONFIGS, JSON.stringify(configs));
-    events.emit('grade_config:saved', newConfig);
-    events.emit('store:changed', { type: 'grade' });
+    return streak;
   }
 
-  getSubjectGradeCategories(subjectId, term = null) {
-    const grades = this.getGrades();
-    return grades.filter(g => {
-      if (g.subject_id !== subjectId) return false;
-      if (term && g.term !== term) return false;
-      return true;
+  // --- GRADES & CATEGORIES CRUD ---
+  getGrades(subjectId = null, term = null) {
+    let list = this.state.grades || [];
+    if (subjectId) {
+      list = list.filter(g => g.subject_id === subjectId);
+    }
+    if (term) {
+      list = list.filter(g => g.term === term);
+    }
+    return list.slice().sort((a, b) => {
+      const orderA = a.sort_index !== undefined && a.sort_index !== null ? Number(a.sort_index) : 999999;
+      const orderB = b.sort_index !== undefined && b.sort_index !== null ? Number(b.sort_index) : 999999;
+      if (orderA !== orderB) return orderA - orderB;
+      return (a.created_at || '').localeCompare(b.created_at || '');
     });
   }
 
-  saveGradeCategory(categoryData) {
-    const grades = this.getGrades();
-    const category = {
-      id: categoryData.id || generateId('cat'),
-      subject_id: categoryData.subject_id,
-      term: categoryData.term || 'Midterm',
-      category: categoryData.category || 'Quizzes',
-      weight: Math.max(0, Number(categoryData.weight) || 0),
-      entries: categoryData.entries || []
+  getSubjectGradeCategories(subjectId, term = null) {
+    return this.getGrades(subjectId, term);
+  }
+
+
+
+  // --- SYNC & CONNECTION STATUS TRACKING ---
+  getSyncStatus() {
+    return this.syncStatusState || { status: 'idle', message: '', error: null, timestamp: Date.now() };
+  }
+
+  getConnectionStatus() {
+    let effectiveStatus = 'synced';
+    if (!this.isOnline) {
+      effectiveStatus = 'offline';
+    } else if (this.activeCloudOperations > 0 || this.isSyncing || (this.syncStatusState && this.syncStatusState.status === 'saving')) {
+      effectiveStatus = 'saving';
+    } else if (this.syncStatusState && this.syncStatusState.status === 'error') {
+      effectiveStatus = 'error';
+    } else if (this.syncStatusState && this.syncStatusState.status === 'offline') {
+      effectiveStatus = 'offline';
+    } else {
+      effectiveStatus = 'synced';
+    }
+
+    return {
+      isOnline: this.isOnline,
+      status: effectiveStatus,
+      message: this.syncStatusState?.message || '',
+      error: this.syncStatusState?.error || null,
+      lastSyncedAt: this.lastSyncedAt
+    };
+  }
+
+  getLastSyncedAt() {
+    return this.lastSyncedAt;
+  }
+
+  setSyncStatus(status, messageOrError = '') {
+    if (status === 'synced') {
+      this.lastSyncedAt = Date.now();
+    }
+
+    this.syncStatusState = {
+      status, // 'idle' | 'saving' | 'synced' | 'error' | 'offline'
+      message: status === 'error' ? '' : messageOrError,
+      error: status === 'error' ? messageOrError : null,
+      timestamp: Date.now()
     };
 
-    if (categoryData.id) {
+    events.emit('sync:status', this.syncStatusState);
+    events.emit('sync:connection', this.getConnectionStatus());
+
+    // If synced, automatically transition back to idle after 2.5 seconds for per-action indicators
+    if (status === 'synced') {
+      if (this.syncStatusTimer) clearTimeout(this.syncStatusTimer);
+      this.syncStatusTimer = setTimeout(() => {
+        if (this.syncStatusState && this.syncStatusState.status === 'synced') {
+          this.syncStatusState = { status: 'idle', message: '', error: null, timestamp: Date.now() };
+          events.emit('sync:status', this.syncStatusState);
+          events.emit('sync:connection', this.getConnectionStatus());
+        }
+      }, 2500);
+    }
+  }
+
+  async trackCloudOperation(operationPromise, label = 'Syncing...') {
+    if (!this.isOnline) {
+      this.setSyncStatus('offline', 'Cannot sync while offline');
+      return await operationPromise;
+    }
+
+    this.activeCloudOperations++;
+    this.setSyncStatus('saving', label);
+
+    try {
+      const result = await operationPromise;
+      this.activeCloudOperations = Math.max(0, this.activeCloudOperations - 1);
+      if (this.activeCloudOperations === 0) {
+        this.lastSyncedAt = Date.now();
+        this.setSyncStatus('synced', 'Synced with cloud');
+      }
+      return result;
+    } catch (err) {
+      this.activeCloudOperations = Math.max(0, this.activeCloudOperations - 1);
+      console.error('Tracked cloud operation error:', err);
+      if (!this.isOnline || (err && err.message && err.message.toLowerCase().includes('failed to fetch'))) {
+        this.setSyncStatus('offline', 'Network connection lost');
+      } else {
+        this.setSyncStatus('error', err.message || 'Sync failed');
+      }
+      throw err;
+    }
+  }
+
+  async syncGradeCategoriesUpsert(rows) {
+    if (!rows || rows.length === 0) return { success: true };
+    this.setSyncStatus('saving');
+    try {
+      const user = await getCurrentUser();
+      if (!user) {
+        this.setSyncStatus('synced');
+        return { success: true };
+      }
+
+      // 1. Try upserting with full payload including sort_index
+      const { error } = await supabase.from('grade_categories').upsert(rows, { onConflict: 'id' });
+      if (error) {
+        // 2. If sort_index column is missing in user's Supabase DB schema, retry without sort_index
+        if (error.message && (error.message.includes('sort_index') || error.code === 'PGRST204')) {
+          console.warn('Retrying grade_categories upsert without sort_index column:', error.message);
+          const fallbackRows = rows.map(({ sort_index, ...rest }) => rest);
+          const { error: fallbackErr } = await supabase.from('grade_categories').upsert(fallbackRows, { onConflict: 'id' });
+          if (fallbackErr) {
+            console.error('Supabase grade_categories upsert fallback error:', fallbackErr);
+            this.setSyncStatus('error', fallbackErr.message || 'Failed to save categories to cloud');
+            return { success: false, error: fallbackErr };
+          }
+        } else {
+          console.error('Supabase grade_categories upsert error:', error);
+          this.setSyncStatus('error', error.message || 'Failed to save categories to cloud');
+          return { success: false, error };
+        }
+      }
+
+      this.setSyncStatus('synced');
+      return { success: true };
+    } catch (err) {
+      console.error('Supabase syncGradeCategoriesUpsert exception:', err);
+      this.setSyncStatus('error', err.message || 'Cloud sync failed');
+      return { success: false, error: err };
+    }
+  }
+
+  async syncGradeCategoriesDelete(ids) {
+    if (!ids || ids.length === 0) return { success: true };
+    this.setSyncStatus('saving');
+    try {
+      const user = await getCurrentUser();
+      if (!user) {
+        this.setSyncStatus('synced');
+        return { success: true };
+      }
+      const { error } = await supabase.from('grade_categories').delete().in('id', ids).eq('user_id', user.id);
+      if (error) {
+        console.error('Supabase grade_categories delete error:', error);
+        this.setSyncStatus('error', error.message || 'Failed to delete categories');
+        return { success: false, error };
+      }
+      this.setSyncStatus('synced');
+      return { success: true };
+    } catch (err) {
+      console.error('Supabase syncGradeCategoriesDelete exception:', err);
+      this.setSyncStatus('error', err.message || 'Delete failed');
+      return { success: false, error: err };
+    }
+  }
+
+  saveGradeCategory(categoryData) {
+    const grades = this.state.grades;
+    let category;
+    const isNew = !categoryData.id;
+
+    if (!isNew) {
       const idx = grades.findIndex(g => g.id === categoryData.id);
-      if (idx !== -1) grades[idx] = category;
+      if (idx !== -1) {
+        grades[idx] = { ...grades[idx], ...categoryData };
+        category = grades[idx];
+      }
     } else {
+      let sortIndex = categoryData.sort_index;
+      if (sortIndex === undefined || sortIndex === null) {
+        const existingForTerm = grades.filter(g => g.subject_id === categoryData.subject_id && g.term === (categoryData.term || 'Midterm'));
+        const maxSort = existingForTerm.reduce((max, g) => Math.max(max, g.sort_index !== undefined && g.sort_index !== null ? Number(g.sort_index) : -1), -1);
+        sortIndex = maxSort + 1;
+      }
+
+      category = {
+        id: generateId('cat'),
+        subject_id: categoryData.subject_id,
+        term: categoryData.term || 'Midterm',
+        category: categoryData.category || 'Quizzes',
+        weight: Number(categoryData.weight) || 0,
+        sort_index: sortIndex,
+        entries: [],
+        created_at: new Date().toISOString()
+      };
       grades.push(category);
     }
 
-    localStorage.setItem(STORAGE_KEYS.GRADES, JSON.stringify(grades));
     events.emit('grade_category:saved', category);
     events.emit('store:changed', { type: 'grade' });
+
+    // Supabase Cloud sync
+    getCurrentUser().then(user => {
+      if (user && category) {
+        const row = {
+          id: category.id,
+          user_id: user.id,
+          subject_id: category.subject_id,
+          term: category.term,
+          category: category.category,
+          weight: category.weight,
+          sort_index: category.sort_index !== undefined ? category.sort_index : 0,
+          created_at: category.created_at
+        };
+        this.syncGradeCategoriesUpsert([row]);
+      }
+    });
+
     return category;
   }
 
+  saveGradeCategoriesBulk(categoriesList, overwriteSubjectId = null, overwriteTerm = null) {
+    let grades = this.state.grades;
+    let targetIdsToDelete = [];
+
+    if (overwriteSubjectId && overwriteTerm) {
+      const targetCategoriesToDelete = grades.filter(g => g.subject_id === overwriteSubjectId && g.term === overwriteTerm);
+      targetIdsToDelete = targetCategoriesToDelete.map(t => t.id);
+      this.state.grades = grades.filter(g => !(g.subject_id === overwriteSubjectId && g.term === overwriteTerm));
+      grades = this.state.grades;
+    }
+
+    const created = [];
+    categoriesList.forEach((catData) => {
+      let sortIndex = catData.sort_index;
+      if (sortIndex === undefined || sortIndex === null) {
+        const existingForTerm = grades.filter(g => g.subject_id === catData.subject_id && g.term === (catData.term || 'Midterm'));
+        const maxSort = existingForTerm.reduce((max, g) => Math.max(max, g.sort_index !== undefined && g.sort_index !== null ? Number(g.sort_index) : -1), -1);
+        sortIndex = maxSort + 1;
+      }
+
+      const category = {
+        id: generateId('cat'),
+        subject_id: catData.subject_id,
+        term: catData.term || 'Midterm',
+        category: catData.category ? catData.category.trim() : 'New Category',
+        weight: Number(catData.weight) || 0,
+        sort_index: sortIndex,
+        entries: [],
+        created_at: new Date().toISOString()
+      };
+      grades.push(category);
+      created.push(category);
+    });
+
+    events.emit('store:changed', { type: 'grade' });
+
+    // Supabase Cloud sync with coordinated delete -> upsert
+    getCurrentUser().then(async user => {
+      if (user) {
+        if (targetIdsToDelete.length > 0) {
+          await this.syncGradeCategoriesDelete(targetIdsToDelete);
+        }
+
+        if (created.length > 0) {
+          const rows = created.map(c => ({
+            id: c.id,
+            user_id: user.id,
+            subject_id: c.subject_id,
+            term: c.term,
+            category: c.category,
+            weight: c.weight,
+            sort_index: c.sort_index !== undefined ? c.sort_index : 0,
+            created_at: c.created_at
+          }));
+          await this.syncGradeCategoriesUpsert(rows);
+        }
+      }
+    });
+
+    return created;
+  }
+
+  copyCategoriesBetweenTerms(subjectId, fromTerm = 'Midterm', toTerm = 'Final', overwrite = true) {
+    const sourceCategories = this.getSubjectGradeCategories(subjectId, fromTerm);
+    if (sourceCategories.length === 0) return [];
+
+    let grades = this.state.grades;
+    const targetCategoriesToDelete = grades.filter(g => g.subject_id === subjectId && g.term === toTerm);
+    const targetIdsToDelete = targetCategoriesToDelete.map(t => t.id);
+
+    if (overwrite && targetIdsToDelete.length > 0) {
+      this.state.grades = grades.filter(g => !(g.subject_id === subjectId && g.term === toTerm));
+      grades = this.state.grades;
+    }
+
+    const created = [];
+    sourceCategories.forEach((sc, idx) => {
+      const newCat = {
+        id: generateId('cat'),
+        subject_id: subjectId,
+        term: toTerm,
+        category: sc.category,
+        weight: Number(sc.weight) || 0,
+        sort_index: sc.sort_index !== undefined && sc.sort_index !== null ? Number(sc.sort_index) : idx,
+        entries: [], // Empty entries, never copies scores
+        created_at: new Date().toISOString()
+      };
+      grades.push(newCat);
+      created.push(newCat);
+    });
+
+    events.emit('store:changed', { type: 'grade' });
+
+    // Supabase Cloud sync
+    getCurrentUser().then(async user => {
+      if (user) {
+        if (overwrite && targetIdsToDelete.length > 0) {
+          await this.syncGradeCategoriesDelete(targetIdsToDelete);
+        }
+        if (created.length > 0) {
+          const rows = created.map(c => ({
+            id: c.id,
+            user_id: user.id,
+            subject_id: c.subject_id,
+            term: c.term,
+            category: c.category,
+            weight: c.weight,
+            sort_index: c.sort_index !== undefined ? c.sort_index : 0,
+            created_at: c.created_at
+          }));
+          await this.syncGradeCategoriesUpsert(rows);
+        }
+      }
+    });
+
+    return created;
+  }
+
+  async reorderGradeCategories(subjectId, term, orderedCategoryIds) {
+    if (!subjectId || !term || !Array.isArray(orderedCategoryIds) || orderedCategoryIds.length === 0) return;
+
+    const grades = this.state.grades || [];
+    const updatedCategories = [];
+
+    orderedCategoryIds.forEach((catId, index) => {
+      const cat = grades.find(g => g.id === catId && g.subject_id === subjectId && g.term === term);
+      if (cat) {
+        cat.sort_index = index;
+        updatedCategories.push(cat);
+      }
+    });
+
+    events.emit('grade_categories:reordered', { subjectId, term, orderedCategoryIds });
+    events.emit('store:changed', { type: 'grade' });
+
+    // Supabase Cloud sync
+    try {
+      const user = await getCurrentUser();
+      if (user && updatedCategories.length > 0) {
+        const rows = updatedCategories.map(c => ({
+          id: c.id,
+          user_id: user.id,
+          subject_id: c.subject_id,
+          term: c.term,
+          category: c.category,
+          weight: c.weight,
+          sort_index: c.sort_index,
+          created_at: c.created_at || new Date().toISOString()
+        }));
+        await this.syncGradeCategoriesUpsert(rows);
+      }
+    } catch (err) {
+      console.error('Failed to sync category reorder to cloud:', err);
+    }
+  }
+
   deleteGradeCategory(categoryId) {
-    let grades = this.getGrades().filter(g => g.id !== categoryId);
-    localStorage.setItem(STORAGE_KEYS.GRADES, JSON.stringify(grades));
+    this.state.grades = (this.state.grades || []).filter(g => g.id !== categoryId);
     events.emit('grade_category:deleted', categoryId);
     events.emit('store:changed', { type: 'grade' });
+
+    this.syncGradeCategoriesDelete([categoryId]);
   }
 
   saveGradeEntry(categoryId, entryData) {
-    const grades = this.getGrades();
+    const grades = this.state.grades;
     const cat = grades.find(g => g.id === categoryId);
     if (!cat) return null;
-
     if (!cat.entries) cat.entries = [];
 
     const entry = {
-      id: entryData.id || generateId('ent'),
-      name: entryData.name ? entryData.name.trim() : 'Assessment',
-      score: Math.max(0, Number(entryData.score) || 0),
-      out_of: Math.max(1, Number(entryData.out_of) || 100)
+      id: generateId('ent'),
+      name: entryData.name ? entryData.name.trim() : 'New Assessment',
+      score: Number(entryData.score) || 0,
+      out_of: Number(entryData.out_of) || 100
     };
 
-    if (entryData.id) {
-      const idx = cat.entries.findIndex(e => e.id === entryData.id);
-      if (idx !== -1) cat.entries[idx] = entry;
-      else cat.entries.push(entry);
-    } else {
-      cat.entries.push(entry);
-    }
-
-    localStorage.setItem(STORAGE_KEYS.GRADES, JSON.stringify(grades));
+    cat.entries.push(entry);
     events.emit('grade_entry:saved', { categoryId, entry });
     events.emit('store:changed', { type: 'grade' });
+
+    // Supabase Cloud sync
+    this.setSyncStatus('saving');
+    getCurrentUser().then(user => {
+      if (user) {
+        supabase.from('grade_entries').upsert({
+          id: entry.id,
+          user_id: user.id,
+          category_id: categoryId,
+          name: entry.name,
+          score: entry.score,
+          out_of: entry.out_of,
+          created_at: new Date().toISOString()
+        }, { onConflict: 'id' }).then(({ error }) => {
+          if (error) {
+            console.error('Supabase grade entry sync error:', error);
+            this.setSyncStatus('error', error.message || 'Failed to save assessment');
+          } else {
+            this.setSyncStatus('synced');
+          }
+        });
+      } else {
+        this.setSyncStatus('synced');
+      }
+    });
+
     return entry;
   }
 
   updateGradeEntry(categoryId, entryId, updates) {
-    const grades = this.getGrades();
+    const grades = this.state.grades;
     const cat = grades.find(g => g.id === categoryId);
     if (!cat || !cat.entries) return null;
     const entry = cat.entries.find(e => e.id === entryId);
@@ -1219,23 +1744,111 @@ class Store {
       if (!isNaN(num) && num > 0) entry.out_of = num;
     }
 
-    localStorage.setItem(STORAGE_KEYS.GRADES, JSON.stringify(grades));
     events.emit('grade_entry:saved', { categoryId, entry });
     events.emit('store:changed', { type: 'grade' });
+
+    // Supabase Cloud sync
+    this.setSyncStatus('saving');
+    getCurrentUser().then(user => {
+      if (user) {
+        supabase.from('grade_entries').update({
+          name: entry.name,
+          score: entry.score,
+          out_of: entry.out_of
+        }).eq('id', entryId).eq('user_id', user.id).then(({ error }) => {
+          if (error) {
+            console.error('Supabase grade entry update error:', error);
+            this.setSyncStatus('error', error.message || 'Failed to update score');
+          } else {
+            this.setSyncStatus('synced');
+          }
+        });
+      } else {
+        this.setSyncStatus('synced');
+      }
+    });
+
     return entry;
   }
 
   deleteGradeEntry(categoryId, entryId) {
-    const grades = this.getGrades();
+    const grades = this.state.grades;
     const cat = grades.find(g => g.id === categoryId);
     if (cat && cat.entries) {
       cat.entries = cat.entries.filter(e => e.id !== entryId);
-      localStorage.setItem(STORAGE_KEYS.GRADES, JSON.stringify(grades));
       events.emit('grade_entry:deleted', { categoryId, entryId });
       events.emit('store:changed', { type: 'grade' });
+
+      this.setSyncStatus('saving');
+      getCurrentUser().then(user => {
+        if (user) {
+          supabase.from('grade_entries').delete().eq('id', entryId).eq('user_id', user.id).then(({ error }) => {
+            if (error) {
+              console.error('Supabase grade entry delete error:', error);
+              this.setSyncStatus('error', error.message || 'Failed to delete assessment');
+            } else {
+              this.setSyncStatus('synced');
+            }
+          });
+        } else {
+          this.setSyncStatus('synced');
+        }
+      });
     }
   }
 
+  // --- SUBJECT GRADE CONFIGS ---
+  getGradeConfigs() {
+    return this.state.grade_configs || [];
+  }
+
+  getSubjectGradeConfig(subjectId) {
+    const configs = this.getGradeConfigs();
+    const found = configs.find(c => c.subject_id === subjectId);
+    if (found) return found;
+
+    const settings = this.getSettings();
+    return {
+      subject_id: subjectId,
+      midterm_weight: settings.default_midterm_weight,
+      final_weight: settings.default_final_weight
+    };
+  }
+
+  saveSubjectGradeConfig(subjectId, midtermWeight, finalWeight) {
+    const configs = this.state.grade_configs;
+    const idx = configs.findIndex(c => c.subject_id === subjectId);
+    const config = {
+      subject_id: subjectId,
+      midterm_weight: Number(midtermWeight) || 50,
+      final_weight: Number(finalWeight) || 50
+    };
+
+    if (idx !== -1) {
+      configs[idx] = config;
+    } else {
+      configs.push(config);
+    }
+
+    events.emit('grade_config:saved', config);
+    events.emit('store:changed', { type: 'config' });
+
+    // Supabase Cloud sync
+    getCurrentUser().then(user => {
+      if (user) {
+        supabase.from('subject_grade_configs').upsert({
+          subject_id: subjectId,
+          user_id: user.id,
+          midterm_weight: config.midterm_weight,
+          final_weight: config.final_weight
+        }, { onConflict: 'subject_id,user_id' }).then(({ error }) => {
+          if (error) console.warn('Supabase config sync error:', error);
+        });
+      }
+    });
+
+    return config;
+  }
 
   calculateTermGrade(subjectId, term) {
     const categories = this.getSubjectGradeCategories(subjectId, term);
@@ -1351,34 +1964,54 @@ class Store {
       totalSubjects: activeSubjects.length,
       gradedSubjects: gradedCount
     };
-
   }
 
   // --- STUDY PLANS ---
   getStudyPlans() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.PLANS);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      console.error('Error getting study plans', e);
-      return [];
-    }
+    return this.state.plans || [];
+  }
+
+  getStudyPlanById(planId) {
+    const plans = this.getStudyPlans();
+    return plans.find(p => p.id === planId) || null;
   }
 
   getStudyPlanBySubject(subjectId) {
+    if (!subjectId) return null;
     const plans = this.getStudyPlans();
     return plans.find(p => p.subject_id === subjectId) || null;
   }
 
-  saveStudyPlan(subjectId, title, htmlContent) {
-    let plans = this.getStudyPlans();
-    const existingIdx = plans.findIndex(p => p.subject_id === subjectId);
+  saveStudyPlan(subjectIdOrObj, title, htmlContent, existingPlanId = null) {
+    let subjectId = null;
+    let planTitle = title;
+    let content = htmlContent;
+    let planId = existingPlanId;
+
+    if (typeof subjectIdOrObj === 'object' && subjectIdOrObj !== null) {
+      subjectId = subjectIdOrObj.subject_id || subjectIdOrObj.subjectId || null;
+      planTitle = subjectIdOrObj.title;
+      content = subjectIdOrObj.html_content || subjectIdOrObj.htmlContent;
+      planId = subjectIdOrObj.id || null;
+    } else {
+      subjectId = subjectIdOrObj || null;
+    }
+
+    let plans = this.state.plans || [];
+    let existingIdx = -1;
+
+    if (planId) {
+      existingIdx = plans.findIndex(p => p.id === planId);
+    } else if (subjectId) {
+      // 1-plan-per-subject replacement rule applies to subject-tied plans
+      existingIdx = plans.findIndex(p => p.subject_id === subjectId);
+    }
 
     const plan = {
       id: existingIdx !== -1 ? plans[existingIdx].id : generateId('plan'),
       subject_id: subjectId,
-      title: title ? title.trim() : 'Study Plan',
-      html_content: htmlContent || '',
+      title: planTitle ? planTitle.trim() : 'Study Plan',
+      html_content: content || '',
       updated_at: new Date().toISOString()
     };
 
@@ -1388,68 +2021,74 @@ class Store {
       plans.unshift(plan);
     }
 
-    localStorage.setItem(STORAGE_KEYS.PLANS, JSON.stringify(plans));
     events.emit('plan:saved', plan);
     events.emit('store:changed', { type: 'plan' });
+
+    // Supabase Cloud sync
+    getCurrentUser().then(user => {
+      if (user) {
+        supabase.from('study_plans').upsert({
+          id: plan.id,
+          user_id: user.id,
+          subject_id: plan.subject_id,
+          title: plan.title,
+          html_content: plan.html_content,
+          updated_at: plan.updated_at
+        }, { onConflict: 'id' }).then(({ error }) => {
+          if (error) console.warn('Supabase plan sync error:', error);
+        });
+      }
+    });
+
     return plan;
   }
 
-  deleteStudyPlan(subjectId) {
-    let plans = this.getStudyPlans().filter(p => p.subject_id !== subjectId);
-    localStorage.setItem(STORAGE_KEYS.PLANS, JSON.stringify(plans));
-    events.emit('plan:deleted', subjectId);
+  deleteStudyPlan(planIdOrSubjectId) {
+    let targetPlan = (this.state.plans || []).find(p => p.id === planIdOrSubjectId);
+    if (!targetPlan) {
+      targetPlan = (this.state.plans || []).find(p => p.subject_id === planIdOrSubjectId);
+    }
+    const planIdToDelete = targetPlan ? targetPlan.id : planIdOrSubjectId;
+
+    this.state.plans = (this.state.plans || []).filter(p => p.id !== planIdToDelete);
+    events.emit('plan:deleted', planIdToDelete);
     events.emit('store:changed', { type: 'plan' });
+
+    getCurrentUser().then(user => {
+      if (user && planIdToDelete) {
+        supabase.from('study_plans').delete().eq('id', planIdToDelete).eq('user_id', user.id).then();
+      }
+    });
   }
 
-  // --- USER PROFILE (Single Object Architecture) ---
+  // --- USER PROFILE ---
   getUserProfile() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.USER);
-      const defaults = {
-        name: 'Alex Rivera',
-        email: 'alex.rivera@university.edu',
-        year_level: '2nd Year',
-        institution: 'State University',
-        program: 'BS Computer Science',
-        avatar: 'AR',
-        avatar_color: '#6366f1'
-      };
-      return raw ? { ...defaults, ...JSON.parse(raw) } : defaults;
-    } catch (e) {
-      return {
-        name: 'Alex Rivera',
-        email: 'alex.rivera@university.edu',
-        year_level: '2nd Year',
-        institution: 'State University',
-        program: 'BS Computer Science',
-        avatar: 'AR',
-        avatar_color: '#6366f1'
-      };
-    }
+    return { ...this.getDefaultUser(), ...(this.state.user || {}) };
   }
 
   saveUserProfile(profileData) {
     const current = this.getUserProfile();
     const name = profileData.name !== undefined ? profileData.name.trim() : current.name;
     const email = profileData.email !== undefined ? profileData.email.trim() : current.email;
+    const bio = profileData.bio !== undefined ? profileData.bio.trim() : (current.bio || '');
     const year_level = profileData.year_level !== undefined ? profileData.year_level : current.year_level;
     const institution = profileData.institution !== undefined ? profileData.institution.trim() : current.institution;
     const program = profileData.program !== undefined ? profileData.program.trim() : current.program;
     const avatar_color = profileData.avatar_color !== undefined ? profileData.avatar_color : current.avatar_color;
     
-    // Compute initials from name
     const initials = name.split(' ')
       .filter(Boolean)
       .map(part => part[0])
       .slice(0, 2)
       .join('')
-      .toUpperCase() || 'AR';
+      .toUpperCase() || 'ST';
 
     const updatedProfile = {
       ...current,
       ...profileData,
       name,
       email,
+      bio,
       year_level,
       institution,
       program,
@@ -1457,22 +2096,55 @@ class Store {
       avatar: initials
     };
 
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedProfile));
+    this.state.user = updatedProfile;
     events.emit('user:updated', updatedProfile);
     events.emit('store:changed', { type: 'user' });
+
+    // Supabase Cloud sync
+    getCurrentUser().then(user => {
+      if (user) {
+        supabase.from('profiles').upsert({
+          user_id: user.id,
+          display_name: updatedProfile.name,
+          email: updatedProfile.email || user.email,
+          bio: updatedProfile.bio,
+          year_level: updatedProfile.year_level,
+          school: updatedProfile.institution,
+          program: updatedProfile.program,
+          avatar_color: updatedProfile.avatar_color,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' }).then(({ error }) => {
+          if (error) console.warn('Supabase profile sync error:', error);
+        });
+      }
+    });
+
     return updatedProfile;
   }
 
-
   // --- THEME ---
   getTheme() {
-    return localStorage.getItem(STORAGE_KEYS.THEME) || 'dark';
+    return this.state.theme || 'dark';
   }
 
   setTheme(theme) {
-    localStorage.setItem(STORAGE_KEYS.THEME, theme);
+    this.state.theme = theme;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('aven_theme', theme);
+      }
+    } catch (e) {}
     document.documentElement.setAttribute('data-theme', theme);
     events.emit('theme:changed', theme);
+
+    getCurrentUser().then(user => {
+      if (user) {
+        supabase.from('settings').upsert({
+          user_id: user.id,
+          theme: theme
+        }, { onConflict: 'user_id' }).then();
+      }
+    });
   }
 }
 

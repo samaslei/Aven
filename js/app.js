@@ -1,8 +1,12 @@
 /**
  * Aven - Main Application Router & Coordinator
+ * Integrated with Supabase Auth, Cloud Sync, and Local Data Migration
  */
 
 import { store, events } from './store.js';
+import { supabase, getCurrentSession, signOut, onAuthStateChange } from './supabase.js';
+import { AuthController } from './auth.js';
+import { LandingPage } from './landing.js';
 import { renderSubjectsView } from './subjects.js';
 import { renderTrackerView } from './tracker.js';
 import { renderGradesView } from './grades.js';
@@ -12,6 +16,10 @@ import { renderSettingsView } from './settings.js';
 class AvenApp {
   constructor() {
     this.currentPage = 'subjects';
+    this.currentUser = null;
+    this.authController = null;
+    this.landingPage = null;
+
     this.pages = {
       subjects: {
         title: 'Subjects',
@@ -35,7 +43,7 @@ class AvenApp {
       },
       settings: {
         title: 'Settings',
-        subtitle: 'Manage your theme, academic defaults, timer preferences, and account.',
+        subtitle: 'Manage your academic defaults, timer preferences, account, and data.',
         renderer: renderSettingsView
       }
     };
@@ -43,12 +51,19 @@ class AvenApp {
     this.init();
   }
 
-  init() {
+  async init() {
+    this.startupLoader = document.getElementById('startup-loader');
+    this.startupStatusEl = document.getElementById('startup-status-text');
+    this.setStartupStatus('Checking credentials...');
+
     // Set theme from store
     const theme = store.getTheme();
     document.documentElement.setAttribute('data-theme', theme);
 
     // Setup DOM references
+    this.appContainer = document.getElementById('app');
+    this.landingScreen = document.getElementById('landing-screen');
+    this.authScreen = document.getElementById('auth-screen');
     this.mainContainer = document.getElementById('view-content');
     this.pageTitleEl = document.getElementById('page-title');
     this.pageSubtitleEl = document.getElementById('page-subtitle');
@@ -56,16 +71,169 @@ class AvenApp {
     this.userPopover = document.getElementById('user-popover');
     this.toastContainer = document.getElementById('toast-container');
 
-    this.renderUser();
     this.setupNavigation();
     this.setupGlobalEvents();
+    this.setupSyncIndicator();
+    this.setupAuthListener();
 
-    // Initial page load (check hash or default to subjects)
+    // Check active session on startup
+    try {
+      const session = await getCurrentSession();
+      if (session && session.user) {
+        this.setStartupStatus('Loading academic workspace...');
+        await this.handleAuthenticated(session);
+      } else {
+        this.handleUnauthenticated();
+      }
+    } catch (err) {
+      console.error('App init session check error:', err);
+      this.handleUnauthenticated();
+    } finally {
+      this.dismissStartupLoader();
+    }
+  }
+
+  setStartupStatus(text) {
+    if (this.startupStatusEl) {
+      this.startupStatusEl.textContent = text;
+    }
+  }
+
+  showStartupLoader(text = 'Loading...', targetRoute = null) {
+    this.setStartupStatus(text);
+    if (typeof window.renderStartupSkeleton === 'function') {
+      const currentRoute = targetRoute || window.location.hash.replace('#', '') || 'subjects';
+      window.renderStartupSkeleton(currentRoute);
+    }
+    if (this.startupLoader) {
+      this.startupLoader.style.display = 'flex';
+      void this.startupLoader.offsetWidth; // Reflow
+      this.startupLoader.classList.remove('fade-out');
+    }
+  }
+
+  dismissStartupLoader() {
+    if (this.appContainer) {
+      this.appContainer.classList.remove('app-shell-loading');
+    }
+    if (!this.startupLoader) return;
+    this.startupLoader.classList.add('fade-out');
+    setTimeout(() => {
+      if (this.startupLoader && this.startupLoader.classList.contains('fade-out')) {
+        this.startupLoader.style.display = 'none';
+      }
+    }, 380);
+  }
+
+  setupAuthListener() {
+    onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // If this is a new sign-in or different user, perform full initial authentication setup
+        if (!this.currentUser || this.currentUser.id !== session.user.id) {
+          const isFreshLogin = !this.authScreen?.classList.contains('hidden') || !this.landingScreen?.classList.contains('hidden');
+          await this.handleAuthenticated(session, isFreshLogin);
+        } else {
+          // Returning to tab / token refreshed for already logged-in user:
+          // Do NOT trigger full blocking loading overlay or page navigation.
+          // Silently update user and let the top-right sync indicator handle cloud sync in the background.
+          this.currentUser = session.user;
+          this.renderUser();
+          store.syncFromCloud(session.user.id, false).catch(err => console.warn('Background sync on refocus error:', err));
+        }
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        this.currentUser = session.user;
+        this.renderUser();
+      } else if (event === 'SIGNED_OUT') {
+        this.handleUnauthenticated();
+        this.dismissStartupLoader();
+      }
+    });
+  }
+
+  async handleAuthenticated(session, isFreshLogin = false) {
+    this.currentUser = session.user;
+
+    // Show App, Hide Landing and Auth Screens
+    if (this.landingScreen) this.landingScreen.classList.add('hidden');
+    if (this.authScreen) this.authScreen.classList.add('hidden');
+    if (this.appContainer) {
+      this.appContainer.style.display = 'flex';
+    }
+
+    // 1. Initial local profile render
+    this.renderUser();
+
+    // 2. Sync directly from Supabase Cloud (carrying over landing theme on fresh login)
+    await store.syncFromCloud(session.user.id, isFreshLogin);
+    this.renderUser();
+
+    // 3. Initial page load (check hash or default to subjects)
     const hash = window.location.hash.replace('#', '');
-    if (this.pages[hash]) {
-      this.navigateTo(hash);
+    const targetRoute = this.pages[hash] ? hash : 'subjects';
+    if (typeof window.renderStartupSkeleton === 'function') {
+      window.renderStartupSkeleton(targetRoute);
+    }
+    this.navigateTo(targetRoute);
+
+    // Smoothly reveal sharp, interactive content
+    this.dismissStartupLoader();
+  }
+
+  handleUnauthenticated() {
+    this.currentUser = null;
+    store.resetState();
+
+    // Hide App, show appropriate public page based on hash
+    if (this.appContainer) this.appContainer.style.display = 'none';
+
+    const hash = window.location.hash.replace('#', '');
+    if (hash === 'signin' || hash === 'auth') {
+      this.showAuthView(false);
+    } else if (hash === 'signup') {
+      this.showAuthView(true);
     } else {
-      this.navigateTo('subjects');
+      this.showLandingView();
+    }
+  }
+
+  showLandingView() {
+    if (this.authScreen) this.authScreen.classList.add('hidden');
+    if (this.landingScreen) {
+      this.landingScreen.classList.remove('hidden');
+      if (!this.landingPage) {
+        this.landingPage = new LandingPage(
+          (isSignUp) => {
+            window.location.hash = isSignUp ? 'signup' : 'signin';
+            this.showAuthView(isSignUp);
+          },
+          () => {
+            const current = store.getTheme();
+            const next = current === 'dark' ? 'light' : 'dark';
+            store.setTheme(next);
+          }
+        );
+      }
+      this.landingPage.render(this.landingScreen);
+    }
+  }
+
+  showAuthView(isSignUp = false) {
+    if (this.landingScreen) this.landingScreen.classList.add('hidden');
+    if (this.authScreen) {
+      this.authScreen.classList.remove('hidden');
+      if (!this.authController) {
+        this.authController = new AuthController(
+          async (session) => {
+            this.setStartupStatus('Connecting to cloud...');
+            await this.handleAuthenticated(session, true);
+          },
+          () => {
+            window.location.hash = '';
+            this.showLandingView();
+          }
+        );
+      }
+      this.authController.renderAuthScreen(this.authScreen, isSignUp);
     }
   }
 
@@ -73,16 +241,21 @@ class AvenApp {
     const user = store.getUserProfile();
     const avatarEl = document.getElementById('user-avatar');
     const nameEl = document.getElementById('user-name');
+    const roleEl = document.getElementById('user-role');
     const emailEl = document.getElementById('user-email');
 
+    const email = (this.currentUser && this.currentUser.email) || user.email || 'student@university.edu';
+    const name = user.name || (email ? email.split('@')[0] : 'Student');
+    const roleText = `${user.year_level || '1st Year'}${user.program ? ` · ${user.program}` : ' · Student'}`;
+
     if (avatarEl) {
-      avatarEl.textContent = user.avatar || 'AR';
+      avatarEl.textContent = user.avatar || 'ST';
       avatarEl.style.backgroundColor = user.avatar_color || '#6366f1';
     }
-    if (nameEl) nameEl.textContent = user.name || 'Alex Rivera';
-    if (emailEl) emailEl.textContent = user.email || 'alex.rivera@university.edu';
+    if (nameEl) nameEl.textContent = name;
+    if (roleEl) roleEl.textContent = roleText;
+    if (emailEl) emailEl.textContent = email;
   }
-
 
   navigateTo(pageKey, targetSection = null) {
     if (!this.pages[pageKey]) pageKey = 'subjects';
@@ -118,11 +291,9 @@ class AvenApp {
       }, { once: true });
     }
 
-
-
     // Handle scroll to target section if in settings
     if (pageKey === 'settings') {
-      const sectionToActivate = targetSection || 'settings-appearance';
+      const sectionToActivate = targetSection || 'settings-academic';
       this.setActiveSettingsSublink(sectionToActivate);
       if (targetSection) {
         setTimeout(() => {
@@ -178,10 +349,7 @@ class AvenApp {
     setTimeout(checkActive, 100);
   }
 
-
   setupNavigation() {
-    // Top-level nav links
-    // Mobile Navigation Drawer Toggle & Quick Actions
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const mobileBackdrop = document.getElementById('mobile-drawer-backdrop');
     const sidebar = document.getElementById('sidebar');
@@ -227,12 +395,10 @@ class AvenApp {
         const targetPage = link.dataset.page;
         const settingsNavItem = document.getElementById('nav-item-settings');
 
-        // Close mobile drawer on navigation
         if (window.innerWidth < 768) {
           closeMobileDrawer();
         }
 
-        // Toggle sub-nav if clicking Settings while already on Settings
         if (targetPage === 'settings' && this.currentPage === 'settings') {
           settingsNavItem?.classList.toggle('expanded');
           return;
@@ -265,8 +431,6 @@ class AvenApp {
       });
     });
 
-
-
     // User popover toggle
     if (this.userProfileBtn && this.userPopover) {
       this.userProfileBtn.addEventListener('click', (e) => {
@@ -275,40 +439,57 @@ class AvenApp {
       });
 
       document.addEventListener('click', (e) => {
-        if (!this.userPopover.contains(e.target) && e.target !== this.userProfileBtn) {
+        if (this.userPopover && !this.userPopover.contains(e.target) && !this.userProfileBtn.contains(e.target)) {
           this.userPopover.classList.remove('open');
         }
       });
     }
 
-    // Popover items
-    document.getElementById('toggle-theme-btn')?.addEventListener('click', () => {
+    // Top-bar app-wide theme toggle button
+    document.getElementById('app-theme-btn')?.addEventListener('click', () => {
       const current = store.getTheme();
       const next = current === 'dark' ? 'light' : 'dark';
       store.setTheme(next);
       this.showToast(`Theme switched to ${next} mode`, 'info');
-      this.userPopover.classList.remove('open');
     });
 
-    document.getElementById('reset-demo-btn')?.addEventListener('click', () => {
-      localStorage.clear();
-      store.init();
-      this.showToast('Workspace reset to default demo dataset', 'info');
+    document.getElementById('sync-cloud-btn')?.addEventListener('click', async () => {
       this.userPopover.classList.remove('open');
-      this.navigateTo(this.currentPage);
+      if (this.currentUser) {
+        this.showToast('Synchronizing with Supabase Cloud...', 'info');
+        await store.syncFromCloud(this.currentUser.id);
+        this.renderUser();
+        this.navigateTo(this.currentPage);
+        this.showToast('Cloud workspace up to date', 'success');
+      }
     });
 
-    document.getElementById('logout-btn')?.addEventListener('click', () => {
-      this.showToast('Session locked. Click anywhere to resume.', 'info');
+    // Wire the existing sidebar sign-out button
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
       this.userPopover.classList.remove('open');
+      this.showToast('Signing out...', 'info');
+      await signOut();
+      this.handleUnauthenticated();
     });
   }
 
   setupGlobalEvents() {
     window.addEventListener('hashchange', () => {
       const hash = window.location.hash.replace('#', '');
-      if (this.pages[hash] && hash !== this.currentPage) {
-        this.navigateTo(hash);
+      if (this.currentUser) {
+        if (this.pages[hash] && hash !== this.currentPage) {
+          this.navigateTo(hash);
+        } else if (!this.pages[hash]) {
+          this.navigateTo('subjects');
+        }
+      } else {
+        if (hash === 'signin' || hash === 'auth') {
+          this.showAuthView(false);
+        } else if (hash === 'signup') {
+          this.showAuthView(true);
+        } else {
+          this.showLandingView();
+        }
       }
     });
 
@@ -330,13 +511,201 @@ class AvenApp {
       }
       const pageConfig = this.pages[this.currentPage];
       if (this.mainContainer && pageConfig && pageConfig.renderer) {
-        // If we are currently on settings page, avoid re-rendering view on input to preserve focus
         if (this.currentPage === 'settings' && data && (data.type === 'user' || data.type === 'settings')) {
           return;
         }
         pageConfig.renderer(this.mainContainer);
       }
     });
+  }
+
+  setupSyncIndicator() {
+    this.syncBadge = document.getElementById('global-sync-badge');
+    this.syncDot = document.getElementById('global-sync-dot');
+    this.syncLabel = document.getElementById('global-sync-label');
+    this.syncPopover = document.getElementById('global-sync-popover');
+    this.popoverDot = document.getElementById('popover-status-dot');
+    this.popoverTitle = document.getElementById('popover-status-title');
+    this.popoverStatePill = document.getElementById('popover-state-pill');
+    this.popoverLastSynced = document.getElementById('popover-last-synced');
+    this.popoverDesc = document.getElementById('popover-status-desc');
+    this.syncNowBtn = document.getElementById('global-sync-now-btn');
+    this.mobileSyncBadge = document.getElementById('mobile-sync-badge');
+    this.mobileSyncDot = document.getElementById('mobile-sync-dot');
+
+    // Popover Toggle
+    this.syncBadge?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = this.syncPopover?.classList.contains('open');
+      if (isOpen) {
+        this.closeSyncPopover();
+      } else {
+        this.openSyncPopover();
+      }
+    });
+
+    this.mobileSyncBadge?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const conn = store.getConnectionStatus();
+      if (!conn.isOnline) {
+        this.showToast('Offline — Changes saved locally in memory', 'warning');
+      } else if (conn.status === 'saving') {
+        this.showToast('Synchronizing with Supabase Cloud...', 'info');
+      } else {
+        this.showToast('Supabase Cloud is connected and up to date', 'success');
+      }
+    });
+
+    // Close popover when clicking outside
+    document.addEventListener('click', (e) => {
+      if (this.syncPopover && !this.syncPopover.contains(e.target) && e.target !== this.syncBadge && !this.syncBadge?.contains(e.target)) {
+        this.closeSyncPopover();
+      }
+    });
+
+    // Wire Sync Now button
+    this.syncNowBtn?.addEventListener('click', async () => {
+      if (!store.isOnline) {
+        this.showToast('Cannot sync while offline. Check internet connection.', 'warning');
+        return;
+      }
+      if (this.currentUser) {
+        this.showToast('Synchronizing workspace data...', 'info');
+        await store.syncFromCloud(this.currentUser.id);
+        this.renderUser();
+        this.navigateTo(this.currentPage);
+        this.showToast('Workspace synchronized with Supabase Cloud', 'success');
+      } else {
+        this.showToast('Sign in to sync your workspace with cloud storage', 'info');
+      }
+    });
+
+    // Listen to reactive store sync events
+    events.on('sync:connection', (connState) => {
+      this.renderSyncStatus(connState);
+    });
+
+    events.on('sync:status', () => {
+      this.renderSyncStatus(store.getConnectionStatus());
+    });
+
+    // Periodic relative timestamp updater
+    setInterval(() => {
+      if (this.popoverLastSynced) {
+        this.popoverLastSynced.textContent = this.formatRelativeTime(store.getLastSyncedAt());
+      }
+    }, 30000);
+
+    // Initial render
+    this.renderSyncStatus(store.getConnectionStatus());
+  }
+
+  openSyncPopover() {
+    this.syncPopover?.classList.add('open');
+    this.syncBadge?.classList.add('active');
+    this.syncBadge?.setAttribute('aria-expanded', 'true');
+    this.syncPopover?.setAttribute('aria-hidden', 'false');
+    if (this.popoverLastSynced) {
+      this.popoverLastSynced.textContent = this.formatRelativeTime(store.getLastSyncedAt());
+    }
+  }
+
+  closeSyncPopover() {
+    this.syncPopover?.classList.remove('open');
+    this.syncBadge?.classList.remove('active');
+    this.syncBadge?.setAttribute('aria-expanded', 'false');
+    this.syncPopover?.setAttribute('aria-hidden', 'true');
+  }
+
+  renderSyncStatus(connState) {
+    if (!connState) connState = store.getConnectionStatus();
+    const { isOnline, status, lastSyncedAt, error, message } = connState;
+
+    const badgeClasses = ['sync-synced', 'sync-saving', 'sync-offline', 'sync-error'];
+    const currentClass = `sync-${status}`;
+
+    // Update main header badge
+    if (this.syncBadge) {
+      badgeClasses.forEach(c => this.syncBadge.classList.remove(c));
+      this.syncBadge.classList.add(currentClass);
+    }
+
+    // Update mobile badge
+    if (this.mobileSyncBadge) {
+      badgeClasses.forEach(c => this.mobileSyncBadge.classList.remove(c));
+      this.mobileSyncBadge.classList.add(currentClass);
+    }
+
+    // Update label text
+    if (this.syncLabel) {
+      if (status === 'saving') {
+        this.syncLabel.textContent = 'Syncing...';
+      } else if (status === 'offline' || !isOnline) {
+        this.syncLabel.textContent = 'Offline';
+      } else if (status === 'error') {
+        this.syncLabel.textContent = 'Sync failed';
+      } else {
+        this.syncLabel.textContent = 'Synced';
+      }
+    }
+
+    // Update popover card details
+    if (this.popoverDot) {
+      this.popoverDot.className = `sync-popover-dot ${status}`;
+    }
+
+    if (this.popoverTitle) {
+      if (status === 'saving') {
+        this.popoverTitle.textContent = 'Synchronizing Workspace...';
+      } else if (status === 'offline' || !isOnline) {
+        this.popoverTitle.textContent = 'Offline Mode';
+      } else if (status === 'error') {
+        this.popoverTitle.textContent = 'Sync Error';
+      } else {
+        this.popoverTitle.textContent = 'Supabase Cloud Connected';
+      }
+    }
+
+    if (this.popoverStatePill) {
+      this.popoverStatePill.className = `sync-popover-state-pill ${status}`;
+      if (status === 'saving') {
+        this.popoverStatePill.textContent = 'Syncing';
+      } else if (status === 'offline' || !isOnline) {
+        this.popoverStatePill.textContent = 'Offline';
+      } else if (status === 'error') {
+        this.popoverStatePill.textContent = 'Failed';
+      } else {
+        this.popoverStatePill.textContent = 'Live';
+      }
+    }
+
+    if (this.popoverLastSynced) {
+      this.popoverLastSynced.textContent = this.formatRelativeTime(lastSyncedAt);
+    }
+
+    if (this.popoverDesc) {
+      if (status === 'offline' || !isOnline) {
+        this.popoverDesc.textContent = 'Network connection lost. Changes are stored in memory and will synchronize automatically when reconnected.';
+      } else if (status === 'saving') {
+        this.popoverDesc.textContent = message || 'Active database transactions are writing to your Supabase Cloud workspace.';
+      } else if (status === 'error') {
+        this.popoverDesc.textContent = error || 'A cloud synchronization error occurred. Click "Sync Now" to retry.';
+      } else {
+        this.popoverDesc.textContent = 'Your subjects, study timer sessions, grades, and study plans are synchronized across all devices.';
+      }
+    }
+  }
+
+  formatRelativeTime(timestamp) {
+    if (!timestamp) return 'Just now';
+    const diffSec = Math.floor((Date.now() - timestamp) / 1000);
+    if (diffSec < 10) return 'Just now';
+    if (diffSec < 60) return `${diffSec}s ago`;
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    return new Date(timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
   showToast(message, type = 'info') {
@@ -351,7 +720,7 @@ class AvenApp {
       toast.style.transform = 'translateY(10px)';
       toast.style.transition = 'all 0.2s ease';
       setTimeout(() => toast.remove(), 200);
-    }, 3000);
+    }, 3200);
   }
 }
 

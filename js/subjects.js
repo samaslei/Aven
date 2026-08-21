@@ -11,6 +11,75 @@ let currentYearFilter = 'all';
 let deleteTargetSubjectId = null;
 let archiveTargetSubjectId = null;
 
+export function sortSubjectsList(subjects, sortKey) {
+  const list = [...subjects];
+  const YEAR_ORDER = {
+    '1st Year': 1,
+    '2nd Year': 2,
+    '3rd Year': 3,
+    '4th Year': 4,
+    '5th Year': 5,
+    '6th Year': 6,
+    '7th Year': 7
+  };
+  const SEM_ORDER = {
+    '1st Semester': 1,
+    '2nd Semester': 2,
+    'Summer': 3
+  };
+
+  switch (sortKey) {
+    case 'name-asc':
+      return list.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+    case 'name-desc':
+      return list.sort((a, b) => (b.name || '').localeCompare(a.name || '', undefined, { sensitivity: 'base' }));
+    case 'recent-asc':
+      return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+    case 'recent-desc':
+      return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    case 'standing-desc':
+      return list.sort((a, b) => {
+        const aGrade = store.calculateSubjectGrade(a.id).overallPercentage;
+        const bGrade = store.calculateSubjectGrade(b.id).overallPercentage;
+        const aVal = aGrade !== null && aGrade !== undefined ? aGrade : -1;
+        const bVal = bGrade !== null && bGrade !== undefined ? bGrade : -1;
+        return bVal - aVal;
+      });
+    case 'standing-asc':
+      return list.sort((a, b) => {
+        const aGrade = store.calculateSubjectGrade(a.id).overallPercentage;
+        const bGrade = store.calculateSubjectGrade(b.id).overallPercentage;
+        const aVal = aGrade !== null && aGrade !== undefined ? aGrade : 9999;
+        const bVal = bGrade !== null && bGrade !== undefined ? bGrade : 9999;
+        return aVal - bVal;
+      });
+    case 'time-desc':
+      return list.sort((a, b) => {
+        const aTime = store.getSubjectTotalStudyMinutes(a.id);
+        const bTime = store.getSubjectTotalStudyMinutes(b.id);
+        return bTime - aTime;
+      });
+    case 'time-asc':
+      return list.sort((a, b) => {
+        const aTime = store.getSubjectTotalStudyMinutes(a.id);
+        const bTime = store.getSubjectTotalStudyMinutes(b.id);
+        return aTime - bTime;
+      });
+    case 'year-sem-asc':
+      return list.sort((a, b) => {
+        const aY = YEAR_ORDER[a.year_level] || 99;
+        const bY = YEAR_ORDER[b.year_level] || 99;
+        if (aY !== bY) return aY - bY;
+        const aS = SEM_ORDER[a.semester] || 99;
+        const bS = SEM_ORDER[b.semester] || 99;
+        if (aS !== bS) return aS - bS;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    default:
+      return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
+}
+
 export function renderSubjectsView(container) {
 
   const activeSubjects = store.getSubjects(false);
@@ -19,6 +88,7 @@ export function renderSubjectsView(container) {
   const streakStats = store.getStreakStats();
   const weeklyHours = store.getWeeklyStudyHours();
   const viewMode = store.getSubjectsViewMode(); // 'grid' | 'list'
+  const currentSort = store.getSubjectsSort();
 
   // Filter subjects
   let displayedSubjects = allSubjects;
@@ -32,10 +102,13 @@ export function renderSubjectsView(container) {
     displayedSubjects = displayedSubjects.filter(s => s.year_level === currentYearFilter);
   }
 
+  // Sort subjects
+  displayedSubjects = sortSubjectsList(displayedSubjects, currentSort);
+
   container.innerHTML = `
     <!-- Top Summary Banner (Scoped to Active Subjects, Uniform 3-Row Layout) -->
     <div class="stats-banner">
-      <div class="stat-card">
+      <div class="stat-card stat-card-blue">
         <div class="stat-card-header">
           <span class="stat-card-title">Enrolled Subjects</span>
           <svg class="stat-card-icon stat-icon-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -49,7 +122,7 @@ export function renderSubjectsView(container) {
         </div>
       </div>
 
-      <div class="stat-card">
+      <div class="stat-card stat-card-teal">
         <div class="stat-card-header">
           <span class="stat-card-title">Study Time (Week)</span>
           <svg class="stat-card-icon stat-icon-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -63,7 +136,7 @@ export function renderSubjectsView(container) {
         </div>
       </div>
 
-      <div class="stat-card">
+      <div class="stat-card stat-card-indigo">
         <div class="stat-card-header">
           <span class="stat-card-title">Cumulative GPA</span>
           <svg class="stat-card-icon stat-icon-indigo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -77,7 +150,7 @@ export function renderSubjectsView(container) {
         </div>
       </div>
 
-      <div class="stat-card">
+      <div class="stat-card stat-card-purple">
         <div class="stat-card-header">
           <span class="stat-card-title">Study Streak</span>
           <svg class="stat-card-icon stat-icon-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -92,9 +165,9 @@ export function renderSubjectsView(container) {
     </div>
 
 
-    <!-- Controls & Local Filtering Bar with Grid/List Toggle & Bulk Actions -->
+    <!-- Controls & Local Filtering Bar with Grid/List Toggle, Sorting & Bulk Actions -->
     <div class="controls-bar">
-      <div class="filter-group">
+      <div class="filter-group" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
         <button class="filter-chip ${currentFilter === 'active' ? 'active' : ''}" data-filter="active">
           Active (${activeSubjects.length})
         </button>
@@ -105,10 +178,79 @@ export function renderSubjectsView(container) {
           All (${allSubjects.length})
         </button>
 
-        <select id="subject-year-filter" class="form-select" style="width: auto; padding: 5px 10px; font-size: 12.5px;">
-          <option value="all">All Year Levels</option>
-          ${YEAR_LEVELS.map(y => `<option value="${y}" ${currentYearFilter === y ? 'selected' : ''}>${y}</option>`).join('')}
-        </select>
+        <div style="width: 1px; height: 16px; background: var(--border-default); margin: 0 2px;"></div>
+
+        <!-- 1. Notion-Inspired Year Level Filter Icon Button -->
+        <div style="position: relative;">
+          <button class="toolbar-icon-btn ${currentYearFilter !== 'all' ? 'has-active-filter' : ''}" 
+                  id="btn-subject-year-filter" 
+                  title="${currentYearFilter === 'all' ? 'Filter by year level' : `Filtered: ${currentYearFilter}`}"
+                  aria-label="Filter by year level">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+            </svg>
+            ${currentYearFilter !== 'all' ? `<span class="icon-active-dot"></span>` : ''}
+          </button>
+
+          <div class="user-popover toolbar-popover" id="subject-year-filter-menu" style="min-width: 175px; top: calc(100% + 6px); bottom: auto; left: 0;">
+            <div class="popover-section-header">Filter Year Level</div>
+            <button class="popover-item ${currentYearFilter === 'all' ? 'active' : ''}" data-year="all">
+              ${currentYearFilter === 'all' ? '✓ ' : ''}All Year Levels
+            </button>
+            ${YEAR_LEVELS.map(y => `
+              <button class="popover-item ${currentYearFilter === y ? 'active' : ''}" data-year="${y}">
+                ${currentYearFilter === y ? '✓ ' : ''}${y}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- 2. Notion-Inspired Sort Icon Button -->
+        <div style="position: relative;">
+          <button class="toolbar-icon-btn ${currentSort !== 'recent-desc' ? 'has-active-filter' : ''}" 
+                  id="btn-subject-sort" 
+                  title="Sort subjects"
+                  aria-label="Sort subjects">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 16 4 4 4-4"></path>
+              <path d="M7 20V4"></path>
+              <path d="m21 8-4-4-4 4"></path>
+              <path d="M17 4v16"></path>
+            </svg>
+            ${currentSort !== 'recent-desc' ? `<span class="icon-active-dot"></span>` : ''}
+          </button>
+
+          <div class="user-popover toolbar-popover" id="subject-sort-menu" style="min-width: 215px; top: calc(100% + 6px); bottom: auto; left: 0;">
+            <div class="popover-section-header">Sort Subjects</div>
+            <button class="popover-item ${currentSort === 'recent-desc' ? 'active' : ''}" data-sort="recent-desc">
+              ${currentSort === 'recent-desc' ? '✓ ' : ''}Recently added (Newest)
+            </button>
+            <button class="popover-item ${currentSort === 'recent-asc' ? 'active' : ''}" data-sort="recent-asc">
+              ${currentSort === 'recent-asc' ? '✓ ' : ''}Recently added (Oldest)
+            </button>
+            <button class="popover-item ${currentSort === 'name-asc' ? 'active' : ''}" data-sort="name-asc">
+              ${currentSort === 'name-asc' ? '✓ ' : ''}Name (A–Z)
+            </button>
+            <button class="popover-item ${currentSort === 'name-desc' ? 'active' : ''}" data-sort="name-desc">
+              ${currentSort === 'name-desc' ? '✓ ' : ''}Name (Z–A)
+            </button>
+            <button class="popover-item ${currentSort === 'standing-desc' ? 'active' : ''}" data-sort="standing-desc">
+              ${currentSort === 'standing-desc' ? '✓ ' : ''}Standing (Highest)
+            </button>
+            <button class="popover-item ${currentSort === 'standing-asc' ? 'active' : ''}" data-sort="standing-asc">
+              ${currentSort === 'standing-asc' ? '✓ ' : ''}Standing (Lowest)
+            </button>
+            <button class="popover-item ${currentSort === 'time-desc' ? 'active' : ''}" data-sort="time-desc">
+              ${currentSort === 'time-desc' ? '✓ ' : ''}Study time (Most)
+            </button>
+            <button class="popover-item ${currentSort === 'time-asc' ? 'active' : ''}" data-sort="time-asc">
+              ${currentSort === 'time-asc' ? '✓ ' : ''}Study time (Least)
+            </button>
+            <button class="popover-item ${currentSort === 'year-sem-asc' ? 'active' : ''}" data-sort="year-sem-asc">
+              ${currentSort === 'year-sem-asc' ? '✓ ' : ''}Year & Semester
+            </button>
+          </div>
+        </div>
       </div>
 
       <div style="display: flex; align-items: center; gap: 10px;">
@@ -155,7 +297,7 @@ export function renderSubjectsView(container) {
 
     <!-- Subjects Container (Grouped by Term if Archived Filter, else Regular View) -->
     ${displayedSubjects.length === 0 ? `
-      <div style="padding: 48px 24px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border: 1px dashed var(--border-subtle); border-radius: var(--radius-lg);">
+      <div style="padding: 48px 24px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border: none; border-radius: var(--radius-lg); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.08);">
         <p style="font-size: 15px; font-weight: 500; margin-bottom: 8px;">No subjects found</p>
         <p style="font-size: 13px;">${currentFilter === 'archived' ? 'No archived subjects in your repository.' : 'Create your first academic subject or adjust filters above to get started.'}</p>
       </div>
@@ -435,12 +577,12 @@ function renderSubjectsListView(subjects) {
     <div class="subjects-list-card">
       <table class="subjects-list-table">
         <colgroup>
-          <col style="width: 32%;">
-          <col style="width: 22%;">
-          <col style="width: 10%;">
+          <col style="width: 44%;">
           <col style="width: 17%;">
-          <col style="width: 7%;">
           <col style="width: 12%;">
+          <col style="width: 14%;">
+          <col style="width: 8%;">
+          <col style="width: 5%;">
         </colgroup>
         <thead>
           <tr>
@@ -449,7 +591,7 @@ function renderSubjectsListView(subjects) {
             <th>Study Time</th>
             <th>Standing</th>
             <th>Plan</th>
-            <th style="text-align: right;">Actions</th>
+            <th style="text-align: right;"></th>
           </tr>
         </thead>
         <tbody>
@@ -460,16 +602,23 @@ function renderSubjectsListView(subjects) {
   `;
 }
 
+function getStandingClass(pct) {
+  if (pct === null || pct === undefined || isNaN(pct)) return 'grade-none';
+  if (pct >= 75) return 'grade-pass';
+  if (pct >= 60) return 'grade-warn';
+  return 'grade-danger';
+}
+
 function getArchiveReasonBadge(sub) {
   if (!sub.archived) return '';
   const reason = sub.archive_reason || 'Archived';
   if (reason.toLowerCase().includes('dropped')) {
-    return `<span class="tag tag-dropped" title="Dropped subject">Dropped</span>`;
+    return `<span class="tag-status-warn" title="Dropped subject">Dropped</span>`;
   }
   if (reason.toLowerCase().includes('semester')) {
-    return `<span class="tag tag-completed" title="Semester completed">Semester Ended</span>`;
+    return `<span class="tag-status-success" title="Semester completed">Semester Ended</span>`;
   }
-  return `<span class="tag tag-archived" title="${reason}">${reason}</span>`;
+  return `<span class="tag-status-archived" title="${reason}">${reason}</span>`;
 }
 
 function renderSubjectCard(sub) {
@@ -477,32 +626,41 @@ function renderSubjectCard(sub) {
   const hoursFormatted = (totalMins / 60).toFixed(1) + 'h';
   const gradeStats = store.calculateSubjectGrade(sub.id);
   const plan = store.getStudyPlanBySubject(sub.id);
+  const standingClass = getStandingClass(gradeStats.overallPercentage);
+
+  const semAbbr = (sub.semester || '')
+    .replace('1st Semester', '1st Sem')
+    .replace('2nd Semester', '2nd Sem');
 
   return `
-    <div class="subject-card ${sub.archived ? 'archived' : ''}" data-id="${sub.id}">
+    <div class="subject-card ${sub.archived ? 'archived' : ''}" data-id="${sub.id}" style="--sub-color: ${sub.color || '#6366f1'};">
       <div class="subject-card-top">
         <div class="subject-header-left">
           <div class="subject-color-bar" style="background-color: ${sub.color || '#6366f1'};"></div>
-          <div>
-            ${sub.code ? `<span class="subject-code-badge">${sub.code}</span>` : ''}
-            <h4 class="subject-name">${sub.name}</h4>
+          <div class="subject-list-title-block">
+            <div class="subject-list-header-line">
+              ${sub.code ? `<span class="subject-list-code">${sub.code}</span>` : ''}
+              <h4 class="subject-name">${sub.name}</h4>
+            </div>
+            ${sub.instructor ? `
+              <span class="subject-list-instructor">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                ${sub.instructor}
+              </span>
+            ` : ''}
           </div>
         </div>
       </div>
 
-      ${sub.instructor ? `
-        <div class="subject-instructor">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-          ${sub.instructor}
-        </div>
-      ` : ''}
-
-      <div class="subject-tags">
-        <span class="tag">${sub.year_level}</span>
-        <span class="tag">${sub.semester}</span>
+      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+        <span class="subject-term-badge">
+          <span>${sub.year_level}</span>
+          <span class="term-dot">·</span>
+          <span>${semAbbr}</span>
+        </span>
         ${getArchiveReasonBadge(sub)}
       </div>
 
@@ -513,12 +671,15 @@ function renderSubjectCard(sub) {
         </div>
         <div class="subject-metric">
           <span class="metric-label">Standing</span>
-          <span class="metric-value" style="color: ${getStandingColor(gradeStats.overallPercentage)}; font-weight: 700;">${gradeStats.summaryLine}</span>
+          <div class="subject-standing-pill ${standingClass}" style="margin-top: 2px; font-size: 12px;">
+            <span class="standing-dot" style="background: currentColor;"></span>
+            <span>${gradeStats.summaryLine}</span>
+          </div>
         </div>
         <div class="subject-metric">
           <span class="metric-label">Study Plan</span>
-          <span class="metric-value" style="color: ${plan ? 'var(--success)' : 'var(--text-muted)'}; font-size: 12px;">
-            ${plan ? '● Ready' : 'None'}
+          <span class="subject-plan-pill ${plan ? 'ready' : ''}" style="margin-top: 4px;">
+            ${plan ? '● Ready' : '—'}
           </span>
         </div>
       </div>
@@ -539,50 +700,85 @@ function renderSubjectListRow(sub) {
   const hoursFormatted = (totalMins / 60).toFixed(1) + 'h';
   const gradeStats = store.calculateSubjectGrade(sub.id);
   const plan = store.getStudyPlanBySubject(sub.id);
+  const standingClass = getStandingClass(gradeStats.overallPercentage);
 
   const semAbbr = (sub.semester || '')
     .replace('1st Semester', '1st Sem')
     .replace('2nd Semester', '2nd Sem');
 
   return `
-    <tr class="subject-list-row ${sub.archived ? 'archived' : ''}" data-id="${sub.id}">
+    <tr class="subject-list-row ${sub.archived ? 'archived' : ''}" data-id="${sub.id}" style="--sub-color: ${sub.color || '#6366f1'};">
       <td class="subject-list-name-cell">
-        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-          <div class="subject-color-bar" style="background-color: ${sub.color || '#6366f1'}; height: 20px; flex-shrink: 0;"></div>
-          ${sub.code ? `<span class="subject-code-badge" style="flex-shrink: 0;">${sub.code}</span>` : ''}
-          <div style="min-width: 0; overflow: hidden;">
-            <strong class="subject-list-name" title="${sub.name}">${sub.name}</strong>
-            ${sub.instructor ? `<div style="font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${sub.instructor}">${sub.instructor}</div>` : ''}
+        <div style="display: flex; align-items: flex-start; gap: 12px; min-width: 0;">
+          <div class="subject-color-bar" style="background-color: ${sub.color || '#6366f1'}; height: 22px; width: 5px; border-radius: var(--radius-full); flex-shrink: 0; margin-top: 2px;"></div>
+          <div class="subject-list-title-block">
+            <div class="subject-list-header-line">
+              ${sub.code ? `<span class="subject-list-code">${sub.code}</span>` : ''}
+              <span class="subject-list-name">${sub.name}</span>
+            </div>
+            ${sub.instructor ? `
+              <span class="subject-list-instructor">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                ${sub.instructor}
+              </span>
+            ` : ''}
           </div>
         </div>
       </td>
       <td>
-        <div style="display: flex; gap: 4px; flex-wrap: wrap; row-gap: 3px;">
-          <span class="tag" style="white-space: nowrap;">${sub.year_level}</span>
-          <span class="tag" style="white-space: nowrap;">${semAbbr}</span>
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <span class="subject-term-badge">
+            <span>${sub.year_level}</span>
+            <span class="term-dot">·</span>
+            <span>${semAbbr}</span>
+          </span>
           ${getArchiveReasonBadge(sub)}
         </div>
       </td>
-      <td style="font-family: var(--font-mono); font-weight: 600; color: var(--text-primary); white-space: nowrap;">
-        ${hoursFormatted}
+      <td>
+        <span class="subject-study-time">${hoursFormatted}</span>
       </td>
       <td>
-        <span style="font-family: var(--font-mono); font-weight: 600; color: ${getStandingColor(gradeStats.overallPercentage)}; white-space: nowrap;">
-          ${gradeStats.summaryLine}
+        <div class="subject-standing-pill ${standingClass}">
+          <span class="standing-dot" style="background: currentColor;"></span>
+          <span>${gradeStats.summaryLine}</span>
+        </div>
+      </td>
+      <td>
+        <span class="subject-plan-pill ${plan ? 'ready' : ''}">
+          ${plan ? '● Ready' : '—'}
         </span>
       </td>
-
-      <td style="white-space: nowrap;">
-        <span style="font-size: 12px; color: ${plan ? 'var(--success)' : 'var(--text-muted)'}; font-weight: 500;">
-          ${plan ? '● Yes' : '—'}
-        </span>
-      </td>
-      <td style="text-align: right; white-space: nowrap;">
-        ${!sub.archived ? `<button class="btn btn-ghost btn-sm btn-edit-sub" data-id="${sub.id}">Edit</button>` : ''}
-        <button class="btn btn-ghost btn-sm btn-archive-sub" data-id="${sub.id}">
-          ${sub.archived ? 'Unarchive' : 'Archive'}
-        </button>
-        <button class="btn btn-ghost btn-sm btn-delete-sub" data-id="${sub.id}" style="color: var(--danger); padding: 4px 6px;">Delete</button>
+      <td style="text-align: right;">
+        <div class="row-actions-dropdown-wrapper">
+          <button type="button" class="subject-row-actions-btn" data-id="${sub.id}" title="Subject options" aria-label="Subject options">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="12" r="2.2"></circle>
+              <circle cx="19" cy="12" r="2.2"></circle>
+              <circle cx="5" cy="12" r="2.2"></circle>
+            </svg>
+          </button>
+          <div class="user-popover toolbar-popover row-actions-popover" id="row-actions-${sub.id}">
+            ${!sub.archived ? `
+              <button class="popover-item btn-edit-sub" data-id="${sub.id}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                Edit Subject
+              </button>
+            ` : ''}
+            <button class="popover-item btn-archive-sub" data-id="${sub.id}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              ${sub.archived ? 'Unarchive' : 'Archive'}
+            </button>
+            <div class="popover-divider"></div>
+            <button class="popover-item popover-item-danger btn-delete-sub" data-id="${sub.id}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Delete
+            </button>
+          </div>
+        </div>
       </td>
     </tr>
   `;
@@ -597,14 +793,58 @@ function attachSubjectsEvents(container) {
     });
   });
 
-  // Year level filter dropdown
-  const yearSelect = container.querySelector('#subject-year-filter');
-  if (yearSelect) {
-    yearSelect.addEventListener('change', (e) => {
-      currentYearFilter = e.target.value;
-      renderSubjectsView(container);
+  // 1. Notion-Inspired Year level filter popover menu
+  const yearBtn = container.querySelector('#btn-subject-year-filter');
+  const yearMenu = container.querySelector('#subject-year-filter-menu');
+  if (yearBtn && yearMenu) {
+    yearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = yearMenu.classList.contains('open');
+      container.querySelectorAll('.toolbar-popover').forEach(p => p.classList.remove('open'));
+      if (!isOpen) yearMenu.classList.add('open');
+    });
+
+    yearMenu.querySelectorAll('.popover-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentYearFilter = item.dataset.year;
+        yearMenu.classList.remove('open');
+        renderSubjectsView(container);
+      });
     });
   }
+
+  // 2. Notion-Inspired Sort popover menu
+  const sortBtn = container.querySelector('#btn-subject-sort');
+  const sortMenu = container.querySelector('#subject-sort-menu');
+  if (sortBtn && sortMenu) {
+    sortBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = sortMenu.classList.contains('open');
+      container.querySelectorAll('.toolbar-popover').forEach(p => p.classList.remove('open'));
+      if (!isOpen) sortMenu.classList.add('open');
+    });
+
+    sortMenu.querySelectorAll('.popover-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const sortKey = item.dataset.sort;
+        store.setSubjectsSort(sortKey);
+        sortMenu.classList.remove('open');
+        renderSubjectsView(container);
+      });
+    });
+  }
+
+  // Close toolbar popovers on outside click
+  const closeToolbarPopovers = (e) => {
+    container.querySelectorAll('.toolbar-popover').forEach(p => {
+      if (!p.contains(e.target) && !e.target.closest('.toolbar-icon-btn')) {
+        p.classList.remove('open');
+      }
+    });
+  };
+  document.addEventListener('click', closeToolbarPopovers);
 
   // Grid / List View Mode Toggle
   container.querySelectorAll('#view-mode-toggle .seg-btn').forEach(btn => {
@@ -699,15 +939,42 @@ function attachSubjectsEvents(container) {
     });
   });
 
+  // Row overflow actions popover toggles
+  container.querySelectorAll('.subject-row-actions-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const subId = btn.dataset.id;
+      const popover = container.querySelector(`#row-actions-${subId}`);
+      if (!popover) return;
+      const isOpen = popover.classList.contains('open');
+      container.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
+      if (!isOpen) popover.classList.add('open');
+    });
+  });
+
+  // Close row actions popovers on outside click
+  const closeRowActionPopovers = (e) => {
+    container.querySelectorAll('.row-actions-popover').forEach(p => {
+      if (!p.contains(e.target) && !e.target.closest('.subject-row-actions-btn')) {
+        p.classList.remove('open');
+      }
+    });
+  };
+  document.addEventListener('click', closeRowActionPopovers);
+
   // Edit / Archive / Delete Buttons
   container.querySelectorAll('.btn-edit-sub').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      container.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
       openEditModal(btn.dataset.id);
     });
   });
 
   container.querySelectorAll('.btn-archive-sub').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      container.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
       const subId = btn.dataset.id;
       const sub = store.getSubjectById(subId);
       if (!sub) return;
@@ -790,7 +1057,9 @@ function attachSubjectsEvents(container) {
 
   // Delete modal triggers
   container.querySelectorAll('.btn-delete-sub').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      container.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
       const subId = btn.dataset.id;
       const sub = store.getSubjectById(subId);
       if (!sub) return;
