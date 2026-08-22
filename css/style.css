@@ -1925,6 +1925,43 @@ button, input, select, textarea {
   accent-color: var(--accent);
 }
 
+/* ==========================================================================
+   Neutral Colors Accessibility Mode (Calm Hover Treatment)
+   ========================================================================== */
+[data-neutral-colors="true"] .subject-card::before {
+  background: linear-gradient(145deg, 
+    rgba(255, 255, 255, 0.04) 0%, 
+    rgba(255, 255, 255, 0.01) 50%, 
+    var(--bg-surface) 100%
+  );
+}
+
+[data-neutral-colors="true"][data-theme="light"] .subject-card::before {
+  background: linear-gradient(145deg, 
+    rgba(0, 0, 0, 0.02) 0%, 
+    rgba(0, 0, 0, 0.005) 50%, 
+    #ffffff 100%
+  );
+}
+
+[data-neutral-colors="true"] .subject-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.52), 
+              0 0 20px -4px rgba(255, 255, 255, 0.06), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+[data-neutral-colors="true"][data-theme="light"] .subject-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.09), 
+              0 2px 8px -1px rgba(0, 0, 0, 0.04), 
+              inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+[data-neutral-colors="true"] .subject-list-row:hover td {
+  background: var(--bg-surface-hover);
+}
+
 
 /* ==========================================================================
    Study Tracker View — Full-Year Heatmap, Milestone Journey & Manual Log

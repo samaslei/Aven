@@ -15,10 +15,13 @@
   }
   </script>
   <script>
-    // Immediate theme bootstrap to eliminate startup flash
+    // Immediate theme and accessibility bootstrap to eliminate startup flash
     try {
       var storedTheme = localStorage.getItem('aven_theme') || 'dark';
       document.documentElement.setAttribute('data-theme', storedTheme);
+      if (localStorage.getItem('aven_neutral_colors') === 'true') {
+        document.documentElement.setAttribute('data-neutral-colors', 'true');
+      }
     } catch (e) {}
   </script>
 </head>
@@ -475,6 +478,11 @@
                 <li>
                   <a class="nav-sublink" data-section="settings-academic">
                     <span>Academic Defaults</span>
+                  </a>
+                </li>
+                <li>
+                  <a class="nav-sublink" data-section="settings-display">
+                    <span>Display & Accessibility</span>
                   </a>
                 </li>
                 <li>

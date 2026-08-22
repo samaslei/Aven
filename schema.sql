@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS public.settings (
   pomodoro_break INTEGER DEFAULT 5,
   notification_sound BOOLEAN DEFAULT true,
   subjects_view_mode TEXT DEFAULT 'grid',
+  neutral_colors BOOLEAN DEFAULT false,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 

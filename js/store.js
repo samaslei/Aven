@@ -195,13 +195,19 @@ class Store {
     let savedGradesSort = 'year-sem-grouped';
     let savedSubjectsSort = 'recent-desc';
     let savedTheme = 'dark';
+    let savedNeutralColors = false;
     try {
       if (typeof localStorage !== 'undefined') {
         savedGradesSort = localStorage.getItem('aven_grades_sidebar_sort') || 'year-sem-grouped';
         savedSubjectsSort = localStorage.getItem('aven_subjects_sort') || 'recent-desc';
         savedTheme = localStorage.getItem('aven_theme') || 'dark';
+        savedNeutralColors = localStorage.getItem('aven_neutral_colors') === 'true';
       }
     } catch (e) {}
+
+    if (savedNeutralColors && typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-neutral-colors', 'true');
+    }
 
     this.state = {
       subjects: [],
@@ -210,7 +216,7 @@ class Store {
       grade_configs: [],
       plans: [],
       user: this.getDefaultUser(),
-      settings: this.getDefaultSettings(),
+      settings: { ...this.getDefaultSettings(), neutral_colors: savedNeutralColors },
       grading_scale: JSON.parse(JSON.stringify(PHILIPPINE_GRADE_SCALE)),
       subjects_sort: savedSubjectsSort,
       grades_sidebar_sort: savedGradesSort,
@@ -220,12 +226,13 @@ class Store {
 
   getDefaultUser() {
     return {
-      name: 'Student',
-      email: '',
+      name: 'Alex Rivera',
+      email: 'student@university.edu',
+      bio: 'Undergraduate Student',
       year_level: '1st Year',
-      institution: '',
-      program: '',
-      avatar: 'ST',
+      institution: 'University of the Philippines',
+      program: 'BS Computer Science',
+      avatar: 'AR',
       avatar_color: '#6366f1'
     };
   }
@@ -238,7 +245,8 @@ class Store {
       pomodoro_work_mins: 25,
       pomodoro_break_mins: 5,
       sound_notifications: true,
-      subjects_view_mode: 'grid'
+      subjects_view_mode: 'grid',
+      neutral_colors: false
     };
   }
 
@@ -287,6 +295,15 @@ class Store {
         .maybeSingle();
 
       if (settingsRow) {
+        let isNeutral = settingsRow.neutral_colors === true;
+        if (settingsRow.neutral_colors === undefined || settingsRow.neutral_colors === null) {
+          try {
+            if (typeof localStorage !== 'undefined') {
+              isNeutral = localStorage.getItem('aven_neutral_colors') === 'true';
+            }
+          } catch (e) {}
+        }
+
         this.state.settings = {
           default_midterm_weight: Number(settingsRow.term_weight_default || 50),
           default_final_weight: 100 - Number(settingsRow.term_weight_default || 50),
@@ -294,8 +311,20 @@ class Store {
           pomodoro_work_mins: settingsRow.pomodoro_work || 25,
           pomodoro_break_mins: settingsRow.pomodoro_break || 5,
           sound_notifications: settingsRow.notification_sound !== false,
-          subjects_view_mode: settingsRow.subjects_view_mode || 'grid'
+          subjects_view_mode: settingsRow.subjects_view_mode || 'grid',
+          neutral_colors: isNeutral
         };
+
+        if (isNeutral) {
+          document.documentElement.setAttribute('data-neutral-colors', 'true');
+        } else {
+          document.documentElement.removeAttribute('data-neutral-colors');
+        }
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('aven_neutral_colors', isNeutral ? 'true' : 'false');
+          }
+        } catch (e) {}
 
         if (isFreshLogin) {
           // Carry over the active landing page theme choice into the app and persist to Supabase
@@ -340,7 +369,8 @@ class Store {
           pomodoro_work: 25,
           pomodoro_break: 5,
           notification_sound: true,
-          subjects_view_mode: 'grid'
+          subjects_view_mode: 'grid',
+          neutral_colors: false
         }, { onConflict: 'user_id' });
       }
 
@@ -448,6 +478,18 @@ class Store {
     const current = this.getSettings();
     const updated = { ...current, ...partial };
     this.state.settings = updated;
+
+    if (updated.neutral_colors) {
+      document.documentElement.setAttribute('data-neutral-colors', 'true');
+    } else {
+      document.documentElement.removeAttribute('data-neutral-colors');
+    }
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('aven_neutral_colors', updated.neutral_colors ? 'true' : 'false');
+      }
+    } catch (e) {}
+
     events.emit('settings:updated', updated);
     events.emit('store:changed', { type: 'settings' });
 
@@ -463,6 +505,7 @@ class Store {
           pomodoro_break: updated.pomodoro_break_mins,
           notification_sound: updated.sound_notifications,
           subjects_view_mode: updated.subjects_view_mode,
+          neutral_colors: updated.neutral_colors || false,
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' }).then(({ error }) => {
           if (error) console.warn('Supabase settings sync error:', error);

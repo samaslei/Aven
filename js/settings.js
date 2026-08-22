@@ -80,7 +80,28 @@ export function renderSettingsView(container) {
         </div>
       </div>
 
-      <!-- 2. Account Settings Section -->
+      <!-- 2. Display & Accessibility Section -->
+      <div class="settings-section" id="settings-display">
+        <div class="settings-section-header">
+          <h3 class="settings-section-title">Display & Accessibility</h3>
+        </div>
+        <div class="settings-card">
+          <div class="settings-row compact">
+            <div class="setting-info">
+              <strong class="setting-title">Neutral Card Colors</strong>
+              <p class="setting-desc">Replace subject color glow effects on card hover with a calm, neutral highlight</p>
+            </div>
+            <div class="setting-control">
+              <label class="switch-toggle" title="Toggle Neutral Card Colors">
+                <input type="checkbox" id="setting-neutral-colors" ${settings.neutral_colors ? 'checked' : ''}>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Account Settings Section -->
       <div class="settings-section" id="settings-account">
         <div class="settings-section-header">
           <h3 class="settings-section-title">Account</h3>
@@ -446,7 +467,18 @@ function attachSettingsEvents(container) {
     renderSettingsView(container);
   });
 
-  // 5. Pointer link from Account to Data Management
+  // 5. Neutral Colors Accessibility Toggle
+  const neutralColorsSwitch = container.querySelector('#setting-neutral-colors');
+  neutralColorsSwitch?.addEventListener('change', () => {
+    const enabled = neutralColorsSwitch.checked;
+    store.saveSettings({ neutral_colors: enabled });
+    window.avenApp?.showToast(
+      enabled ? 'Neutral card colors enabled' : 'Default colored card glow restored',
+      'info'
+    );
+  });
+
+  // 6. Pointer link from Account to Data Management
   container.querySelector('#link-goto-data')?.addEventListener('click', (e) => {
     e.preventDefault();
     const dataSection = container.querySelector('#settings-data');
