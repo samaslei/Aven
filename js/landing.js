@@ -81,7 +81,7 @@ export class LandingPage {
             </h1>
 
             <p class="landing-hero-subheadline">
-              Replace messy spreadsheets, disconnected stopwatch apps, and lost PDF syllabi with a cohesive, dark-first workspace engineered for high-achieving university students.
+              Replace messy spreadsheets, disconnected study apps, and lost PDF syllabi with a cohesive, dark-first workspace engineered for high-achieving university students.
             </p>
 
             <div class="landing-hero-ctas">
@@ -298,10 +298,10 @@ export class LandingPage {
               </div>
               <h3 class="feature-card-title">Study Tracker & Heatmap</h3>
               <p class="feature-card-desc">
-                Log deep focus sessions with a precision stopwatch or Pomodoro timer. Watch your study consistency grow on a GitHub/LeetCode-style activity heatmap.
+                Log study sessions and track your consistency across subjects. Watch your study consistency grow on a GitHub/LeetCode-style activity heatmap.
               </p>
               <div class="feature-card-highlight">
-                <span class="highlight-tag">Pomodoro + Stopwatch</span>
+                <span class="highlight-tag">Milestone Journey</span>
                 <span class="highlight-tag">Streak Tracking</span>
               </div>
             </div>
@@ -427,7 +427,7 @@ export class LandingPage {
               <div class="step-badge">02</div>
               <h3 class="step-title">Track & log study sessions</h3>
               <p class="step-desc">
-                Launch the stopwatch or 25/5 Pomodoro timer while working on problem sets or reviewing notes. Aven automatically tallies your hours and streaks.
+                Log your study hours when working on problem sets or reviewing notes. Aven automatically tallies your consistency, heatmap activity, and streaks.
               </p>
             </div>
 
@@ -472,7 +472,7 @@ export class LandingPage {
               <div class="benefit-check">✓</div>
               <div class="benefit-text">
                 <strong>Real-time Supabase cloud sync</strong>
-                <p>Your study timers, grade entries, and syllabus plans update instantly across all your devices.</p>
+                <p>Your study sessions, grade entries, and syllabus plans update instantly across all your devices.</p>
               </div>
             </div>
 

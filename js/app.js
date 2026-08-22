@@ -28,7 +28,7 @@ class AvenApp {
       },
       tracker: {
         title: 'Study Tracker',
-        subtitle: 'Log study sessions with a stopwatch or Pomodoro timer, and keep your streak going.',
+        subtitle: 'Log study sessions, track your activity heatmap, and keep your streak going.',
         renderer: renderTrackerView
       },
       grades: {
@@ -43,7 +43,7 @@ class AvenApp {
       },
       settings: {
         title: 'Settings',
-        subtitle: 'Manage your academic defaults, timer preferences, account, and data.',
+        subtitle: 'Manage your academic defaults, grading scale, account, and data.',
         renderer: renderSettingsView
       }
     };
@@ -691,7 +691,7 @@ class AvenApp {
       } else if (status === 'error') {
         this.popoverDesc.textContent = error || 'A cloud synchronization error occurred. Click "Sync Now" to retry.';
       } else {
-        this.popoverDesc.textContent = 'Your subjects, study timer sessions, grades, and study plans are synchronized across all devices.';
+        this.popoverDesc.textContent = 'Your subjects, study sessions, grades, and study plans are synchronized across all devices.';
       }
     }
   }

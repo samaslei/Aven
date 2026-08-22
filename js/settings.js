@@ -1,8 +1,7 @@
 /**
  * Aven - Settings View Controller
  * Features: Appearance, Academic Defaults with customizable Grading Scale,
- * Study Tracker defaults (timer mode, sound & notifications), Account management with inline pointer,
- * Data Management with live storage indicator, and App About/Release notes.
+ * Account management with inline pointer, Data Management with live storage indicator, and App About/Release notes.
  */
 
 import { store, events, YEAR_LEVELS, DEFAULT_COLOR_SWATCHES } from './store.js';
@@ -81,41 +80,7 @@ export function renderSettingsView(container) {
         </div>
       </div>
 
-      <!-- 3. Study Tracker Defaults -->
-      <div class="settings-section" id="settings-tracker">
-        <div class="settings-section-header">
-          <h3 class="settings-section-title">Study Tracker</h3>
-        </div>
-        <div class="settings-card">
-          <div class="settings-row compact">
-            <div class="setting-info">
-              <strong class="setting-title">Pomodoro Mode as Default</strong>
-            </div>
-            <div class="setting-control">
-              <label class="switch-toggle" title="Toggle Default Timer Mode">
-                <input type="checkbox" id="timer-switch-toggle" ${settings.default_timer_mode === 'pomodoro' ? 'checked' : ''}>
-                <span class="switch-slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Sound & Notifications Toggle -->
-          <div class="settings-row compact">
-            <div class="setting-info">
-              <strong class="setting-title">Sound & Notifications</strong>
-              <p class="setting-desc">Play audio chime when focus or break intervals complete</p>
-            </div>
-            <div class="setting-control">
-              <label class="switch-toggle" title="Toggle Audio Notifications">
-                <input type="checkbox" id="sound-switch-toggle" ${settings.sound_notifications !== false ? 'checked' : ''}>
-                <span class="switch-slider"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. Account Settings Section -->
+      <!-- 2. Account Settings Section -->
       <div class="settings-section" id="settings-account">
         <div class="settings-section-header">
           <h3 class="settings-section-title">Account</h3>
@@ -348,7 +313,7 @@ export function renderSettingsView(container) {
           <ul style="padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 8px; line-height: 1.4;">
             <li><strong>Full Jan–Dec Calendar Heatmap:</strong> Year navigation and clean month blocks with LeetCode-style activity tracking.</li>
             <li><strong>Grading Scale Customization:</strong> Editable percentage thresholds for Philippine 1.00–5.00 grading system.</li>
-            <li><strong>Focus Sound & Notifications:</strong> Option to enable or mute chime completions on Pomodoro cycles.</li>
+            <li><strong>Milestone Progress Journey:</strong> Dynamic goals tracking total cumulative study hours.</li>
             <li><strong>Sidebar Sub-Navigation:</strong> Expandable Settings menu with scroll-synced active highlighting.</li>
             <li><strong>Local Storage Monitor:</strong> Real-time storage footprint calculation.</li>
           </ul>
@@ -481,24 +446,7 @@ function attachSettingsEvents(container) {
     renderSettingsView(container);
   });
 
-  // 5. Timer Mode Pill Switch Toggle
-  const timerSwitch = container.querySelector('#timer-switch-toggle');
-  timerSwitch?.addEventListener('change', () => {
-    const targetMode = timerSwitch.checked ? 'pomodoro' : 'stopwatch';
-    store.saveSettings({ default_timer_mode: targetMode });
-    window.avenApp?.showToast(`Default timer set to ${targetMode}`, 'info');
-    renderSettingsView(container);
-  });
-
-  // 6. Sound & Notifications Toggle
-  const soundSwitch = container.querySelector('#sound-switch-toggle');
-  soundSwitch?.addEventListener('change', () => {
-    const enabled = soundSwitch.checked;
-    store.saveSettings({ sound_notifications: enabled });
-    window.avenApp?.showToast(`Sound notifications ${enabled ? 'enabled' : 'disabled'}`, 'info');
-  });
-
-  // 7. Pointer link from Account to Data Management
+  // 5. Pointer link from Account to Data Management
   container.querySelector('#link-goto-data')?.addEventListener('click', (e) => {
     e.preventDefault();
     const dataSection = container.querySelector('#settings-data');
