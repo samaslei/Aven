@@ -12,14 +12,22 @@ function getSupabaseConfig() {
 
   const url = (
     envObj.VITE_SUPABASE_URL ||
+    envObj.NEXT_PUBLIC_SUPABASE_URL ||
+    envObj.SUPABASE_URL ||
     metaEnv.VITE_SUPABASE_URL ||
+    metaEnv.NEXT_PUBLIC_SUPABASE_URL ||
+    metaEnv.SUPABASE_URL ||
     (localStore ? localStore.getItem('aven_supabase_url') : '') ||
     ''
   ).trim();
 
   const anonKey = (
     envObj.VITE_SUPABASE_ANON_KEY ||
+    envObj.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    envObj.SUPABASE_ANON_KEY ||
     metaEnv.VITE_SUPABASE_ANON_KEY ||
+    metaEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    metaEnv.SUPABASE_ANON_KEY ||
     (localStore ? localStore.getItem('aven_supabase_anon_key') : '') ||
     ''
   ).trim();

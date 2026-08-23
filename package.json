@@ -6,6 +6,7 @@
   "main": "server.js",
   "scripts": {
     "dev": "node server.js",
+    "build": "node -e \"console.log('Production build ready.')\"",
     "start": "node server.js"
   },
   "keywords": [
