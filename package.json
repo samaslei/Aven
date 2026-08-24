@@ -4,8 +4,8 @@
   "type": "module",
   "description": "Aven - Unified Academic Operating System for Students",
   "scripts": {
-    "dev": "node server.js",
-    "serve": "node server.js",
+    "dev": "node scripts/server.js",
+    "serve": "node scripts/server.js",
     "build": "node -e \"console.log('Production static build ready.')\""
   },
   "keywords": [

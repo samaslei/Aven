@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, '..');
 
 let PORT = parseInt(process.env.PORT || '3000', 10);
 const MIME_TYPES = {
@@ -23,7 +24,7 @@ const MIME_TYPES = {
 };
 
 function parseEnvFile() {
-  const envPath = path.join(__dirname, '.env');
+  const envPath = path.join(ROOT_DIR, '.env');
   const env = {};
   if (fs.existsSync(envPath)) {
     try {
@@ -63,14 +64,14 @@ const server = http.createServer((req, res) => {
 
   if (reqUrl === '/') reqUrl = '/index.html';
 
-  const filePath = path.join(__dirname, reqUrl);
+  const filePath = path.join(ROOT_DIR, reqUrl);
   const extname = String(path.extname(filePath)).toLowerCase();
   const contentType = MIME_TYPES[extname] || 'application/octet-stream';
 
   fs.readFile(filePath, (error, content) => {
     if (error) {
       if (error.code === 'ENOENT') {
-        fs.readFile(path.join(__dirname, 'index.html'), (err, indexContent) => {
+        fs.readFile(path.join(ROOT_DIR, 'index.html'), (err, indexContent) => {
           if (err) {
             res.writeHead(500);
             res.end(`Server Error: ${err.code}`);
