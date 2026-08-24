@@ -5,7 +5,35 @@
       "destination": "/api/env.js"
     },
     {
-      "source": "/((?!css/|js/|api/|assets/|favicon\\.svg|favicon\\.ico|robots\\.txt|sitemap\\.xml).*)",
+      "source": "/subjects",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/tracker",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/grades",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/plans",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/settings",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/signin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/signup",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/auth",
       "destination": "/index.html"
     }
   ],
