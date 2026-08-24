@@ -5,11 +5,29 @@
       "destination": "/api/env.js"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!css/|js/|api/|.*\\.[a-zA-Z0-9]+$).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/css/(.*)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/css; charset=UTF-8"
+        }
+      ]
+    },
+    {
+      "source": "/js/(.*)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript; charset=UTF-8"
+        }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [
