@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Aven - Unified Academic Operating System for Students",
-  "main": "server.js",
   "scripts": {
     "dev": "node server.js",
-    "build": "node -e \"console.log('Production build ready.')\"",
-    "start": "node server.js"
+    "serve": "node server.js",
+    "build": "node -e \"console.log('Production static build ready.')\""
   },
   "keywords": [
     "student-os",
