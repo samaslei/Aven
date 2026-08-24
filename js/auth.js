@@ -35,7 +35,7 @@ export class AuthController {
 
           <div class="auth-header">
             <div class="brand auth-brand">
-              <div class="brand-icon">A</div>
+              <img src="favicon.svg" alt="Aven Logo" class="brand-icon">
               <span class="brand-text">Aven</span>
               <span class="brand-tag">Cloud</span>
             </div>

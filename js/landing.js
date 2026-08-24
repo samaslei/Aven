@@ -29,7 +29,7 @@ export class LandingPage {
         <header class="landing-nav">
           <div class="landing-nav-container">
             <a href="#" class="landing-brand">
-              <div class="brand-icon">A</div>
+              <img src="favicon.svg" alt="Aven Logo" class="brand-icon">
               <span class="brand-text">Aven</span>
               <span class="landing-badge-tag">Academic OS</span>
             </a>
@@ -530,7 +530,7 @@ export class LandingPage {
           <div class="landing-footer-container">
             <div class="landing-footer-brand">
               <div class="landing-brand">
-                <div class="brand-icon">A</div>
+                <img src="favicon.svg" alt="Aven Logo" class="brand-icon">
                 <span class="brand-text">Aven</span>
               </div>
               <p class="landing-footer-tagline">Academic Operating System for university students.</p>
