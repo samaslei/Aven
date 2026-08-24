@@ -13,9 +13,9 @@
   --bg-surface-hover: #22252c;
   --bg-input: #121316;
   
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.10);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-default: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.12);
   --border-focus: #6366f1;
 
   --text-primary: #f3f4f6;
@@ -41,17 +41,17 @@
   --tag-border: var(--border-subtle);
 
   /* Glassmorphism System - Apple-Inspired Translucent Materials (Dark) */
-  --bg-glass-sidebar: rgba(16, 17, 20, 0.76);
-  --bg-glass-modal: rgba(22, 24, 30, 0.82);
-  --bg-glass-modal-footer: rgba(16, 17, 21, 0.88);
-  --bg-glass-dropdown: rgba(26, 28, 35, 0.86);
-  --bg-glass-floating: rgba(20, 22, 27, 0.80);
-  --glass-blur: blur(22px) saturate(180%);
-  --glass-blur-modal: blur(28px) saturate(190%);
-  --glass-blur-sm: blur(14px) saturate(160%);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-elevated: rgba(255, 255, 255, 0.12);
-  --glass-specular: inset 0 1px 0 0 rgba(255, 255, 255, 0.035);
+  --bg-glass-sidebar: rgba(16, 17, 20, 0.92);
+  --bg-glass-modal: rgba(22, 24, 30, 0.94);
+  --bg-glass-modal-footer: rgba(16, 17, 21, 0.96);
+  --bg-glass-dropdown: rgba(26, 28, 35, 0.95);
+  --bg-glass-floating: rgba(20, 22, 27, 0.93);
+  --glass-blur: blur(10px) saturate(130%);
+  --glass-blur-modal: blur(14px) saturate(140%);
+  --glass-blur-sm: blur(8px) saturate(120%);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-border-elevated: rgba(255, 255, 255, 0.08);
+  --glass-specular: inset 0 1px 0 0 rgba(255, 255, 255, 0.025);
 
   /* LeetCode Heatmap Palette (Dark) */
   --heat-empty: #17191d;
@@ -96,9 +96,9 @@
   --bg-input: #ffffff;
 
   /* Sharpened High-Contrast Borders */
-  --border-subtle: rgba(15, 23, 42, 0.10);
-  --border-default: rgba(15, 23, 42, 0.16);
-  --border-strong: rgba(15, 23, 42, 0.24);
+  --border-subtle: rgba(15, 23, 42, 0.06);
+  --border-default: rgba(15, 23, 42, 0.10);
+  --border-strong: rgba(15, 23, 42, 0.16);
   --border-focus: #4338ca;
 
   /* WCAG AAA High Contrast Typography */
@@ -125,17 +125,17 @@
   --tag-border: rgba(67, 56, 202, 0.18);
 
   /* Glassmorphism System - Apple-Inspired Translucent Materials (Light) */
-  --bg-glass-sidebar: rgba(235, 240, 248, 0.78);
-  --bg-glass-modal: rgba(255, 255, 255, 0.88);
-  --bg-glass-modal-footer: rgba(246, 248, 252, 0.92);
-  --bg-glass-dropdown: rgba(255, 255, 255, 0.94);
-  --bg-glass-floating: rgba(255, 255, 255, 0.85);
-  --glass-blur: blur(24px) saturate(190%);
-  --glass-blur-modal: blur(30px) saturate(200%);
-  --glass-blur-sm: blur(14px) saturate(170%);
-  --glass-border: rgba(15, 23, 42, 0.09);
-  --glass-border-elevated: rgba(15, 23, 42, 0.12);
-  --glass-specular: inset 0 1px 0 0 rgba(255, 255, 255, 0.35);
+  --bg-glass-sidebar: rgba(235, 240, 248, 0.92);
+  --bg-glass-modal: rgba(255, 255, 255, 0.96);
+  --bg-glass-modal-footer: rgba(246, 248, 252, 0.98);
+  --bg-glass-dropdown: rgba(255, 255, 255, 0.97);
+  --bg-glass-floating: rgba(255, 255, 255, 0.94);
+  --glass-blur: blur(10px) saturate(130%);
+  --glass-blur-modal: blur(14px) saturate(140%);
+  --glass-blur-sm: blur(8px) saturate(120%);
+  --glass-border: rgba(15, 23, 42, 0.06);
+  --glass-border-elevated: rgba(15, 23, 42, 0.09);
+  --glass-specular: inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
 
   --heat-empty: #e2e6ed;
   --heat-level-1: #9be9a8;
@@ -4160,8 +4160,8 @@ button, input, select, textarea {
   width: 100vw;
   height: 100vh;
   background: rgba(0, 0, 0, 0.64);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: none;
   align-items: center;
   justify-content: center;
@@ -4814,7 +4814,7 @@ input[type="number"]::-webkit-inner-spin-button {
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg), 0 0 0 1px var(--border-subtle);
   padding: 32px 32px;
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
 
 .auth-top-bar {
