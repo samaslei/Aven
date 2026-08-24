@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node scripts/server.js",
     "serve": "node scripts/server.js",
-    "build": "node -e \"console.log('Production static build ready.')\""
+    "build": "node scripts/build.js"
   },
   "keywords": [
     "student-os",
