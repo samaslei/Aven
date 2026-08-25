@@ -7637,3 +7637,173 @@ body.mobile-drawer-locked {
   color: var(--text-muted);
   flex-shrink: 0;
 }
+
+/* ==========================================================================
+   Hierarchical Collapsible Grade Category Tree List
+   ========================================================================== */
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background: var(--bg-surface);
+  border: var(--border-card);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.category-tree-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s ease;
+  box-sizing: border-box;
+}
+
+.category-tree-item:last-child {
+  border-bottom: none;
+}
+
+.category-tree-item.is-dragging {
+  opacity: 0.45;
+  background: var(--bg-surface-hover);
+}
+
+/* Top-Level Category Header Row */
+.cat-tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.cat-tree-header:hover {
+  background: var(--bg-surface-hover);
+}
+
+.cat-tree-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cat-chevron-btn {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease, background 0.15s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.cat-chevron-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.cat-chevron-icon {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: rotate(0deg);
+}
+
+.cat-chevron-btn.expanded .cat-chevron-icon,
+.category-tree-item.is-expanded .cat-chevron-icon {
+  transform: rotate(90deg);
+}
+
+.cat-drag-handle {
+  width: 18px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: grab;
+  border-radius: var(--radius-xs);
+  opacity: 0.6;
+  transition: opacity 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.cat-drag-handle:hover {
+  opacity: 1;
+  color: var(--text-primary);
+}
+
+.cat-drag-handle:active {
+  cursor: grabbing;
+}
+
+.cat-tree-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-empty-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-surface-hover);
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+}
+
+.cat-tree-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Children Assessment Items Table (Indented Tree Hierarchy) */
+.cat-children-container {
+  padding: 4px 16px 14px 44px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.cat-children-container::before {
+  content: '';
+  position: absolute;
+  left: 26px;
+  top: 0;
+  bottom: 14px;
+  width: 1.5px;
+  background: var(--border-subtle);
+  border-radius: 1px;
+}
+
+.cat-empty-inline-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-surface-hover);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-default);
+}

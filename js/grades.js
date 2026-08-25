@@ -1259,6 +1259,64 @@ function attachGradesEvents(container) {
     b.addEventListener('click', () => copyModal?.classList.remove('open'));
   });
 
+  // Expand / Collapse Category Toggle
+  container.querySelectorAll('.cat-tree-header').forEach(header => {
+    header.addEventListener('click', (e) => {
+      // Don't toggle when clicking buttons, inputs, drag handles, or editable weights
+      if (e.target.closest('.btn-add-entry, .btn-del-cat, .cat-weight-editable, .cat-drag-handle, input, button')) {
+        return;
+      }
+      const item = header.closest('.category-tree-item');
+      if (!item) return;
+      const catId = item.dataset.catId;
+      const isExpanded = item.classList.contains('is-expanded');
+      const nextExpanded = !isExpanded;
+      categoryExpandedState[catId] = nextExpanded;
+
+      const childrenContainer = item.querySelector('.cat-children-container');
+      const chevronBtn = item.querySelector('.cat-chevron-btn');
+
+      if (nextExpanded) {
+        item.classList.remove('is-collapsed');
+        item.classList.add('is-expanded');
+        if (childrenContainer) childrenContainer.style.display = '';
+        if (chevronBtn) chevronBtn.classList.add('expanded');
+      } else {
+        item.classList.remove('is-expanded');
+        item.classList.add('is-collapsed');
+        if (childrenContainer) childrenContainer.style.display = 'none';
+        if (chevronBtn) chevronBtn.classList.remove('expanded');
+      }
+    });
+  });
+
+  // Explicit Chevron button click
+  container.querySelectorAll('.cat-chevron-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const item = btn.closest('.category-tree-item');
+      if (!item) return;
+      const catId = item.dataset.catId;
+      const isExpanded = item.classList.contains('is-expanded');
+      const nextExpanded = !isExpanded;
+      categoryExpandedState[catId] = nextExpanded;
+
+      const childrenContainer = item.querySelector('.cat-children-container');
+
+      if (nextExpanded) {
+        item.classList.remove('is-collapsed');
+        item.classList.add('is-expanded');
+        if (childrenContainer) childrenContainer.style.display = '';
+        btn.classList.add('expanded');
+      } else {
+        item.classList.remove('is-expanded');
+        item.classList.add('is-collapsed');
+        if (childrenContainer) childrenContainer.style.display = 'none';
+        btn.classList.remove('expanded');
+      }
+    });
+  });
+
   // Delete Category
   container.querySelectorAll('.btn-del-cat').forEach(btn => {
     btn.addEventListener('click', (e) => {
