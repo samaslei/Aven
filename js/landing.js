@@ -31,7 +31,7 @@ export class LandingPage {
             <a href="#" class="landing-brand">
               <svg width="24" height="24" viewBox="0 0 24 24" class="brand-icon" style="border-radius: 6px; flex-shrink: 0;">
                 <rect width="24" height="24" rx="6" fill="#505537"/>
-                <path d="M6 18L12 6L18 18H14L12 13L10 18H6Z" fill="white"/>
+                <polygon points="12,4.8 4.6,19.2 8.6,19.2 12,11.8 15.4,19.2 19.4,19.2" fill="white"/>
               </svg>
               <span class="brand-text">Aven</span>
               <span class="landing-badge-tag">Academic OS</span>

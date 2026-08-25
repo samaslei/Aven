@@ -1,4 +1,7 @@
-/**
+import fs from 'fs';
+
+// 1. UPDATE js/ui/skeleton.js
+const updatedSkeletonJs = `/**
  * Aven - Route-Aware Startup Skeleton Generator
  * Renders clean, data-driven skeleton placeholders during initial workspace bootstrap.
  */
@@ -21,7 +24,7 @@ export function renderStartupSkeleton(targetRoute) {
   if (!mainEl) return;
 
   const skeletonTemplates = {
-    subjects: `
+    subjects: \`
       <div class="sk-header">
         <div class="sk-header-titles">
           <div class="sk-block sk-title" style="width: 140px;"></div>
@@ -81,8 +84,8 @@ export function renderStartupSkeleton(targetRoute) {
           </div>
         </div>
       </div>
-    `,
-    tracker: `
+    \`,
+    tracker: \`
       <div class="sk-header">
         <div class="sk-header-titles">
           <div class="sk-block sk-title" style="width: 170px;"></div>
@@ -161,8 +164,8 @@ export function renderStartupSkeleton(targetRoute) {
           </div>
         </div>
       </div>
-    `,
-    grades: `
+    \`,
+    grades: \`
       <div class="sk-header">
         <div class="sk-header-titles">
           <div class="sk-block sk-title" style="width: 130px;"></div>
@@ -222,8 +225,8 @@ export function renderStartupSkeleton(targetRoute) {
           </div>
         </div>
       </div>
-    `,
-    plans: `
+    \`,
+    plans: \`
       <div class="sk-header">
         <div class="sk-header-titles">
           <div class="sk-block sk-title" style="width: 150px;"></div>
@@ -249,8 +252,8 @@ export function renderStartupSkeleton(targetRoute) {
           </div>
         </div>
       </div>
-    `,
-    settings: `
+    \`,
+    settings: \`
       <div class="sk-header">
         <div class="sk-header-titles">
           <div class="sk-block sk-title" style="width: 120px;"></div>
@@ -269,8 +272,40 @@ export function renderStartupSkeleton(targetRoute) {
           </div>
         </div>
       </div>
-    `
+    \`
   };
 
   mainEl.innerHTML = skeletonTemplates[activeRoute] || skeletonTemplates.subjects;
 }
+`;
+
+fs.writeFileSync('js/ui/skeleton.js', updatedSkeletonJs, 'utf-8');
+
+// 2. UPDATE css/style.css skeleton styles
+let css = fs.readFileSync('css/style.css', 'utf-8');
+
+css = css.replace(
+  `background: rgba(99, 102, 241, 0.18);\n  border: 1px solid rgba(99, 102, 241, 0.25);`,
+  `background: var(--accent-surface);\n  border: 1px solid var(--border-default);`
+);
+
+if (!css.includes('.sk-tracker-analytics-row')) {
+  css += `
+/* Skeleton Grid Helpers */
+.sk-tracker-analytics-row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .sk-tracker-analytics-row {
+    flex-direction: column;
+  }
+}
+`;
+}
+
+fs.writeFileSync('css/style.css', css, 'utf-8');
+
+console.log('Successfully updated site startup loading skeletons!');

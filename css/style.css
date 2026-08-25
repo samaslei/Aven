@@ -8079,3 +8079,16 @@ body.mobile-drawer-locked {
   background: transparent !important;
   background-color: transparent !important;
 }
+
+/* Skeleton Grid Helpers */
+.sk-tracker-analytics-row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .sk-tracker-analytics-row {
+    flex-direction: column;
+  }
+}
