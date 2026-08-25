@@ -8059,3 +8059,23 @@ body.mobile-drawer-locked {
 .grade-entries-table tfoot tr:hover td {
   background: transparent !important;
 }
+
+/* Explicit Dark Mode Totals Row Background Matching */
+[data-theme="dark"] .grade-entries-table tfoot,
+[data-theme="dark"] .grade-entries-table tfoot tr,
+[data-theme="dark"] .grade-entries-table .cat-totals-row,
+[data-theme="dark"] .grade-entries-table .cat-totals-row td,
+[data-theme="dark"] .grade-entries-table tfoot td {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-top: 1px solid var(--border-subtle) !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .grade-entries-table tr.cat-totals-row:hover td,
+[data-theme="dark"] .grade-entries-table tfoot tr:hover td {
+  background: transparent !important;
+  background-color: transparent !important;
+}

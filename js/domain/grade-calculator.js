@@ -135,8 +135,22 @@ export function calculateTermGradeBreakdown(categories = [], scale = null) {
     });
   });
 
+  // Check if any category is a Term Exam / Major Exam category
+  // Common user namings: 'Term Exams', 'Midterm Exam', 'Final Exam', 'Exam', 'Major Exam', 'Periodical Exam', etc.
+  const isExamCategory = (name) => /exam|periodical|major\s*test|defense/i.test(name || '');
+  const examCategories = categories.filter(c => isExamCategory(c.category));
+  const hasExamCategory = examCategories.length > 0;
+  const hasExamEntry = examCategories.some(c => (c.entries || []).length > 0);
+
   let termPercentage = null;
-  if (totalWeight > 0) {
+  let isPendingExam = false;
+
+  if (hasExamCategory && !hasExamEntry) {
+    // Exam category is configured but no exam has been entered yet:
+    // Do not calculate a premature partial standing.
+    isPendingExam = true;
+    termPercentage = null;
+  } else if (totalWeight > 0) {
     termPercentage = Math.round(weightedEarned * 100) / 100;
   }
 
@@ -144,8 +158,9 @@ export function calculateTermGradeBreakdown(categories = [], scale = null) {
     percentage: termPercentage,
     totalWeight,
     weightedEarned,
+    isPendingExam,
     categorySummaries,
-    philGrade: getPhilippineGrade(termPercentage, scale)
+    philGrade: isPendingExam ? { grade: '—', desc: 'Awaiting Term Exam' } : getPhilippineGrade(termPercentage, scale)
   };
 }
 
