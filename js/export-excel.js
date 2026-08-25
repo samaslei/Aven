@@ -3,6 +3,7 @@
  * Generates formatted, multi-section academic grade reports with SheetJS.
  */
 import { store } from './store.js';
+import { getTodayISO } from './utils/date-utils.js';
 
 /**
  * Ensures SheetJS (XLSX) library is loaded in the window.
@@ -32,11 +33,7 @@ async function ensureXlsxLoaded() {
  * Format date as YYYY-MM-DD for filenames
  */
 function getFileDateString() {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return getTodayISO();
 }
 
 /**

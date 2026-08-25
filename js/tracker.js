@@ -4,6 +4,10 @@
  */
 
 import { store, events } from './store.js';
+import { calculateDistributionStats, calculateMilestoneData } from './domain/tracker-calculator.js';
+import { playDualToneChime } from './utils/audio.js';
+import { formatMinutesAndSeconds, getTodayISO } from './utils/date-utils.js';
+import { renderSubjectSelectOptions } from './ui/dropdown.js';
 
 let selectedSubjectId = '';
 let heatmapYear = new Date().getFullYear(); // Year-view navigation state
@@ -15,45 +19,6 @@ let pomoTimeRemaining = 25 * 60; // seconds
 let pomoIsRunning = false;
 let pomoInterval = null;
 let pomoSubjectId = '';
-
-function playPomoChime() {
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const now = ctx.currentTime;
-
-    // Note 1: 587.33Hz (D5)
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(587.33, now);
-    gain1.gain.setValueAtTime(0.18, now);
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start(now);
-    osc1.stop(now + 0.35);
-
-    // Note 2: 880Hz (A5)
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(880, now + 0.16);
-    gain2.gain.setValueAtTime(0.22, now + 0.16);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(now + 0.16);
-    osc2.stop(now + 0.7);
-  } catch (e) {}
-}
-
-function formatPomoTime(seconds) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
 
 export function renderTrackerView(container) {
   const activeSubjects = store.getSubjects(false);
@@ -93,67 +58,11 @@ export function renderTrackerView(container) {
     `;
   }
 
-  // Calculate distribution data based on scope ('all' or 'week')
-  function getDistributionData(sessions, scope = 'all') {
-    let filtered = sessions;
-    if (scope === 'week') {
-      const now = new Date();
-      const startOfWeek = new Date(now);
-      const day = startOfWeek.getDay();
-      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Monday start
-      startOfWeek.setDate(diff);
-      startOfWeek.setHours(0, 0, 0, 0);
-      filtered = sessions.filter(s => new Date(s.date) >= startOfWeek);
-    }
 
-    const subjectMap = {};
-    let totalMinutes = 0;
-
-    filtered.forEach(s => {
-      const subId = s.subject_id || 'general';
-      if (!subjectMap[subId]) {
-        if (subId === 'general') {
-          subjectMap[subId] = {
-            id: 'general',
-            name: 'General Study',
-            code: '',
-            color: '#94a3b8',
-            minutes: 0
-          };
-        } else {
-          const sub = store.getSubjectById(subId);
-          subjectMap[subId] = {
-            id: subId,
-            name: sub ? sub.name : 'Unknown Subject',
-            code: sub ? sub.code : '',
-            color: sub && sub.color ? sub.color : '#6366f1',
-            minutes: 0
-          };
-        }
-      }
-      subjectMap[subId].minutes += s.duration;
-      totalMinutes += s.duration;
-    });
-
-    const slices = Object.values(subjectMap)
-      .filter(s => s.minutes > 0)
-      .sort((a, b) => b.minutes - a.minutes)
-      .map(s => ({
-        ...s,
-        percentage: totalMinutes > 0 ? (s.minutes / totalMinutes) * 100 : 0,
-        hours: (s.minutes / 60).toFixed(1)
-      }));
-
-    return {
-      totalMinutes,
-      totalHours: (totalMinutes / 60).toFixed(1),
-      slices
-    };
-  }
 
   // Render SVG Donut Chart and Legend Card
   function renderDistributionCard(sessions) {
-    const dist = getDistributionData(sessions, distributionScope);
+    const dist = calculateDistributionStats(sessions, distributionScope, id => store.getSubjectById(id));
     const totalHours = dist.totalHours;
     const slices = dist.slices;
 
@@ -348,18 +257,13 @@ export function renderTrackerView(container) {
         <div class="pomo-subject-row">
           <label class="form-label" for="pomo-subject-select" style="font-size: 11px; margin-bottom: 4px; color: var(--text-muted);">Subject</label>
           <select id="pomo-subject-select" class="form-select pomo-subject-select">
-            <option value="">🌐 General Study</option>
-            ${activeSubjects.map(s => `
-              <option value="${s.id}" ${s.id === pomoSubjectId ? 'selected' : ''}>
-                ${s.code ? `[${s.code}] ` : ''}${s.name}
-              </option>
-            `).join('')}
+            ${renderSubjectSelectOptions(activeSubjects, pomoSubjectId, true)}
           </select>
         </div>
 
         <!-- Large Monospace Countdown -->
         <div class="pomo-display-block">
-          <div class="pomo-time-display" id="pomo-time-display">${formatPomoTime(pomoTimeRemaining)}</div>
+          <div class="pomo-time-display" id="pomo-time-display">${formatMinutesAndSeconds(pomoTimeRemaining)}</div>
           <div class="pomo-progress-track">
             <div class="pomo-progress-fill ${pomoPhase === 'break' ? 'break-fill' : ''}" id="pomo-progress-fill" style="width: ${progressPct}%;"></div>
           </div>
@@ -400,7 +304,7 @@ export function renderTrackerView(container) {
 
   // Render Journey to Next Milestone Card
   function renderMilestoneCard(sessions) {
-    const data = getMilestoneData(sessions);
+    const data = calculateMilestoneData(sessions);
 
     return `
       <div class="tool-card journey-milestone-card">
@@ -543,12 +447,7 @@ export function renderTrackerView(container) {
               <div class="form-group">
                 <label class="form-label" for="manual-subject-select">Subject</label>
                 <select id="manual-subject-select" class="form-select">
-                  <option value="">🌐 General / No Subject</option>
-                  ${activeSubjects.map(s => `
-                    <option value="${s.id}" ${s.id === selectedSubjectId ? 'selected' : ''}>
-                      ${s.code ? `[${s.code}] ` : ''}${s.name}
-                    </option>
-                  `).join('')}
+                  ${renderSubjectSelectOptions(activeSubjects, selectedSubjectId, true)}
                 </select>
               </div>
 
@@ -723,7 +622,7 @@ function attachTrackerEvents(container) {
       const timeDisplay = container.querySelector('#pomo-time-display');
       const progressFill = container.querySelector('#pomo-progress-fill');
       if (timeDisplay) {
-        timeDisplay.textContent = formatPomoTime(pomoTimeRemaining);
+        timeDisplay.textContent = formatMinutesAndSeconds(pomoTimeRemaining);
       }
       if (progressFill) {
         const totalSecs = (pomoPhase === 'focus' ? 25 : 5) * 60;
@@ -732,7 +631,7 @@ function attachTrackerEvents(container) {
       }
     } else {
       // Phase completed!
-      playPomoChime();
+      playDualToneChime();
       if (pomoPhase === 'focus') {
         const todayStr = new Date().toISOString().split('T')[0];
         store.saveSession({
