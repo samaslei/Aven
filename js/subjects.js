@@ -353,16 +353,7 @@ export function renderSubjectsView(container) {
               <input type="text" id="sub-form-instructor" class="form-input" placeholder="e.g. Dr. Elena Santos">
             </div>
 
-            <!-- Row 4: Color Swatches -->
-            <div class="form-group">
-              <label class="form-label">Subject Color Accent</label>
-              <div class="color-swatches" id="color-swatches-container">
-                ${DEFAULT_COLOR_SWATCHES.map((hex, i) => `
-                  <div class="color-swatch-opt ${i === 0 ? 'active' : ''}" data-color="${hex}" style="background-color: ${hex};"></div>
-                `).join('')}
-              </div>
-              <input type="hidden" id="sub-form-color" value="${DEFAULT_COLOR_SWATCHES[0]}">
-            </div>
+            <input type="hidden" id="sub-form-color" value="${DEFAULT_COLOR_SWATCHES[0]}">
           </div>
 
           <div class="modal-footer">
@@ -867,11 +858,6 @@ function attachSubjectsEvents(container) {
     container.querySelector('#sub-form-id').value = '';
     container.querySelector('#subject-modal-title').textContent = 'New Subject';
     container.querySelector('#sub-form-color').value = DEFAULT_COLOR_SWATCHES[0];
-    
-    container.querySelectorAll('.color-swatch-opt').forEach((sw, i) => {
-      sw.classList.toggle('active', i === 0);
-    });
-
     createModal.classList.add('open');
   };
 
@@ -887,11 +873,6 @@ function attachSubjectsEvents(container) {
     container.querySelector('#sub-form-semester').value = sub.semester || '1st Semester';
     container.querySelector('#sub-form-instructor').value = sub.instructor || '';
     container.querySelector('#sub-form-color').value = sub.color || DEFAULT_COLOR_SWATCHES[0];
-
-    container.querySelectorAll('.color-swatch-opt').forEach(sw => {
-      sw.classList.toggle('active', sw.dataset.color === sub.color);
-    });
-
     createModal.classList.add('open');
   };
 
@@ -929,14 +910,7 @@ function attachSubjectsEvents(container) {
     b.addEventListener('click', closeModals);
   });
 
-  // Color Swatches Selection
-  container.querySelectorAll('.color-swatch-opt').forEach(swatch => {
-    swatch.addEventListener('click', () => {
-      container.querySelectorAll('.color-swatch-opt').forEach(s => s.classList.remove('active'));
-      swatch.classList.add('active');
-      container.querySelector('#sub-form-color').value = swatch.dataset.color;
-    });
-  });
+
 
   // Row overflow actions popover toggles
   container.querySelectorAll('.subject-row-actions-btn').forEach(btn => {
