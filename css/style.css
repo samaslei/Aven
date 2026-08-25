@@ -73,6 +73,8 @@
   --radius-xl: 18px;
   --radius-full: 9999px;
 
+  --border-card: 1px solid rgba(255, 255, 255, 0.08);
+
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.28);
   --shadow-md: 0 3px 8px -1px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 8px 20px -3px rgba(0, 0, 0, 0.42);
@@ -153,6 +155,8 @@
   --heat-level-3: #656b43;
   --heat-level-4: #3e4424;
   --heat-border: rgba(45, 50, 35, 0.08);
+
+  --border-card: 1px solid rgba(255, 255, 255, 0.90);
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.06);
@@ -991,7 +995,7 @@ button, input, select, textarea {
 
 .stat-card {
   background: var(--bg-surface);
-  border: none;
+  border: var(--border-card);
   border-radius: var(--radius-xl);
   padding: 20px 22px;
   display: flex;
@@ -1247,7 +1251,7 @@ button, input, select, textarea {
 .subject-card {
   --sub-color: #505537;
   background: var(--bg-surface);
-  border: none;
+  border: var(--border-card);
   border-radius: var(--radius-xl);
   padding: 22px 24px;
   display: flex;
@@ -1904,7 +1908,7 @@ button, input, select, textarea {
 
 .heatmap-container-card {
   background: var(--bg-surface);
-  border: none;
+  border: var(--border-card);
   border-radius: var(--radius-xl);
   padding: 20px 24px 18px;
   display: flex;
@@ -2316,7 +2320,7 @@ button, input, select, textarea {
 
 .journey-milestone-card {
   background: var(--bg-surface);
-  border: none;
+  border: var(--border-card);
   border-radius: var(--radius-xl);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   position: relative;
@@ -2540,7 +2544,7 @@ button, input, select, textarea {
 /* Study Time Distribution Pie/Donut Chart Card */
 .distribution-container-card {
   background: var(--bg-surface);
-  border: none;
+  border: var(--border-card);
   border-radius: var(--radius-xl);
   padding: 22px 24px;
   display: flex;
@@ -3751,7 +3755,7 @@ button, input, select, textarea {
 
 .grade-summary-box {
   background: var(--bg-surface);
-  border: none;
+  border: var(--border-card);
   border-radius: var(--radius-xl);
   padding: 22px 24px;
   display: flex;
@@ -3929,7 +3933,7 @@ button, input, select, textarea {
 
 .plans-sidebar {
   background: var(--bg-surface);
-  border: none;
+  border: var(--border-card);
   border-radius: var(--radius-xl);
   padding: 18px;
   display: flex;
@@ -3980,7 +3984,7 @@ button, input, select, textarea {
 
 .plan-viewer-container {
   background: var(--bg-surface);
-  border: none;
+  border: var(--border-card);
   border-radius: var(--radius-xl);
   display: flex;
   flex-direction: column;
@@ -4021,6 +4025,7 @@ button, input, select, textarea {
 .settings-profile-hero {
   padding: 22px 24px;
   background: var(--bg-surface);
+  border: var(--border-card);
   border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
@@ -4156,7 +4161,7 @@ button, input, select, textarea {
 
 .settings-card {
   background: var(--bg-surface);
-  border: none;
+  border: var(--border-card);
   border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
