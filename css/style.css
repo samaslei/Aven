@@ -7602,3 +7602,38 @@ body.mobile-drawer-locked {
 
 
 
+
+/* Universal Standardized Card Eyebrow Header Labels (Site-Wide Uniformity) */
+.card-header-label,
+.heatmap-header-label,
+.distribution-header-label,
+.pomodoro-header-label,
+.milestone-header-label,
+.manual-log-header-label,
+.history-header-label,
+.tool-card-title,
+.stat-card-title,
+.settings-section-title {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  color: var(--text-muted) !important;
+  font-family: var(--font-sans) !important;
+  text-transform: uppercase !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+}
+
+.card-header-label svg,
+.heatmap-header-label svg,
+.distribution-header-label svg,
+.pomodoro-header-label svg,
+.milestone-header-label svg,
+.manual-log-header-label svg,
+.history-header-label svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}

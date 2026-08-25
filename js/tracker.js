@@ -71,12 +71,12 @@ export function renderTrackerView(container) {
       return `
         <div class="distribution-container-card">
           <div class="distribution-header">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div class="card-header-label distribution-header-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
                 <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
               </svg>
-              <h3 style="font-size: 15px; font-weight: 600;">Study Time Distribution</h3>
+              <span>STUDY TIME DISTRIBUTION</span>
             </div>
             <div class="segmented-control" id="dist-scope-switcher">
               <button class="seg-btn ${distributionScope === 'all' ? 'active' : ''}" data-scope="all">All Time</button>
@@ -148,12 +148,12 @@ export function renderTrackerView(container) {
     return `
       <div class="distribution-container-card">
         <div class="distribution-header">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <div class="card-header-label distribution-header-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
               <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
             </svg>
-            <h3 style="font-size: 15px; font-weight: 600;">Study Time Distribution</h3>
+            <span>STUDY TIME DISTRIBUTION</span>
           </div>
           <div class="segmented-control" id="dist-scope-switcher">
             <button class="seg-btn ${distributionScope === 'all' ? 'active' : ''}" data-scope="all">All Time</button>
@@ -440,14 +440,12 @@ export function renderTrackerView(container) {
 
         <!-- Manual Log Entry (Hours + Minutes Side-by-Side) -->
         <div class="tool-card manual-log-card">
-          <div class="tool-card-title">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-              <span>Manual Study Log</span>
-            </div>
+          <div class="card-header-label manual-log-header-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <span>MANUAL STUDY LOG</span>
           </div>
 
           <form id="manual-session-form">
@@ -488,8 +486,14 @@ export function renderTrackerView(container) {
       <!-- Recent Sessions Log -->
       <div class="sessions-history-card">
         <div style="display: flex; align-items: center; justify-content: space-between;">
-          <h3 style="font-size: 15px; font-weight: 600;">Recent Study History</h3>
-          <span style="font-size: 12px; color: var(--text-muted);">${sessions.length} logged sessions</span>
+          <div class="card-header-label history-header-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="12 8 12 12 14 14"></polyline>
+              <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"></path>
+            </svg>
+            <span>RECENT STUDY HISTORY</span>
+          </div>
+          <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">${sessions.length} logged sessions</span>
         </div>
 
         <div class="data-table-wrapper">
