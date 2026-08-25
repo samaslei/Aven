@@ -626,22 +626,22 @@ button, input, select, textarea {
 }
 
 /* ==========================================================================
-   Buttons & Form Controls
+   Buttons & Form Controls (Reference Fully Rounded Pill Style)
    ========================================================================== */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 7px 14px;
+  padding: 8px 18px;
   font-size: 13px;
   font-weight: 600;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   border: 1px solid var(--border-default);
   background-color: var(--bg-surface);
   color: var(--text-primary);
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   user-select: none;
   box-shadow: var(--shadow-sm);
@@ -656,34 +656,56 @@ button, input, select, textarea {
 
 .btn:active {
   transform: translateY(1px) scale(0.98);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
+/* Solid Black Primary Button */
 .btn-primary {
-  background: var(--accent);
+  background-color: var(--accent);
   border: 1px solid var(--accent);
-  color: var(--text-inverse);
+  color: var(--text-inverse) !important;
   box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover);
+  background-color: var(--accent-hover);
   border-color: var(--accent-hover);
-  color: var(--text-inverse);
+  color: var(--text-inverse) !important;
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
+}
+
+.btn-primary svg {
+  color: var(--text-inverse) !important;
+  stroke: var(--text-inverse) !important;
+}
+
+/* Outline / Secondary Button */
+.btn-secondary,
+.btn-outline {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  border-radius: var(--radius-full);
+}
+
+.btn-secondary:hover,
+.btn-outline:hover {
+  background-color: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
 }
 
 .btn-danger {
   background-color: var(--danger-surface);
   border-color: var(--danger-border);
   color: var(--danger);
+  border-radius: var(--radius-full);
 }
 
 .btn-danger:hover {
   background-color: var(--danger);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+  box-shadow: 0 4px 12px rgba(194, 65, 54, 0.30);
 }
 
 .btn-ghost {
@@ -691,6 +713,7 @@ button, input, select, textarea {
   border-color: transparent;
   color: var(--text-secondary);
   box-shadow: none;
+  border-radius: var(--radius-full);
 }
 
 .btn-ghost:hover {
@@ -700,15 +723,19 @@ button, input, select, textarea {
 }
 
 .btn-sm {
-  padding: 5px 11px;
+  padding: 5px 14px;
   font-size: 12px;
+  border-radius: var(--radius-full);
 }
 
 .btn-icon {
-  padding: 6px;
-  border-radius: var(--radius-md);
+  padding: 0;
+  border-radius: var(--radius-full);
   width: 32px;
   height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Segmented Control */
