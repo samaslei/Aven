@@ -145,7 +145,7 @@ export function renderSubjectsView(container) {
         </div>
         <div class="stat-card-body">
           <span class="stat-card-title">Cumulative GPA</span>
-          <div class="stat-card-value" style="color: ${getStandingColor(academicStanding.rawAvgPct)};">${academicStanding.gpa !== '—' ? academicStanding.gpa : '—'}</div>
+          <div class="stat-card-value">${academicStanding.gpa !== '—' ? academicStanding.gpa : '—'}</div>
           <span class="stat-card-subtitle">Avg ${academicStanding.avgPct} · ${academicStanding.gradedSubjects}/${activeSubjects.length} graded</span>
         </div>
       </div>
@@ -674,7 +674,7 @@ function renderSubjectCard(sub) {
         </div>
         <div class="subject-metric-col">
           <span class="subject-metric-lbl">Standing</span>
-          <span class="subject-metric-val" style="color: ${getStandingColor(gradeStats.overallPercentage)};">${gradeStats.summaryLine}</span>
+          <span class="subject-metric-val">${gradeStats.summaryLine}</span>
         </div>
         <div class="subject-metric-col">
           <span class="subject-metric-lbl">Plan</span>

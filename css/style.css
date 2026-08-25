@@ -94,7 +94,7 @@
   /* Warm Sage/Khaki Canvas & Crisp Off-White Surfaces (FeedBacker Exact Match) */
   --bg-app: #c5bfa8;                     /* Deep, warm earthy sage canvas */
   --bg-sidebar: #e9e4d4;                 /* Soft distinct cream-sage navigation rail */
-  --bg-surface: #fbfaf5;                 /* Crisp light cream/off-white cards */
+  --bg-surface: #ffffff;                  /* Pure white cards (reference exact match) */
   --bg-surface-elevated: #ffffff;        /* Pure white elevated overlays */
   --bg-surface-hover: #f1ede0;           /* Soft warm hover surface */
   --bg-input: #ffffff;                   /* Form inputs */
@@ -154,10 +154,10 @@
   --heat-level-4: #3e4424;
   --heat-border: rgba(45, 50, 35, 0.08);
 
-  --shadow-sm: 0 2px 6px -1px rgba(45, 50, 35, 0.08), 0 1px 2px 0 rgba(45, 50, 35, 0.04);
-  --shadow-md: 0 6px 18px -3px rgba(45, 50, 35, 0.12), 0 2px 6px -1px rgba(45, 50, 35, 0.06);
-  --shadow-lg: 0 14px 30px -4px rgba(45, 50, 35, 0.16), 0 4px 12px -2px rgba(45, 50, 35, 0.06);
-  --shadow-modal: 0 18px 44px -8px rgba(45, 50, 35, 0.18), 0 6px 16px -2px rgba(45, 50, 35, 0.08);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.10);
+  --shadow-modal: 0 20px 50px rgba(0, 0, 0, 0.14);
   --shadow-glow: 0 0 20px rgba(80, 85, 55, 0.18);
 }
 
@@ -380,10 +380,10 @@ button, input, select, textarea {
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border-radius: var(--radius-lg);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: none;
+  box-shadow: none;
   cursor: pointer;
   width: 100%;
   text-align: left;
@@ -391,8 +391,7 @@ button, input, select, textarea {
 }
 
 .sidebar-user-block .user-profile-btn:hover {
-  background: var(--bg-surface-hover);
-  border-color: var(--border-strong);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .sidebar-user-block .user-avatar {
@@ -994,34 +993,33 @@ button, input, select, textarea {
 
 .stat-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: none;
   border-radius: var(--radius-xl);
   padding: 20px 22px;
   display: flex;
   align-items: flex-start;
   gap: 16px;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.09);
 }
 
 /* Prominent Circular Icon Badge (Left Side, Reference Style) */
 .stat-icon-circle {
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-full);
-  background: var(--bg-surface-hover);
+  background: rgba(80, 85, 55, 0.08);
   color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   transition: var(--transition);
 }
 
@@ -1064,75 +1062,7 @@ button, input, select, textarea {
   margin-top: 2px;
 }
 
-.stat-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 20px;
-}
-
-.stat-card-title {
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.stat-card-icon {
-  width: 18px;
-  height: 18px;
-  color: var(--text-muted);
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
-}
-
-.stat-card:hover .stat-card-icon {
-  transform: scale(1.08);
-}
-
-/* Subtle icon tint colors */
-.stat-icon-blue { color: #3b82f6; }
-.stat-icon-teal { color: #10b981; }
-.stat-icon-indigo { color: #818cf8; }
-.stat-icon-amber { color: #f59e0b; }
-
-.stat-card-value {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--text-primary);
-  font-family: var(--font-numeric);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-  line-height: 1.15;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 2px 0;
-}
-
-.stat-card-subtitle {
-  font-size: 11.5px;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 18px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.stat-card-subtitle span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+/* (Old stat-card-header/icon blocks removed — replaced by stat-icon-circle + stat-card-body layout) */
 
 
 .stat-pill {
@@ -1173,7 +1103,7 @@ button, input, select, textarea {
   color: var(--text-primary);
   cursor: pointer;
   transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1319,22 +1249,21 @@ button, input, select, textarea {
 .subject-card {
   --sub-color: #505537;
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: none;
   border-radius: var(--radius-xl);
   padding: 22px 24px;
   display: flex;
   flex-direction: column;
   gap: 18px;
   position: relative;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
 }
 
 .subject-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--border-default);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.09);
 }
 
 .subject-card-header-row {
@@ -1344,18 +1273,17 @@ button, input, select, textarea {
 }
 
 .subject-icon-badge {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-full);
-  background: var(--bg-surface-hover);
-  color: var(--text-primary);
+  background: rgba(80, 85, 55, 0.08);
+  color: var(--olive-deep);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 13px;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .subject-title-area {
@@ -1548,53 +1476,9 @@ button, input, select, textarea {
   white-space: nowrap;
 }
 
-.subject-metrics-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
+/* (Old subject-metrics-row removed — using subject-metrics-strip above) */
 
-[data-theme="light"] .subject-metrics-row {
-  border-top: 1px solid rgba(15, 23, 42, 0.06);
-}
-
-.subject-metric {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.metric-label {
-  font-size: 10.5px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.metric-value {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  font-family: var(--font-numeric);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-}
-
-.subject-card-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-[data-theme="light"] .subject-card-actions {
-  border-top: 1px solid rgba(15, 23, 42, 0.06);
-}
+/* (Old subject-card-actions duplicate removed — using borderless version above) */
 
 /* Subject Compact List View */
 .subjects-list-card {
@@ -2262,13 +2146,11 @@ button, input, select, textarea {
 .tool-card {
   background: var(--bg-surface);
   border: none;
-  border-radius: var(--radius-lg);
-  padding: 24px;
+  border-radius: var(--radius-xl);
+  padding: 22px 24px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  box-shadow: var(--shadow-sm); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl);
-  width: 100%;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
 }
 
@@ -3878,14 +3760,14 @@ button, input, select, textarea {
 
 .grade-summary-box {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: none;
   border-radius: var(--radius-xl);
   padding: 22px 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 14px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
 }
 
