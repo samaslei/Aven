@@ -29,7 +29,10 @@ export class LandingPage {
         <header class="landing-nav">
           <div class="landing-nav-container">
             <a href="#" class="landing-brand">
-              <img src="favicon.svg" alt="Aven Logo" class="brand-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" class="brand-icon" style="border-radius: 6px; flex-shrink: 0;">
+                <rect width="24" height="24" rx="6" fill="#505537"/>
+                <path d="M6 18L12 6L18 18H14L12 13L10 18H6Z" fill="white"/>
+              </svg>
               <span class="brand-text">Aven</span>
               <span class="landing-badge-tag">Academic OS</span>
             </a>
@@ -72,7 +75,7 @@ export class LandingPage {
         <section class="landing-hero">
           <div class="landing-hero-content">
             <div class="landing-pill-tag">
-              <span class="pill-sparkle">✦</span>
+              <span class="pill-sparkle" style="color: #8A9A5B;">✦</span>
               <span>The Academic Operating System</span>
             </div>
 
@@ -103,10 +106,10 @@ export class LandingPage {
 
             <div class="landing-hero-social-proof">
               <div class="landing-avatars-stack">
-                <div class="landing-avatar-pill" style="background: #6366f1;">CS</div>
-                <div class="landing-avatar-pill" style="background: #10b981;">ENG</div>
-                <div class="landing-avatar-pill" style="background: #8b5cf6;">MED</div>
-                <div class="landing-avatar-pill" style="background: #f59e0b;">BIO</div>
+                <div class="landing-avatar-pill" style="background: #8A9A5B;">CS</div>
+                <div class="landing-avatar-pill" style="background: #C9A84C;">ENG</div>
+                <div class="landing-avatar-pill" style="background: #6B5B4D;">MED</div>
+                <div class="landing-avatar-pill" style="background: #B5654A;">BIO</div>
               </div>
               <span class="landing-proof-text">Trusted by students taking heavy STEM & honors course loads</span>
             </div>
