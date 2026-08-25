@@ -362,7 +362,60 @@ export function renderTrackerView(container) {
 
   container.innerHTML = `
     <div class="tracker-layout">
-      <!-- 2-Column Analytics Top Row: Full-Year Activity Heatmap (Left) + Study Time Distribution (Right) -->
+      <!-- Tracker Action Top Row: Bentodoro Timer + Milestone Progress + Manual Study Log (3-Column Grid) -->
+      <div class="tracker-tools-grid">
+        <!-- Bentodoro Timer Card (Left) -->
+        ${renderPomodoroCard(activeSubjects)}
+
+        <!-- Journey to Next Milestone Card (Middle) -->
+        ${renderMilestoneCard(sessions)}
+
+        <!-- Manual Log Entry (Hours + Minutes Side-by-Side) -->
+        <div class="tool-card manual-log-card">
+          <div class="card-header-label manual-log-header-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <span>MANUAL STUDY LOG</span>
+          </div>
+
+          <form id="manual-session-form">
+            <!-- Paired Inputs: Subject & Date Side-by-Side -->
+            <div class="form-row-paired">
+              <div class="form-group">
+                <label class="form-label" for="manual-subject-select">Subject</label>
+                <select id="manual-subject-select" class="form-select">
+                  ${renderSubjectSelectOptions(activeSubjects, selectedSubjectId, true)}
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="manual-date">Date *</label>
+                <input type="date" id="manual-date" class="form-input" value="${todayStr}" max="${todayStr}" required>
+              </div>
+            </div>
+
+            <!-- Paired Inputs: Hours & Minutes Side-by-Side -->
+            <div class="form-row-paired">
+              <div class="form-group">
+                <label class="form-label" for="manual-hours">Hours</label>
+                <input type="number" id="manual-hours" class="form-input" min="0" max="24" value="1" placeholder="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="manual-minutes">Minutes</label>
+                <input type="number" id="manual-minutes" class="form-input" min="0" max="59" value="30" placeholder="0">
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="btn-submit-manual-log">
+              Log Study Session
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- 2-Column Analytics Bottom Row: Full-Year Activity Heatmap (Left) + Study Time Distribution (Right) -->
       <div class="tracker-analytics-row">
         <!-- Full-Year Activity Heatmap Card -->
         <div class="heatmap-container-card">
@@ -428,59 +481,6 @@ export function renderTrackerView(container) {
 
         <!-- Study Time Distribution Pie/Donut Chart Card -->
         ${renderDistributionCard(sessions)}
-      </div>
-
-      <!-- Tracker Action Row: Pomodoro Timer + Milestone Progress + Manual Study Log (3-Column Grid) -->
-      <div class="tracker-tools-grid">
-        <!-- Simple Pomodoro Timer Card (Left) -->
-        ${renderPomodoroCard(activeSubjects)}
-
-        <!-- Journey to Next Milestone Card (Middle) -->
-        ${renderMilestoneCard(sessions)}
-
-        <!-- Manual Log Entry (Hours + Minutes Side-by-Side) -->
-        <div class="tool-card manual-log-card">
-          <div class="card-header-label manual-log-header-label">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
-            <span>MANUAL STUDY LOG</span>
-          </div>
-
-          <form id="manual-session-form">
-            <!-- Paired Inputs: Subject & Date Side-by-Side -->
-            <div class="form-row-paired">
-              <div class="form-group">
-                <label class="form-label" for="manual-subject-select">Subject</label>
-                <select id="manual-subject-select" class="form-select">
-                  ${renderSubjectSelectOptions(activeSubjects, selectedSubjectId, true)}
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="manual-date">Date *</label>
-                <input type="date" id="manual-date" class="form-input" value="${todayStr}" max="${todayStr}" required>
-              </div>
-            </div>
-
-            <!-- Paired Inputs: Hours & Minutes Side-by-Side -->
-            <div class="form-row-paired">
-              <div class="form-group">
-                <label class="form-label" for="manual-hours">Hours</label>
-                <input type="number" id="manual-hours" class="form-input" min="0" max="24" value="1" placeholder="0">
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="manual-minutes">Minutes</label>
-                <input type="number" id="manual-minutes" class="form-input" min="0" max="59" value="30" placeholder="0">
-              </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary" id="btn-submit-manual-log">
-              Log Study Session
-            </button>
-          </form>
-        </div>
       </div>
 
       <!-- Recent Sessions Log -->
