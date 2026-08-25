@@ -7832,8 +7832,9 @@ body.mobile-drawer-locked {
   background: transparent;
 }
 
+/* Entry rows have no row-level hover background change */
 .cat-table tr:hover td {
-  background: var(--bg-surface-hover);
+  background: transparent;
 }
 
 .cat-empty-inline-hint {
@@ -8013,8 +8014,9 @@ body.mobile-drawer-locked {
   box-shadow: none !important;
 }
 
+/* Totals rows have no row-level hover background change */
 .grade-entries-table tr.cat-totals-row:hover td {
-  background: var(--bg-surface-hover) !important;
+  background: transparent !important;
 }
 
 .btn-del-entry {
@@ -8028,4 +8030,13 @@ body.mobile-drawer-locked {
 
 .btn-del-entry:hover {
   color: var(--danger) !important;
+}
+
+/* Disable row-level hover background on Grades assessment tables */
+.grade-entries-table tr:hover td,
+.grade-entries-table tr.grade-entry-row:hover td,
+.grade-entries-table tr.cat-totals-row:hover td,
+.grade-entries-table tbody tr:hover td,
+.grade-entries-table tfoot tr:hover td {
+  background: transparent !important;
 }
