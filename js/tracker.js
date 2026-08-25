@@ -569,10 +569,34 @@ export function renderTrackerView(container) {
 }
 
 function attachTrackerEvents(container) {
-  // LeetCode Tooltip
+  // LeetCode & Chart Tooltip
   const tooltip = container.querySelector('#heatmap-tooltip');
+
+  const updateTooltipPosition = (e) => {
+    if (!tooltip) return;
+    const offset = 14;
+    const tooltipWidth = tooltip.offsetWidth || 180;
+    const tooltipHeight = tooltip.offsetHeight || 60;
+
+    let left = e.clientX + offset;
+    let top = e.clientY - tooltipHeight - 10;
+
+    // If overflowing right edge of viewport, flip to left of cursor
+    if (left + tooltipWidth > window.innerWidth - 12) {
+      left = e.clientX - tooltipWidth - offset;
+    }
+
+    // If overflowing top edge of viewport, place below cursor
+    if (top < 10) {
+      top = e.clientY + offset + 6;
+    }
+
+    tooltip.style.left = `${Math.max(10, left)}px`;
+    tooltip.style.top = `${Math.max(10, top)}px`;
+  };
+
   container.querySelectorAll('.cal-day-cell').forEach(cell => {
-    cell.addEventListener('mouseenter', () => {
+    cell.addEventListener('mouseenter', (e) => {
       const date = cell.dataset.date;
       if (!date) return; // skip empty padding cells
       const mins = Number(cell.dataset.minutes) || 0;
@@ -601,10 +625,13 @@ function attachTrackerEvents(container) {
         ${subListHtml}
       `;
 
-      const rect = cell.getBoundingClientRect();
-      tooltip.style.left = `${rect.left + window.scrollX - 40}px`;
-      tooltip.style.top = `${rect.top + window.scrollY - tooltip.offsetHeight - 8}px`;
       tooltip.style.display = 'flex';
+      updateTooltipPosition(e);
+    });
+
+    cell.addEventListener('mousemove', (e) => {
+      if (!cell.dataset.date) return;
+      updateTooltipPosition(e);
     });
 
     cell.addEventListener('mouseleave', () => {
@@ -820,7 +847,7 @@ function attachTrackerEvents(container) {
 
   // Interactive Donut Slices Tooltip
   container.querySelectorAll('.donut-slice').forEach(slice => {
-    slice.addEventListener('mouseenter', () => {
+    slice.addEventListener('mouseenter', (e) => {
       const name = slice.dataset.name;
       const code = slice.dataset.code;
       const hours = slice.dataset.hours;
@@ -837,10 +864,12 @@ function attachTrackerEvents(container) {
         </div>
       `;
 
-      const rect = slice.getBoundingClientRect();
-      tooltip.style.left = `${rect.left + window.scrollX - 20}px`;
-      tooltip.style.top = `${rect.top + window.scrollY - tooltip.offsetHeight - 10}px`;
       tooltip.style.display = 'flex';
+      updateTooltipPosition(e);
+    });
+
+    slice.addEventListener('mousemove', (e) => {
+      updateTooltipPosition(e);
     });
 
     slice.addEventListener('mouseleave', () => {

@@ -860,7 +860,7 @@ button, input, select, textarea {
 
 .switch-toggle input:checked + .switch-slider:before {
   transform: translateX(20px);
-  background-color: #ffffff;
+  background-color: var(--text-inverse);
 }
 
 
@@ -1201,14 +1201,15 @@ button, input, select, textarea {
 }
 
 .seg-btn.active {
-  background: var(--accent);
-  color: #ffffff;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+  background: var(--accent) !important;
+  color: var(--text-inverse) !important;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
 .seg-btn.active svg {
-  color: #ffffff;
+  color: var(--text-inverse) !important;
+  stroke: var(--text-inverse) !important;
 }
 
 /* Notion-Inspired Minimal Toolbar Icon Buttons & Popovers */
