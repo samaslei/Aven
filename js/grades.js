@@ -94,7 +94,7 @@ export function renderGradesView(container) {
     const isSelected = sub.id === selectedSubjectId;
     const standingClass = getStandingClass(subGrade.overallPercentage);
     return `
-      <div class="grades-subject-item ${isSelected ? 'active' : ''}" data-id="${sub.id}">
+      <div class="grades-subject-item ${isSelected ? 'active' : ''}" data-id="${sub.id}" style="--item-color: ${sub.color || '#505537'};">
         <div class="grades-item-top">
           <span class="grades-item-dot" style="background: ${sub.color || '#6366f1'};"></span>
           <span class="grades-item-name">${sub.name}</span>
