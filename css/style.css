@@ -2276,7 +2276,7 @@ button, input, select, textarea {
 
 .pomo-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(90deg, #505537 0%, #868a67 100%);
   border-radius: var(--radius-full);
   transition: width 0.3s ease;
 }
@@ -2395,7 +2395,7 @@ button, input, select, textarea {
 
 .milestone-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  background: linear-gradient(90deg, #505537 0%, #868a67 55%, #c2c7a4 100%);
   border-radius: var(--radius-full);
   transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
@@ -3767,21 +3767,131 @@ button, input, select, textarea {
   gap: 18px;
 }
 
-.grade-summary-box {
-  background: linear-gradient(145deg, color-mix(in srgb, var(--standing-color, var(--accent)) 16%, var(--bg-surface-elevated)) 0%, color-mix(in srgb, var(--standing-color, var(--accent)) 5%, var(--bg-surface)) 60%, var(--bg-surface) 100%);
-  border: none;
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.40), 0 2px 6px -1px rgba(0, 0, 0, 0.28), inset 0 1px 0 color-mix(in srgb, var(--standing-color, var(--accent)) 15%, rgba(255, 255, 255, 0.05));
-  transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+@media (max-width: 800px) {
+  .grade-summary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-[data-theme="light"] .grade-summary-box {
-  background: linear-gradient(145deg, color-mix(in srgb, var(--standing-color, var(--accent)) 10%, #ffffff) 0%, color-mix(in srgb, var(--standing-color, var(--accent)) 3%, #ffffff) 60%, #ffffff 100%);
-  box-shadow: 0 2px 8px -1px rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.40);
+.grade-summary-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+}
+
+.pulse-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pulse-main-row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+/* Company Pulse Circular Progress Ring (Reference Style) */
+.pulse-ring-container {
+  flex-shrink: 0;
+}
+
+.pulse-ring-outer {
+  width: 92px;
+  height: 92px;
+  border-radius: var(--radius-full);
+  background: radial-gradient(circle, rgba(134, 138, 103, 0.22) 0%, rgba(134, 138, 103, 0.10) 65%, transparent 70%);
+  border: 2px solid rgba(80, 85, 55, 0.25);
+  box-shadow: inset 0 0 0 5px var(--bg-surface), 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+[data-theme="dark"] .pulse-ring-outer {
+  background: radial-gradient(circle, rgba(168, 176, 130, 0.25) 0%, rgba(168, 176, 130, 0.12) 65%, transparent 70%);
+  border-color: rgba(168, 176, 130, 0.35);
+  box-shadow: inset 0 0 0 5px var(--bg-surface), 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.pulse-ring-outer:hover {
+  transform: scale(1.04);
+}
+
+.pulse-ring-score {
+  font-family: var(--font-numeric);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.pulse-ring-sub {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 2px;
+  letter-spacing: 0.03em;
+}
+
+.pulse-metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pulse-metric-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pulse-metric-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-hover);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pulse-metric-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pulse-metric-val {
+  font-family: var(--font-numeric);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.pulse-metric-lbl {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  line-height: 1.2;
 }
 
 .phil-grade-display {

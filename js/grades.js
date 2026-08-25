@@ -788,24 +788,55 @@ function renderOverallTabContent(subject, gradeStats) {
         </div>
       </div>
 
-      <!-- Overall Standing & Target Solver Grid -->
+      <!-- Overall Standing & Target Solver Grid (Pulse Ring & Minimalist Layout) -->
       <div class="grade-summary-grid">
-        <div class="grade-summary-box" style="--standing-color: ${getStandingColor(gradeStats.overallPercentage)};">
-          <span class="stat-card-title">Overall Composite Standing</span>
-          <div class="phil-grade-display">
-            <span class="phil-grade-big" style="color: ${getStandingColor(gradeStats.overallPercentage)};">${gradeStats.overallPercentage !== null ? `${gradeStats.overallPercentage.toFixed(1)}%` : '—'}</span>
-            <span class="phil-grade-desc">· Grade ${gradeStats.philGrade.grade} (${gradeStats.philGrade.desc})</span>
+        <div class="grade-summary-box pulse-card">
+          <div class="pulse-card-header">
+            <span class="stat-card-title">Academic Standing Pulse</span>
+            <span class="stat-pill success">${gradeStats.philGrade.desc || 'Standing'}</span>
           </div>
-          <div style="margin-top: 8px; font-size: 12.5px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
-            <div>Midterm (${config.midterm_weight}%): <strong style="color: ${getStandingColor(midtermPct)};">${midtermPct !== null ? `${midtermPct.toFixed(1)}%` : 'No Data'}</strong></div>
-            <div>Final (${config.final_weight}%): <strong style="color: ${getStandingColor(finalPct)};">${finalPct !== null ? `${finalPct.toFixed(1)}%` : 'No Data'}</strong></div>
+
+          <div class="pulse-main-row">
+            <!-- Large Center Pulse Ring (Reference FeedBacker Style) -->
+            <div class="pulse-ring-container">
+              <div class="pulse-ring-outer">
+                <span class="pulse-ring-score">${gradeStats.overallPercentage !== null ? gradeStats.overallPercentage.toFixed(1) : '—'}</span>
+                <span class="pulse-ring-sub">Grade ${gradeStats.philGrade.grade}</span>
+              </div>
+            </div>
+
+            <!-- Metric Breakdown List with Circular Icon Badges -->
+            <div class="pulse-metrics-list">
+              <div class="pulse-metric-item">
+                <div class="pulse-metric-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                </div>
+                <div class="pulse-metric-text">
+                  <span class="pulse-metric-val" style="color: ${getStandingColor(midtermPct)};">${midtermPct !== null ? `${midtermPct.toFixed(1)}%` : '—'}</span>
+                  <span class="pulse-metric-lbl">Midterm (${config.midterm_weight}%)</span>
+                </div>
+              </div>
+
+              <div class="pulse-metric-item">
+                <div class="pulse-metric-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline></svg>
+                </div>
+                <div class="pulse-metric-text">
+                  <span class="pulse-metric-val" style="color: ${getStandingColor(finalPct)};">${finalPct !== null ? `${finalPct.toFixed(1)}%` : '—'}</span>
+                  <span class="pulse-metric-lbl">Final (${config.final_weight}%)</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Target Grade Solver -->
-        <div class="grade-summary-box" style="--standing-color: var(--accent);">
-          <span class="stat-card-title">Target Grade Solver</span>
-          <p style="font-size: 12px; color: var(--text-secondary);">
+        <div class="grade-summary-box">
+          <div class="pulse-card-header">
+            <span class="stat-card-title">Target Grade Solver</span>
+            <span class="stat-pill" style="background: var(--accent-surface); color: var(--accent);">Target 91.0%</span>
+          </div>
+          <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.45;">
             Calculate the required Final term score to achieve your desired target subject grade.
           </p>
 
