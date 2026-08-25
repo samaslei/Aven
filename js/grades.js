@@ -675,15 +675,15 @@ function renderTermTabContent(subject, term, gradeStats) {
                         }).join('')}
                       </tbody>
                       <tfoot>
-                        <tr class="cat-totals-row">
+                        <tr class="cat-totals-row grade-entry-row" style="cursor: default;">
                           <td style="text-align: left;">
-                            <span class="cell-value-text"><strong>TOTAL</strong></span>
+                            <span class="cell-value-text">TOTAL</span>
                           </td>
                           <td style="text-align: center;">
-                            <span class="cell-value-text mono-num" style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600;">${totalScore.toFixed(1)}</span>
+                            <span class="cell-value-text mono-num" style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums;">${totalScore.toFixed(1)}</span>
                           </td>
                           <td style="text-align: center;">
-                            <span class="cell-value-text mono-num" style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600;">${totalOutOf.toFixed(1)}</span>
+                            <span class="cell-value-text mono-num" style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums;">${totalOutOf.toFixed(1)}</span>
                           </td>
                           <td style="text-align: center;">
                             <span class="entry-pct-text" style="color: ${getStandingColor(catPct)}; font-weight: 700; font-family: var(--font-numeric); font-variant-numeric: tabular-nums;">
