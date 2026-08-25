@@ -468,7 +468,15 @@ class AvenApp {
 
     // Wire the existing sidebar sign-out button
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      this.userPopover.classList.remove('open');
+      this.userPopover?.classList.remove('open');
+      this.showToast('Signing out...', 'info');
+      await signOut();
+      this.handleUnauthenticated();
+    });
+
+    document.getElementById('sidebar-quick-logout')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      this.userPopover?.classList.remove('open');
       this.showToast('Signing out...', 'info');
       await signOut();
       this.handleUnauthenticated();
