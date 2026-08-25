@@ -466,7 +466,7 @@ export function renderSubjectsView(container) {
             ${activeSubjects.map(sub => `
               <label class="bulk-subject-item">
                 <input type="checkbox" class="bulk-sub-checkbox" value="${sub.id}" checked>
-                <span class="subject-color-bar" style="background-color: ${sub.color || '#6366f1'}; height: 16px; width: 3px; border-radius: 2px;"></span>
+                
                 <div style="flex: 1; min-width: 0;">
                   <div style="display: flex; align-items: center; gap: 6px;">
                     ${sub.code ? `<span class="subject-code-badge" style="font-size: 10.5px; padding: 1px 5px;">${sub.code}</span>` : ''}
@@ -709,7 +709,7 @@ function renderSubjectListRow(sub) {
     <tr class="subject-list-row ${sub.archived ? 'archived' : ''}" data-id="${sub.id}" style="--sub-color: ${sub.color || '#6366f1'};">
       <td class="subject-list-name-cell">
         <div style="display: flex; align-items: flex-start; gap: 12px; min-width: 0;">
-          <div class="subject-color-bar" style="background-color: ${sub.color || '#6366f1'}; height: 22px; width: 5px; border-radius: var(--radius-full); flex-shrink: 0; margin-top: 2px;"></div>
+          
           <div class="subject-list-title-block">
             <div class="subject-list-header-line">
               ${sub.code ? `<span class="subject-list-code">${sub.code}</span>` : ''}

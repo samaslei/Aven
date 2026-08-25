@@ -2901,13 +2901,13 @@ button, input, select, textarea {
 
 .grades-subject-item.active {
   background: rgba(80, 85, 55, 0.10);
-  border-color: var(--item-color, var(--olive-deep));
+  border-color: var(--accent);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
 }
 
 [data-theme="dark"] .grades-subject-item.active {
   background: rgba(168, 176, 130, 0.14);
-  border-color: var(--item-color, var(--olive-mid));
+  border-color: var(--accent);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
 }
 
@@ -2922,13 +2922,7 @@ button, input, select, textarea {
   gap: 8px;
 }
 
-.grades-item-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  margin-top: 5px;
-}
+/* (grades-item-dot removed — standing conveyed by text/score only) */
 
 .grades-item-name {
   font-size: 13px;
@@ -3999,17 +3993,32 @@ button, input, select, textarea {
   padding: 10px 12px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: var(--transition);
-  border: none;
+  transition: all 0.16s ease;
+  border: 1.5px solid transparent;
+  background: transparent;
+  position: relative;
+  box-sizing: border-box;
 }
 
-.plan-subject-item:hover {
+.plan-subject-item:hover:not(.active) {
   background: var(--bg-surface-hover);
 }
 
 .plan-subject-item.active {
-  background: var(--bg-surface-elevated);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  background: rgba(80, 85, 55, 0.10);
+  border-color: var(--accent);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="dark"] .plan-subject-item.active {
+  background: rgba(168, 176, 130, 0.14);
+  border-color: var(--accent);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+.plan-subject-item.active strong {
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .plan-viewer-container {

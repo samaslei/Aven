@@ -81,7 +81,7 @@ export function renderPlansView(container) {
                         ${p.title}
                       </strong>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); padding-left: 21px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
                       <span>Standalone Plan</span>
                       <span>${updatedDate}</span>
                     </div>
@@ -104,12 +104,11 @@ export function renderPlansView(container) {
                 return `
                   <div class="plan-subject-item ${isSelected ? 'active' : ''}" data-plan-id="${plan.id}">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                      <span style="width: 8px; height: 8px; border-radius: 50%; background-color: ${subject.color || '#6366f1'}; flex-shrink: 0;"></span>
                       <strong style="font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                         ${subject.code ? `[${subject.code}] ` : ''}${subject.name}
                       </strong>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); padding-left: 16px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
                       <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">${plan.title}</span>
                       <span>${updatedDate}</span>
                     </div>
@@ -144,7 +143,12 @@ export function renderPlansView(container) {
           <div class="plan-viewer-header">
             <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
               ${currentSubject ? `
-                <span style="width: 10px; height: 10px; border-radius: 50%; background-color: ${currentSubject.color || '#6366f1'}; flex-shrink: 0;"></span>
+                <span style="display: flex; align-items: center; color: var(--accent); flex-shrink: 0;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                  </svg>
+                </span>
               ` : `
                 <span style="display: flex; align-items: center; color: var(--accent); flex-shrink: 0;">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
