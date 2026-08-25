@@ -108,58 +108,58 @@ export function renderSubjectsView(container) {
   container.innerHTML = `
     <!-- Top Summary Banner (Scoped to Active Subjects, Uniform 3-Row Layout) -->
     <div class="stats-banner">
-      <div class="stat-card stat-card-blue">
-        <div class="stat-card-header">
-          <span class="stat-card-title">Enrolled Subjects</span>
-          <svg class="stat-card-icon stat-icon-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div class="stat-card">
+        <div class="stat-icon-circle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
           </svg>
         </div>
-        <div class="stat-card-value">${activeSubjects.length} Active</div>
-        <div class="stat-card-subtitle">
-          <span>${allSubjects.length} total enrolled courses</span>
+        <div class="stat-card-body">
+          <span class="stat-card-title">Enrolled Subjects</span>
+          <div class="stat-card-value">${activeSubjects.length} Active</div>
+          <span class="stat-card-subtitle">${allSubjects.length} total enrolled courses</span>
         </div>
       </div>
 
-      <div class="stat-card stat-card-teal">
-        <div class="stat-card-header">
-          <span class="stat-card-title">Study Time (Week)</span>
-          <svg class="stat-card-icon stat-icon-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div class="stat-card">
+        <div class="stat-icon-circle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
         </div>
-        <div class="stat-card-value">${weeklyHours}h</div>
-        <div class="stat-card-subtitle">
-          <span>${streakStats.totalHours}h all-time · ${streakStats.totalSessions} sessions</span>
+        <div class="stat-card-body">
+          <span class="stat-card-title">Study Time (Week)</span>
+          <div class="stat-card-value">${weeklyHours}h</div>
+          <span class="stat-card-subtitle">${streakStats.totalHours}h all-time · ${streakStats.totalSessions} sessions</span>
         </div>
       </div>
 
-      <div class="stat-card stat-card-indigo">
-        <div class="stat-card-header">
-          <span class="stat-card-title">Cumulative GPA</span>
-          <svg class="stat-card-icon stat-icon-indigo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div class="stat-card">
+        <div class="stat-icon-circle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
             <polyline points="16 7 22 7 22 13"></polyline>
           </svg>
         </div>
-        <div class="stat-card-value" style="color: ${getStandingColor(academicStanding.rawAvgPct)};">${academicStanding.gpa !== '—' ? academicStanding.gpa : '—'}</div>
-        <div class="stat-card-subtitle">
-          <span>Avg ${academicStanding.avgPct} · ${academicStanding.gradedSubjects}/${activeSubjects.length} graded</span>
+        <div class="stat-card-body">
+          <span class="stat-card-title">Cumulative GPA</span>
+          <div class="stat-card-value" style="color: ${getStandingColor(academicStanding.rawAvgPct)};">${academicStanding.gpa !== '—' ? academicStanding.gpa : '—'}</div>
+          <span class="stat-card-subtitle">Avg ${academicStanding.avgPct} · ${academicStanding.gradedSubjects}/${activeSubjects.length} graded</span>
         </div>
       </div>
 
-      <div class="stat-card stat-card-purple">
-        <div class="stat-card-header">
-          <span class="stat-card-title">Study Streak</span>
-          <svg class="stat-card-icon stat-icon-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div class="stat-card">
+        <div class="stat-icon-circle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
           </svg>
         </div>
-        <div class="stat-card-value">${streakStats.currentStreak} ${streakStats.currentStreak === 1 ? 'day' : 'days'}</div>
-        <div class="stat-card-subtitle">
-          <span>Personal best: ${streakStats.longestStreak} days streak</span>
+        <div class="stat-card-body">
+          <span class="stat-card-title">Study Streak</span>
+          <div class="stat-card-value">${streakStats.currentStreak} ${streakStats.currentStreak === 1 ? 'day' : 'days'}</div>
+          <span class="stat-card-subtitle">Personal best: ${streakStats.longestStreak} days streak</span>
         </div>
       </div>
     </div>
@@ -632,64 +632,63 @@ function renderSubjectCard(sub) {
     .replace('1st Semester', '1st Sem')
     .replace('2nd Semester', '2nd Sem');
 
+  // Extract 2 initials for the circular subject badge
+  const initials = (sub.code || sub.name || 'CS').substring(0, 2).toUpperCase();
+
   return `
-    <div class="subject-card ${sub.archived ? 'archived' : ''}" data-id="${sub.id}" style="--sub-color: ${sub.color || '#6366f1'};">
-      <div class="subject-card-top">
-        <div class="subject-header-left">
-          <div class="subject-color-bar" style="background-color: ${sub.color || '#6366f1'};"></div>
-          <div class="subject-list-title-block">
-            <div class="subject-list-header-line">
-              ${sub.code ? `<span class="subject-list-code">${sub.code}</span>` : ''}
-              <h4 class="subject-name">${sub.name}</h4>
-            </div>
-            ${sub.instructor ? `
-              <span class="subject-list-instructor">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                ${sub.instructor}
-              </span>
-            ` : ''}
-          </div>
+    <div class="subject-card ${sub.archived ? 'archived' : ''}" data-id="${sub.id}">
+      <div class="subject-card-header-row">
+        <!-- Circular Icon Badge (Reference Style) -->
+        <div class="subject-icon-badge" style="background: rgba(80, 85, 55, 0.09); color: var(--olive-deep);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </div>
+
+        <div class="subject-title-area">
+          ${sub.code ? `<span class="subject-code-tag">${sub.code}</span>` : ''}
+          <h4 class="subject-card-name">${sub.name}</h4>
+          ${sub.instructor ? `
+            <span class="subject-card-instructor">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              ${sub.instructor}
+            </span>
+          ` : ''}
         </div>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-        <span class="subject-term-badge">
-          <span>${sub.year_level}</span>
-          <span class="term-dot">·</span>
-          <span>${semAbbr}</span>
-        </span>
+      <div class="subject-meta-pills">
+        <span class="subject-pill-tag">${sub.year_level} · ${semAbbr}</span>
         ${getArchiveReasonBadge(sub)}
       </div>
 
-      <div class="subject-metrics-row">
-        <div class="subject-metric">
-          <span class="metric-label">Study Time</span>
-          <span class="metric-value">${hoursFormatted}</span>
+      <!-- Clean Minimalist Metrics Strip -->
+      <div class="subject-metrics-strip">
+        <div class="subject-metric-col">
+          <span class="subject-metric-lbl">Study Time</span>
+          <span class="subject-metric-val">${hoursFormatted}</span>
         </div>
-        <div class="subject-metric">
-          <span class="metric-label">Standing</span>
-          <div class="subject-standing-pill ${standingClass}" style="margin-top: 2px; font-size: 12px;">
-            <span class="standing-dot" style="background: currentColor;"></span>
-            <span>${gradeStats.summaryLine}</span>
-          </div>
+        <div class="subject-metric-col">
+          <span class="subject-metric-lbl">Standing</span>
+          <span class="subject-metric-val" style="color: ${getStandingColor(gradeStats.overallPercentage)};">${gradeStats.summaryLine}</span>
         </div>
-        <div class="subject-metric">
-          <span class="metric-label">Study Plan</span>
-          <span class="subject-plan-pill ${plan ? 'ready' : ''}" style="margin-top: 4px;">
-            ${plan ? '● Ready' : '—'}
-          </span>
+        <div class="subject-metric-col">
+          <span class="subject-metric-lbl">Plan</span>
+          <span class="subject-metric-val">${plan ? 'Ready' : '—'}</span>
         </div>
       </div>
 
+      <!-- Pill Action Buttons -->
       <div class="subject-card-actions">
-        ${!sub.archived ? `<button class="btn btn-ghost btn-sm btn-edit-sub" data-id="${sub.id}">Edit</button>` : ''}
-        <button class="btn btn-ghost btn-sm btn-archive-sub" data-id="${sub.id}">
+        ${!sub.archived ? `<button class="btn btn-secondary btn-sm btn-edit-sub" data-id="${sub.id}">Edit</button>` : ''}
+        <button class="btn btn-secondary btn-sm btn-archive-sub" data-id="${sub.id}">
           ${sub.archived ? 'Unarchive' : 'Archive'}
         </button>
-        <button class="btn btn-ghost btn-sm btn-delete-sub" data-id="${sub.id}" style="color: var(--danger);">Delete</button>
+        <button class="btn btn-danger btn-sm btn-delete-sub" data-id="${sub.id}">Delete</button>
       </div>
     </div>
   `;
