@@ -382,7 +382,7 @@ button, input, select, textarea {
 .sidebar-user-block .user-profile-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 8px 10px;
   border-radius: var(--radius-md);
   background: transparent;
@@ -391,25 +391,33 @@ button, input, select, textarea {
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: var(--transition);
+  transition: background-color 0.16s ease;
 }
 
 .sidebar-user-block .user-profile-btn:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .sidebar-user-block .user-avatar {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
   border-radius: var(--radius-full);
   background-color: var(--olive-mid);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 12px;
+  letter-spacing: -0.01em;
   color: #ffffff;
   flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  transition: transform 0.18s ease;
+}
+
+.sidebar-user-block .user-profile-btn:hover .user-avatar {
+  transform: scale(1.04);
 }
 
 .sidebar-user-block .user-info {
@@ -419,25 +427,31 @@ button, input, select, textarea {
   line-height: 1.25;
   flex: 1;
   min-width: 0;
+  gap: 1px;
 }
 
 .sidebar-user-block .user-name {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--text-primary);
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
 }
 
 .sidebar-user-block .user-email {
-  font-size: 11px;
-  color: var(--text-muted);
+  font-size: 11.5px;
+  color: var(--text-secondary);
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
   font-weight: 400;
+  line-height: 1.2;
+  text-decoration: underline;
+  text-decoration-color: rgba(86, 89, 77, 0.35);
+  text-underline-offset: 2px;
 }
 
 .sidebar-user-block .user-chevron {
