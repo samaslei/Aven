@@ -12,6 +12,7 @@ import { renderTrackerView } from './tracker.js';
 import { renderGradesView } from './grades.js';
 import { renderPlansView } from './plans.js';
 import { renderSettingsView } from './settings.js';
+import { renderStartupSkeleton } from './ui/skeleton.js';
 
 class AvenApp {
   constructor() {
@@ -55,6 +56,11 @@ class AvenApp {
     this.startupLoader = document.getElementById('startup-loader');
     this.startupStatusEl = document.getElementById('startup-status-text');
     this.setStartupStatus('Checking credentials...');
+
+    // Render route-aware skeleton immediately
+    try {
+      renderStartupSkeleton();
+    } catch (e) {}
 
     // Set theme from store
     const theme = store.getTheme();
