@@ -373,46 +373,59 @@ button, input, select, textarea {
   padding-top: 14px;
 }
 
-/* Compact User Profile Row (Reference Style) */
+/* Subtle Rounded Profile Card (Reference Style) */
 .sidebar-user-block {
   position: relative;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .sidebar-user-block .user-profile-btn {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 10px;
-  border-radius: var(--radius-md);
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  background: rgba(80, 85, 55, 0.08);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: background-color 0.16s ease;
+  box-sizing: border-box;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .sidebar-user-block .user-profile-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .sidebar-user-block .user-profile-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(80, 85, 55, 0.13);
+  border-color: var(--border-default);
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .sidebar-user-block .user-profile-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .sidebar-user-block .user-avatar {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
   border-radius: var(--radius-full);
   background-color: var(--olive-mid);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 12.5px;
   letter-spacing: -0.01em;
   color: #ffffff;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.30);
   transition: transform 0.18s ease;
 }
 
@@ -427,7 +440,7 @@ button, input, select, textarea {
   line-height: 1.25;
   flex: 1;
   min-width: 0;
-  gap: 1px;
+  gap: 2px;
 }
 
 .sidebar-user-block .user-name {
@@ -463,6 +476,13 @@ button, input, select, textarea {
 
 .sidebar-user-block:has(.user-popover.open) .user-chevron {
   transform: rotate(180deg);
+}
+
+/* Thin Divider Separating Profile Card from Footer Links */
+.sidebar-divider {
+  height: 1px;
+  background: var(--border-default);
+  margin: 6px 4px 8px 4px;
 }
 
 /* User Popover anchored upwards from bottom */
