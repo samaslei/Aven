@@ -566,7 +566,7 @@ function renderTermTabContent(subject, term, gradeStats) {
 
           return `
             <div class="category-breakdown-section ${isExpanded ? 'is-expanded' : 'is-collapsed'}" data-cat-id="${cat.id}">
-              <!-- Header Row (Always Visible & Clickable to Expand/Collapse) -->
+              <!-- Header Row (Notion-Style: Drag Handle -> Chevron -> Name -> Weight) -->
               <div class="category-breakdown-header" data-cat-id="${cat.id}">
                 <div class="cat-header-left">
                   <div class="cat-drag-handle" title="Drag to reorder category" aria-label="Drag to reorder category">
@@ -579,11 +579,16 @@ function renderTermTabContent(subject, term, gradeStats) {
                       <circle cx="16" cy="19" r="2"></circle>
                     </svg>
                   </div>
+                  <button type="button" class="cat-chevron-btn ${isExpanded ? 'expanded' : ''}" data-cat-id="${cat.id}" aria-label="Toggle Expand Category">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="cat-chevron-icon">
+                      <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                  </button>
                   <h4 class="cat-breakdown-name" title="${safeCatName}">${cat.category}</h4>
-                  ${renderWeightIndicator(cat.weight, cat.id)}
                 </div>
 
                 <div class="cat-header-right">
+                  ${renderWeightIndicator(cat.weight, cat.id)}
                   ${entries.length > 0 ? `
                     <div class="cat-header-summary">
                       <span>Avg: <strong style="color: ${getStandingColor(catPct)};">${catPct}%</strong></span>
@@ -596,11 +601,6 @@ function renderTermTabContent(subject, term, gradeStats) {
                   </button>
                   <button type="button" class="btn btn-ghost btn-sm btn-del-cat" data-cat-id="${cat.id}" style="color: var(--danger); padding: 4px 7px;" title="Delete Category">
                     ✕
-                  </button>
-                  <button type="button" class="cat-chevron-btn ${isExpanded ? 'expanded' : ''}" data-cat-id="${cat.id}" aria-label="Toggle Expand Category">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="cat-chevron-icon">
-                      <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
                   </button>
                 </div>
               </div>
