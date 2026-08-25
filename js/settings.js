@@ -16,7 +16,85 @@ export function renderSettingsView(container) {
 
   container.innerHTML = `
     <div class="settings-container">
-      <!-- 1. Academic Defaults Section -->
+            <!-- 1. Appearance & Theme Section -->
+      <div class="settings-section" id="settings-appearance">
+        <div class="settings-section-header">
+          <h3 class="settings-section-title">Appearance & Theme</h3>
+        </div>
+        <div class="settings-card">
+          <div class="theme-options-grid">
+            <div class="theme-option-card ${(store.getTheme() || 'dark') === 'dark' ? 'active' : ''}" data-theme-id="dark">
+              <div class="theme-card-preview" style="background: #141512;">
+                <div class="theme-card-preview-sidebar" style="background: #10110e; border-right: 1px solid rgba(255,255,255,0.06);"></div>
+                <div class="theme-card-preview-main">
+                  <div class="theme-card-preview-block" style="background: #1e201b; border: 1px solid rgba(255,255,255,0.08);"></div>
+                  <div class="theme-card-preview-block" style="width: 50%; background: #a8b082;"></div>
+                </div>
+              </div>
+              <div class="theme-option-info">
+                <div>
+                  <div class="theme-option-title">Deep Sage Dark</div>
+                  <div class="theme-option-desc">Earthy charcoal & sage olive</div>
+                </div>
+                <span class="theme-check-badge">✓</span>
+              </div>
+            </div>
+
+            <div class="theme-option-card ${store.getTheme() === 'pure-black' ? 'active' : ''}" data-theme-id="pure-black">
+              <div class="theme-card-preview" style="background: #000000;">
+                <div class="theme-card-preview-sidebar" style="background: #050505; border-right: 1px solid rgba(255,255,255,0.1);"></div>
+                <div class="theme-card-preview-main">
+                  <div class="theme-card-preview-block" style="background: #0d0d0d; border: 1px solid rgba(255,255,255,0.12);"></div>
+                  <div class="theme-card-preview-block" style="width: 50%; background: #ffffff;"></div>
+                </div>
+              </div>
+              <div class="theme-option-info">
+                <div>
+                  <div class="theme-option-title">Pure Black</div>
+                  <div class="theme-option-desc">Pitch black OLED & monochrome</div>
+                </div>
+                <span class="theme-check-badge">✓</span>
+              </div>
+            </div>
+
+            <div class="theme-option-card ${store.getTheme() === 'light' ? 'active' : ''}" data-theme-id="light">
+              <div class="theme-card-preview" style="background: #c5bfa8;">
+                <div class="theme-card-preview-sidebar" style="background: #e9e4d4; border-right: 1px solid rgba(0,0,0,0.06);"></div>
+                <div class="theme-card-preview-main">
+                  <div class="theme-card-preview-block" style="background: #f5f3ec; border: 1px solid #ffffff;"></div>
+                  <div class="theme-card-preview-block" style="width: 50%; background: #505537;"></div>
+                </div>
+              </div>
+              <div class="theme-option-info">
+                <div>
+                  <div class="theme-option-title">Warm Sage Light</div>
+                  <div class="theme-option-desc">Tactile earthy khaki & soft linen</div>
+                </div>
+                <span class="theme-check-badge">✓</span>
+              </div>
+            </div>
+
+            <div class="theme-option-card ${store.getTheme() === 'pure-white' ? 'active' : ''}" data-theme-id="pure-white">
+              <div class="theme-card-preview" style="background: #f8fafc;">
+                <div class="theme-card-preview-sidebar" style="background: #ffffff; border-right: 1px solid #e2e8f0;"></div>
+                <div class="theme-card-preview-main">
+                  <div class="theme-card-preview-block" style="background: #ffffff; border: 1px solid #e2e8f0;"></div>
+                  <div class="theme-card-preview-block" style="width: 50%; background: #0f172a;"></div>
+                </div>
+              </div>
+              <div class="theme-option-info">
+                <div>
+                  <div class="theme-option-title">Pure White</div>
+                  <div class="theme-option-desc">Ultra-clean minimalist slate light</div>
+                </div>
+                <span class="theme-check-badge">✓</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Academic Defaults Section -->
       <div class="settings-section" id="settings-academic">
         <div class="settings-section-header">
           <h3 class="settings-section-title">Academic Defaults</h3>
@@ -80,28 +158,7 @@ export function renderSettingsView(container) {
         </div>
       </div>
 
-      <!-- 2. Display & Accessibility Section -->
-      <div class="settings-section" id="settings-display">
-        <div class="settings-section-header">
-          <h3 class="settings-section-title">Display & Accessibility</h3>
-        </div>
-        <div class="settings-card">
-          <div class="settings-row compact">
-            <div class="setting-info">
-              <strong class="setting-title">Neutral Card Colors</strong>
-              <p class="setting-desc">Replace subject color glow effects on card hover with a calm, neutral highlight</p>
-            </div>
-            <div class="setting-control">
-              <label class="switch-toggle" title="Toggle Neutral Card Colors">
-                <input type="checkbox" id="setting-neutral-colors" ${settings.neutral_colors ? 'checked' : ''}>
-                <span class="switch-slider"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. Account Settings Section -->
+      <!-- 2. Account Settings Section -->
       <div class="settings-section" id="settings-account">
         <div class="settings-section-header">
           <h3 class="settings-section-title">Account</h3>
@@ -358,6 +415,17 @@ function showInlineSaved(badgeEl) {
 }
 
 function attachSettingsEvents(container) {
+  // Theme selector card clicks
+  container.querySelectorAll('.theme-option-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      const themeId = card.dataset.themeId;
+      if (themeId) {
+        store.setTheme(themeId);
+        renderSettingsView(container);
+      }
+    });
+  });
+
   // 1. Account Settings Auto-save
   const nameInput = container.querySelector('#setting-user-name');
   const emailInput = container.querySelector('#setting-user-email');
@@ -467,18 +535,7 @@ function attachSettingsEvents(container) {
     renderSettingsView(container);
   });
 
-  // 5. Neutral Colors Accessibility Toggle
-  const neutralColorsSwitch = container.querySelector('#setting-neutral-colors');
-  neutralColorsSwitch?.addEventListener('change', () => {
-    const enabled = neutralColorsSwitch.checked;
-    store.saveSettings({ neutral_colors: enabled });
-    window.avenApp?.showToast(
-      enabled ? 'Neutral card colors enabled' : 'Default colored card glow restored',
-      'info'
-    );
-  });
-
-  // 6. Pointer link from Account to Data Management
+  // 5. Pointer link from Account to Data Management
   container.querySelector('#link-goto-data')?.addEventListener('click', (e) => {
     e.preventDefault();
     const dataSection = container.querySelector('#settings-data');

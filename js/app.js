@@ -450,7 +450,11 @@ class AvenApp {
     // Top-bar app-wide theme toggle button
     document.getElementById('app-theme-btn')?.addEventListener('click', () => {
       const current = store.getTheme();
-      const next = current === 'dark' ? 'light' : 'dark';
+      let next = 'light';
+      if (current === 'pure-black') next = 'pure-white';
+      else if (current === 'pure-white') next = 'pure-black';
+      else if (current === 'light') next = 'dark';
+      else next = 'light';
       store.setTheme(next);
       this.showToast(`Theme switched to ${next} mode`, 'info');
     });
