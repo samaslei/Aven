@@ -541,7 +541,10 @@ export class LandingPage {
           <div class="landing-footer-container">
             <div class="landing-footer-brand">
               <div class="landing-brand">
-                <img src="favicon.svg" alt="Aven Logo" class="brand-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" class="brand-icon" style="border-radius: 6px; flex-shrink: 0;">
+                  <rect width="24" height="24" rx="6" fill="#505537"/>
+                  <path d="M6 18L12 6L18 18H14L12 13L10 18H6Z" fill="white"/>
+                </svg>
                 <span class="brand-text">Aven</span>
               </div>
               <p class="landing-footer-tagline">Academic Operating System for university students.</p>
