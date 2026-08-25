@@ -638,8 +638,8 @@ function renderSubjectCard(sub) {
         </div>
 
         <div class="subject-title-area">
-          ${sub.code ? `<span class="subject-code-tag">${sub.code}</span>` : ''}
-          <h4 class="subject-card-name">${sub.name}</h4>
+          <span class="subject-code-tag" style="${!sub.code ? 'visibility: hidden;' : ''}">${sub.code || '&nbsp;'}</span>
+          <h4 class="subject-card-name" title="${sub.name}">${sub.name}</h4>
           ${sub.instructor ? `
             <span class="subject-card-instructor">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -648,7 +648,7 @@ function renderSubjectCard(sub) {
               </svg>
               ${sub.instructor}
             </span>
-          ` : ''}
+          ` : '<span class="subject-card-instructor is-empty" aria-hidden="true">&nbsp;</span>'}
         </div>
       </div>
 
@@ -673,7 +673,7 @@ function renderSubjectCard(sub) {
         </div>
       </div>
 
-      <!-- Pill Action Buttons -->
+      <!-- Pill Action Buttons (Pinned to bottom baseline) -->
       <div class="subject-card-actions">
         ${!sub.archived ? `<button class="btn btn-secondary btn-sm btn-edit-sub" data-id="${sub.id}">Edit</button>` : ''}
         <button class="btn btn-secondary btn-sm btn-archive-sub" data-id="${sub.id}">
