@@ -81,7 +81,7 @@ export class LandingPage {
             </h1>
 
             <p class="landing-hero-subheadline">
-              Replace messy spreadsheets, disconnected study apps, and lost PDF syllabi with a cohesive, dark-first workspace engineered for high-achieving university students.
+              Replace messy spreadsheets, disconnected study apps, and lost PDF syllabi with a cohesive, integrated academic workspace engineered for high-achieving university students.
             </p>
 
             <div class="landing-hero-ctas">
@@ -136,42 +136,50 @@ export class LandingPage {
 
               <!-- Realistic Subjects Dashboard Interface -->
               <div class="mockup-app-body">
-                <!-- Top 4 Metric Stat Cards -->
+                <!-- Top 4 Metric Stat Cards (Matching Real App) -->
                 <div class="mockup-stats-banner">
-                  <div class="mockup-stat-card stat-blue">
-                    <div class="mockup-stat-head">
-                      <span>Enrolled Subjects</span>
-                      <span class="mockup-stat-icon">📚</span>
+                  <div class="mockup-stat-card">
+                    <div class="mockup-stat-inner">
+                      <div class="mockup-stat-icon-circle">📚</div>
+                      <div class="mockup-stat-body">
+                        <div class="mockup-stat-head">Enrolled Subjects</div>
+                        <div class="mockup-stat-val">5 Active</div>
+                        <div class="mockup-stat-sub">5 total courses</div>
+                      </div>
                     </div>
-                    <div class="mockup-stat-val">5 Active</div>
-                    <div class="mockup-stat-sub">5 total courses enrolled</div>
                   </div>
 
-                  <div class="mockup-stat-card stat-teal">
-                    <div class="mockup-stat-head">
-                      <span>Study Time (Week)</span>
-                      <span class="mockup-stat-icon">⏱️</span>
+                  <div class="mockup-stat-card">
+                    <div class="mockup-stat-inner">
+                      <div class="mockup-stat-icon-circle">⏱️</div>
+                      <div class="mockup-stat-body">
+                        <div class="mockup-stat-head">Study Time</div>
+                        <div class="mockup-stat-val">18.4h</div>
+                        <div class="mockup-stat-sub">34 sessions</div>
+                      </div>
                     </div>
-                    <div class="mockup-stat-val">18.4h</div>
-                    <div class="mockup-stat-sub">52.8h all-time · 34 sessions</div>
                   </div>
 
-                  <div class="mockup-stat-card stat-indigo">
-                    <div class="mockup-stat-head">
-                      <span>Cumulative GPA</span>
-                      <span class="mockup-stat-icon">📈</span>
+                  <div class="mockup-stat-card">
+                    <div class="mockup-stat-inner">
+                      <div class="mockup-stat-icon-circle">🎯</div>
+                      <div class="mockup-stat-body">
+                        <div class="mockup-stat-head">Cumulative GPA</div>
+                        <div class="mockup-stat-val">1.22</div>
+                        <div class="mockup-stat-sub">Avg 94.2% · Excellent</div>
+                      </div>
                     </div>
-                    <div class="mockup-stat-val" style="color: #10b981;">1.22</div>
-                    <div class="mockup-stat-sub">Avg 94.2% · 5/5 graded</div>
                   </div>
 
-                  <div class="mockup-stat-card stat-purple">
-                    <div class="mockup-stat-head">
-                      <span>Study Streak</span>
-                      <span class="mockup-stat-icon">🔥</span>
+                  <div class="mockup-stat-card">
+                    <div class="mockup-stat-inner">
+                      <div class="mockup-stat-icon-circle">🔥</div>
+                      <div class="mockup-stat-body">
+                        <div class="mockup-stat-head">Study Streak</div>
+                        <div class="mockup-stat-val">8 days</div>
+                        <div class="mockup-stat-sub">Best: 14 days</div>
+                      </div>
                     </div>
-                    <div class="mockup-stat-val">8 days</div>
-                    <div class="mockup-stat-sub">Best: 14 days</div>
                   </div>
                 </div>
 
@@ -189,12 +197,12 @@ export class LandingPage {
                   </div>
                 </div>
 
-                <!-- Mockup Subject Cards Grid -->
+                <!-- Mockup Subject Cards Grid (Matching Real App) -->
                 <div class="mockup-cards-grid">
                   <!-- Subject 1: CS 102 -->
-                  <div class="mockup-subject-card" style="--card-accent: #6366f1;">
+                  <div class="mockup-subject-card">
                     <div class="mockup-card-top">
-                      <div class="mockup-color-bar" style="background: #6366f1;"></div>
+                      <div class="mockup-card-icon-badge">CS</div>
                       <div class="mockup-card-title-group">
                         <div class="mockup-card-code">CS 102</div>
                         <div class="mockup-card-name">Data Structures & Algorithms</div>
@@ -209,7 +217,7 @@ export class LandingPage {
                       </div>
                       <div class="mockup-m-item">
                         <span class="m-label">Standing</span>
-                        <span class="mockup-standing-pill excellent">● 1.00 (96.4%)</span>
+                        <span class="mockup-standing-pill excellent">1.00 (96.4%)</span>
                       </div>
                       <div class="mockup-m-item">
                         <span class="m-label">Plan</span>
@@ -219,9 +227,9 @@ export class LandingPage {
                   </div>
 
                   <!-- Subject 2: MATH 21 -->
-                  <div class="mockup-subject-card" style="--card-accent: #8b5cf6;">
+                  <div class="mockup-subject-card">
                     <div class="mockup-card-top">
-                      <div class="mockup-color-bar" style="background: #8b5cf6;"></div>
+                      <div class="mockup-card-icon-badge">MA</div>
                       <div class="mockup-card-title-group">
                         <div class="mockup-card-code">MATH 21</div>
                         <div class="mockup-card-name">Discrete Mathematics</div>
@@ -236,7 +244,7 @@ export class LandingPage {
                       </div>
                       <div class="mockup-m-item">
                         <span class="m-label">Standing</span>
-                        <span class="mockup-standing-pill superior">● 1.25 (93.1%)</span>
+                        <span class="mockup-standing-pill superior">1.25 (93.1%)</span>
                       </div>
                       <div class="mockup-m-item">
                         <span class="m-label">Plan</span>
@@ -246,12 +254,12 @@ export class LandingPage {
                   </div>
 
                   <!-- Subject 3: PHYS 11 -->
-                  <div class="mockup-subject-card" style="--card-accent: #06b6d4;">
+                  <div class="mockup-subject-card">
                     <div class="mockup-card-top">
-                      <div class="mockup-color-bar" style="background: #06b6d4;"></div>
+                      <div class="mockup-card-icon-badge">PH</div>
                       <div class="mockup-card-title-group">
                         <div class="mockup-card-code">PHYS 11</div>
-                        <div class="mockup-card-name">General Physics II (Electromagnetism)</div>
+                        <div class="mockup-card-name">General Physics II</div>
                         <div class="mockup-card-prof">Dr. Aris Chen</div>
                       </div>
                     </div>
@@ -263,7 +271,7 @@ export class LandingPage {
                       </div>
                       <div class="mockup-m-item">
                         <span class="m-label">Standing</span>
-                        <span class="mockup-standing-pill verygood">● 1.50 (90.8%)</span>
+                        <span class="mockup-standing-pill verygood">1.50 (90.8%)</span>
                       </div>
                       <div class="mockup-m-item">
                         <span class="m-label">Plan</span>
@@ -419,7 +427,7 @@ export class LandingPage {
               <div class="step-badge">01</div>
               <h3 class="step-title">Add your subjects</h3>
               <p class="step-desc">
-                Create courses with codes, instructor names, semester tags, and custom color accents. Upload your syllabi and grade category breakdown weights.
+                Create courses with codes, instructor names, semester tags, and customizable category breakdown weights. Upload your syllabi and target grade solvers.
               </p>
             </div>
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +12,7 @@
   <script>
     // Immediate theme and accessibility bootstrap to eliminate startup flash
     try {
-      var storedTheme = localStorage.getItem('aven_theme') || 'dark';
+      var storedTheme = localStorage.getItem('aven_theme') || 'light';
       document.documentElement.setAttribute('data-theme', storedTheme);
       if (localStorage.getItem('aven_neutral_colors') === 'true') {
         document.documentElement.setAttribute('data-neutral-colors', 'true');
