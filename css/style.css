@@ -2,8 +2,6 @@
    Aven Design System - Linear & Modern SaaS Hybrid Aesthetic
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&display=swap');
-
 :root {
   /* Color Palette - Dark Theme (Default) */
   --bg-app: #0b0c0e;

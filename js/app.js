@@ -5,13 +5,6 @@
 
 import { store, events } from './store.js';
 import { supabase, getCurrentSession, signOut, onAuthStateChange } from './supabase.js';
-import { AuthController } from './auth.js';
-import { LandingPage } from './landing.js';
-import { renderSubjectsView } from './subjects.js';
-import { renderTrackerView } from './tracker.js';
-import { renderGradesView } from './grades.js';
-import { renderPlansView } from './plans.js';
-import { renderSettingsView } from './settings.js';
 import { renderStartupSkeleton } from './ui/skeleton.js';
 
 class AvenApp {
@@ -25,27 +18,27 @@ class AvenApp {
       subjects: {
         title: 'Subjects',
         subtitle: 'Track your enrolled courses, study progress, and academic standing at a glance.',
-        renderer: renderSubjectsView
+        load: () => import('./subjects.js').then(m => m.renderSubjectsView)
       },
       tracker: {
         title: 'Study Tracker',
         subtitle: 'Log study sessions, track your activity heatmap, and keep your streak going.',
-        renderer: renderTrackerView
+        load: () => import('./tracker.js').then(m => m.renderTrackerView)
       },
       grades: {
         title: 'Grades',
         subtitle: 'Calculate weighted grades by category, and see exactly what you need on the final.',
-        renderer: renderGradesView
+        load: () => import('./grades.js').then(m => m.renderGradesView)
       },
       plans: {
         title: 'Study Plans',
         subtitle: 'Upload and view your syllabi, schedules, and study guides in one place.',
-        renderer: renderPlansView
+        load: () => import('./plans.js').then(m => m.renderPlansView)
       },
       settings: {
         title: 'Settings',
         subtitle: 'Manage your academic defaults, grading scale, account, and data.',
-        renderer: renderSettingsView
+        load: () => import('./settings.js').then(m => m.renderSettingsView)
       }
     };
 
@@ -202,11 +195,12 @@ class AvenApp {
     }
   }
 
-  showLandingView() {
+  async showLandingView() {
     if (this.authScreen) this.authScreen.classList.add('hidden');
     if (this.landingScreen) {
       this.landingScreen.classList.remove('hidden');
       if (!this.landingPage) {
+        const { LandingPage } = await import('./landing.js');
         this.landingPage = new LandingPage(
           (isSignUp) => {
             window.location.hash = isSignUp ? 'signup' : 'signin';
@@ -223,11 +217,12 @@ class AvenApp {
     }
   }
 
-  showAuthView(isSignUp = false) {
+  async showAuthView(isSignUp = false) {
     if (this.landingScreen) this.landingScreen.classList.add('hidden');
     if (this.authScreen) {
       this.authScreen.classList.remove('hidden');
       if (!this.authController) {
+        const { AuthController } = await import('./auth.js');
         this.authController = new AuthController(
           async (session) => {
             this.setStartupStatus('Connecting to cloud...');
@@ -263,7 +258,7 @@ class AvenApp {
     if (emailEl) emailEl.textContent = email;
   }
 
-  navigateTo(pageKey, targetSection = null) {
+  async navigateTo(pageKey, targetSection = null) {
     if (!this.pages[pageKey]) pageKey = 'subjects';
     this.currentPage = pageKey;
     window.location.hash = pageKey;
@@ -287,8 +282,9 @@ class AvenApp {
     }
 
     // Render current view with fluid entrance animation
-    if (this.mainContainer && pageConfig.renderer) {
-      pageConfig.renderer(this.mainContainer);
+    if (this.mainContainer && pageConfig.load) {
+      const renderer = await pageConfig.load();
+      renderer(this.mainContainer);
       this.mainContainer.classList.remove('view-enter');
       void this.mainContainer.offsetWidth; // Trigger reflow for clean re-animation
       this.mainContainer.classList.add('view-enter');

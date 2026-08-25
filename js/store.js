@@ -262,57 +262,40 @@ class Store {
         }, { onConflict: 'user_id' });
       }
 
-      // 3. Fetch Subjects
-      const { data: subjects } = await supabase
-        .from('subjects')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      // 3. Parallel fetch of all entities for maximum startup throughput
+      const [
+        subjectsRes,
+        configsRes,
+        sessionsRes,
+        categoriesRes,
+        entriesRes,
+        plansRes
+      ] = await Promise.all([
+        supabase.from('subjects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('subject_grade_configs').select('*').eq('user_id', userId),
+        supabase.from('study_sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('grade_categories').select('*').eq('user_id', userId).order('sort_index', { ascending: true }).order('created_at', { ascending: true }),
+        supabase.from('grade_entries').select('*').eq('user_id', userId),
+        supabase.from('study_plans').select('*').eq('user_id', userId)
+      ]);
 
-      this.state.subjects = subjects || [];
+      this.state.subjects = subjectsRes.data || [];
+      this.state.grade_configs = configsRes.data || [];
+      this.state.sessions = sessionsRes.data || [];
+      this.state.plans = plansRes.data || [];
 
-      // 4. Fetch Subject Grade Configs
-      const { data: configs } = await supabase
-        .from('subject_grade_configs')
-        .select('*')
-        .eq('user_id', userId);
-
-      this.state.grade_configs = configs || [];
-
-      // 5. Fetch Study Sessions
-      const { data: sessions } = await supabase
-        .from('study_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      this.state.sessions = sessions || [];
-
-      // 6. Fetch Grade Categories & Entries
-      let { data: categories, error: catFetchErr } = await supabase
-        .from('grade_categories')
-        .select('*')
-        .eq('user_id', userId)
-        .order('sort_index', { ascending: true })
-        .order('created_at', { ascending: true });
-
-      if (catFetchErr) {
-        console.warn('Grade categories sort_index order query warning, falling back to natural order:', catFetchErr.message);
-        const fallbackRes = await supabase
-          .from('grade_categories')
-          .select('*')
-          .eq('user_id', userId);
+      let categories = categoriesRes.data;
+      if (categoriesRes.error) {
+        console.warn('Grade categories sort_index order query warning, falling back to natural order:', categoriesRes.error.message);
+        const fallbackRes = await supabase.from('grade_categories').select('*').eq('user_id', userId);
         categories = fallbackRes.data;
       }
 
-      const { data: entries } = await supabase
-        .from('grade_entries')
-        .select('*')
-        .eq('user_id', userId);
+      const entries = entriesRes.data || [];
 
       if (categories) {
         const entriesByCat = {};
-        (entries || []).forEach(e => {
+        entries.forEach(e => {
           if (!entriesByCat[e.category_id]) entriesByCat[e.category_id] = [];
           entriesByCat[e.category_id].push({
             id: e.id,
@@ -330,14 +313,6 @@ class Store {
       } else {
         this.state.grades = [];
       }
-
-      // 7. Fetch Study Plans
-      const { data: plans } = await supabase
-        .from('study_plans')
-        .select('*')
-        .eq('user_id', userId);
-
-      this.state.plans = plans || [];
 
       this.lastSyncedAt = Date.now();
       this.setSyncStatus('synced', 'Workspace synchronized');
