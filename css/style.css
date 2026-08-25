@@ -93,18 +93,18 @@
    Refined Light Mode (High Contrast & Apple Glassmorphism)
    ========================================================================== */
 [data-theme="light"] {
-  /* Warm Sage/Khaki Canvas & Crisp Off-White Surfaces (FeedBacker Exact Match) */
+  /* Warm Sage/Khaki Canvas & Soft Warm Linen Card Surfaces */
   --bg-app: #c5bfa8;                     /* Deep, warm earthy sage canvas */
   --bg-sidebar: #e9e4d4;                 /* Soft distinct cream-sage navigation rail */
-  --bg-surface: #ffffff;                  /* Pure white cards (reference exact match) */
-  --bg-surface-elevated: #ffffff;        /* Pure white elevated overlays */
-  --bg-surface-hover: #f1ede0;           /* Soft warm hover surface */
+  --bg-surface: #f5f3ec;                  /* Soft warm linen card surface */
+  --bg-surface-elevated: #fbf9f4;        /* Elevated overlay surface */
+  --bg-surface-hover: #ede9dc;           /* Soft warm hover surface */
   --bg-input: #ffffff;                   /* Form inputs */
 
   /* Subtle Warm Organic Borders */
-  --border-subtle: rgba(45, 50, 35, 0.07);
-  --border-default: rgba(45, 50, 35, 0.12);
-  --border-strong: rgba(45, 50, 35, 0.20);
+  --border-subtle: rgba(45, 50, 35, 0.08);
+  --border-default: rgba(45, 50, 35, 0.14);
+  --border-strong: rgba(45, 50, 35, 0.22);
   --border-focus: #141512;
 
   /* High-Contrast Deep Charcoal Typography */
@@ -138,10 +138,10 @@
 
   /* Opaque Solid Surface System (Glassmorphism Removed) */
   --bg-glass-sidebar: #e9e4d4;
-  --bg-glass-modal: #ffffff;
-  --bg-glass-modal-footer: #ffffff;
-  --bg-glass-dropdown: #ffffff;
-  --bg-glass-floating: #ffffff;
+  --bg-glass-modal: #fbf9f4;
+  --bg-glass-modal-footer: #f5f3ec;
+  --bg-glass-dropdown: #fbf9f4;
+  --bg-glass-floating: #fbf9f4;
   --glass-blur: none;
   --glass-blur-modal: none;
   --glass-blur-sm: none;
@@ -156,13 +156,36 @@
   --heat-level-4: #3e4424;
   --heat-border: rgba(45, 50, 35, 0.08);
 
-  --border-card: 1px solid rgba(255, 255, 255, 0.90);
+  --border-card: 2px solid #ffffff;
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.10);
   --shadow-modal: 0 20px 50px rgba(0, 0, 0, 0.14);
   --shadow-glow: 0 0 20px rgba(80, 85, 55, 0.18);
+}
+
+/* Crisp Bright White Border on Cards Throughout Light Theme */
+[data-theme="light"] .stat-card,
+[data-theme="light"] .subject-card,
+[data-theme="light"] .tool-card,
+[data-theme="light"] .browser-panel-content,
+[data-theme="light"] .category-breakdown-section,
+[data-theme="light"] .grade-summary-box,
+[data-theme="light"] .grades-subject-list,
+[data-theme="light"] .heatmap-block,
+[data-theme="light"] .heatmap-container,
+[data-theme="light"] .distribution-card,
+[data-theme="light"] .history-table-container,
+[data-theme="light"] .plans-layout-sidebar,
+[data-theme="light"] .plans-main-content,
+[data-theme="light"] .settings-section,
+[data-theme="light"] .settings-card,
+[data-theme="light"] .modal-card,
+[data-theme="light"] .auth-card,
+[data-theme="light"] .card {
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 4px 18px rgba(45, 50, 35, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
 }
 
 /* Base Reset */
