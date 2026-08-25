@@ -702,69 +702,6 @@ function renderTermTabContent(subject, term, gradeStats) {
         }).join('')}
       </div>
 
-      <!-- Compact Bottom Action Toolbar & Total Configured Weight -->
-      <div class="term-bottom-actions-row">
-        <div class="term-actions-left">
-          <button class="btn btn-primary btn-xs" id="btn-open-add-cat">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            <span>Add Category</span>
-          </button>
-
-          <!-- Export to Excel Dropdown Menu -->
-          <div style="position: relative;">
-            <button class="btn btn-secondary btn-xs btn-grades-export-toggle" title="Export grade report to Excel (.xlsx)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-              </svg>
-              <span>Export</span>
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left: 2px;">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </button>
-            <div class="user-popover grades-export-popover">
-              <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 4px 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 4px;">
-                Export Excel (.xlsx)
-              </div>
-              <button class="popover-item btn-export-current-subject" data-subject-id="${subject.id}">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--success); flex-shrink: 0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                <span>${subject.code || 'Current Subject'} (.xlsx)</span>
-              </button>
-              <button class="popover-item btn-export-all-subjects">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent); flex-shrink: 0;"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-                <span>All Active Subjects (.xlsx)</span>
-              </button>
-            </div>
-          </div>
-
-          ${categories.length === 0 ? `
-            <button class="btn btn-secondary btn-xs btn-quick-use-template" title="Quickly setup standard categories">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-              </svg>
-              <span>Quick Template</span>
-            </button>
-          ` : ''}
-
-          ${term === 'Final' && midtermCategories.length > 0 && categories.length === 0 ? `
-            <button class="btn btn-secondary btn-xs btn-quick-copy-midterm" title="Copy category structure & weights from Midterm">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              <span>Copy Midterm</span>
-            </button>
-          ` : ''}
-        </div>
-
-        <span class="term-weight-summary" style="font-size: 11.5px; color: var(--text-secondary); text-align: right;">
-          Total configured weight: <strong>${termData.totalWeight}%</strong> ${termData.totalWeight === 100 ? '<span style="color: var(--success); font-weight: 600;">✓ (100%)</span>' : `<span style="color: var(--warning);">(Need ${100 - termData.totalWeight}%)</span>`}
-        </span>
-      </div>
-
       <!-- Clean Term Standing Summary -->
       <div class="grade-summary-box" style="--standing-color: ${getStandingColor(termData.percentage)};">
         <div style="display: flex; align-items: center; justify-content: space-between;">
