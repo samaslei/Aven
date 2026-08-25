@@ -123,21 +123,24 @@ export function renderTrackerView(container) {
     }).join('');
 
     const legendHtml = slices.map(slice => {
+      const isOther = slice.id === 'other';
+      const isGeneral = slice.id === 'general';
       return `
-        <div class="dist-legend-item" data-id="${slice.id}">
-          <div class="dist-legend-top">
-            <div class="dist-legend-subject">
-              <span class="dist-color-dot" style="background-color: ${slice.color};"></span>
-              ${slice.code ? `<span class="subject-list-code" style="font-size: 10px; padding: 1px 5px;">${slice.code}</span>` : (!slice.code && slice.id === 'general' ? `<span class="tag-status-archived" style="font-size: 10px; padding: 1px 6px;">General</span>` : '')}
-              <span class="dist-subject-name" title="${slice.name}">${slice.name}</span>
-            </div>
-            <div class="dist-legend-metric">
-              <span class="dist-metric-hours">${slice.hours}h</span>
-              <span class="dist-metric-pct">${slice.percentage.toFixed(1)}%</span>
+        <div class="dist-legend-row" data-id="${slice.id}">
+          <div class="dist-legend-left">
+            <span class="dist-circle-badge" style="background-color: ${slice.color}1c; color: ${slice.color}; border: 1px solid ${slice.color}30;">
+              <span class="dist-circle-core" style="background-color: ${slice.color};"></span>
+            </span>
+            <div class="dist-legend-names">
+              <div class="dist-legend-title-line">
+                ${slice.code ? `<span class="subject-list-code" style="font-size: 10px; padding: 1px 5px;">${slice.code}</span>` : (isOther ? `<span class="tag-status-archived" style="font-size: 10px; padding: 1px 6px;">Aggregate</span>` : (isGeneral ? `<span class="tag-status-archived" style="font-size: 10px; padding: 1px 6px;">General</span>` : ''))}
+                <span class="dist-subject-name" title="${slice.name}">${slice.name}</span>
+              </div>
             </div>
           </div>
-          <div class="dist-progress-track">
-            <div class="dist-progress-fill" style="width: ${slice.percentage}%; background-color: ${slice.color};"></div>
+          <div class="dist-legend-right">
+            <strong class="dist-hours-val">${slice.hours}h</strong>
+            <span class="dist-pct-val">${slice.percentage.toFixed(1)}%</span>
           </div>
         </div>
       `;
