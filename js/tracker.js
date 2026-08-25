@@ -26,6 +26,11 @@ export function renderTrackerView(container) {
   const streakStats = store.getStreakStats();
   const sessions = store.getSessions().sort((a, b) => new Date(b.date + ' ' + (b.created_at || '')) - new Date(a.date + ' ' + (a.created_at || '')));
   const calendarData = store.getYearCalendarMatrix(heatmapYear);
+  const allTimeDist = calculateDistributionStats(sessions, 'all', id => store.getSubjectById(id));
+  const distColorMap = {};
+  allTimeDist.slices.forEach(slice => {
+    distColorMap[slice.id] = slice.color;
+  });
 
   // Set default subject if not set
   if (!selectedSubjectId && activeSubjects.length > 0) {
@@ -516,8 +521,9 @@ export function renderTrackerView(container) {
                 </tr>
               ` : sessions.slice(0, 15).map(s => {
                 const sub = s.subject_id ? store.getSubjectById(s.subject_id) : null;
-                const subName = sub ? sub.name : 'General Study';
-                const subColor = sub ? sub.color : '#94a3b8';
+                const subId = s.subject_id || 'general';
+                const subColor = distColorMap[subId] || (sub && sub.color) || '#8A9A5B';
+                const displayName = sub ? (sub.code ? `${sub.code} ${sub.name}` : sub.name) : 'General Study';
                 const hrs = Math.floor(s.duration / 60);
                 const mins = s.duration % 60;
                 const durText = hrs > 0 ? `${hrs}h ${mins > 0 ? `${mins}m` : ''}` : `${mins}m`;
@@ -525,11 +531,7 @@ export function renderTrackerView(container) {
                 return `
                   <tr>
                     <td>
-                      <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="width: 7px; height: 7px; border-radius: 50%; background-color: ${subColor}; flex-shrink: 0;"></span>
-                        ${sub && sub.code ? `<span class="subject-list-code" style="font-size: 10px; padding: 1px 5px;">${sub.code}</span>` : (!sub ? `<span class="tag-status-archived" style="font-size: 10px; padding: 1px 6px;">General</span>` : '')}
-                        <strong style="color: var(--text-primary); font-size: 13px;">${subName}</strong>
-                      </div>
+                      <span style="color: ${subColor}; font-weight: 600; font-size: 13px;">${displayName}</span>
                     </td>
                     <td style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary);">
                       ${durText}
