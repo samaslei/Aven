@@ -676,19 +676,21 @@ function renderTermTabContent(subject, term, gradeStats) {
                       </tbody>
                       <tfoot>
                         <tr class="cat-totals-row">
-                          <td style="text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">
-                            TOTAL: ${totalScore.toFixed(1)} / ${totalOutOf.toFixed(1)}
+                          <td style="text-align: left;">
+                            <span class="cell-value-text"><strong>TOTAL</strong></span>
                           </td>
-                          <td style="text-align: center; font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text-muted); font-weight: 600;">
-                            ${totalScore.toFixed(1)}
+                          <td style="text-align: center;">
+                            <span class="cell-value-text mono-num" style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600;">${totalScore.toFixed(1)}</span>
                           </td>
-                          <td style="text-align: center; font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text-muted); font-weight: 600;">
-                            ${totalOutOf.toFixed(1)}
+                          <td style="text-align: center;">
+                            <span class="cell-value-text mono-num" style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600;">${totalOutOf.toFixed(1)}</span>
                           </td>
-                          <td style="text-align: center; font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 700; color: ${getStandingColor(catPct)};">
-                            ${catPct !== '—' ? `${catPct}%` : '—'}
+                          <td style="text-align: center;">
+                            <span class="entry-pct-text" style="color: ${getStandingColor(catPct)}; font-weight: 700; font-family: var(--font-numeric); font-variant-numeric: tabular-nums;">
+                              ${catPct !== '—' ? `${catPct}%` : '—'}
+                            </span>
                           </td>
-                          <td></td>
+                          <td style="text-align: right;"></td>
                         </tr>
                       </tfoot>
                     </table>
@@ -1554,7 +1556,7 @@ function attachGradesEvents(container) {
   }
 
   // Drag-and-Drop Category Reordering with smooth FLIP animation
-  const categoryList = container.querySelector('.category-list');
+  const categoryList = container.querySelector('.category-breakdown-list') || container.querySelector('.category-list');
   if (categoryList) {
     let draggedCard = null;
     let isHandleGrabbed = false;
@@ -1564,7 +1566,7 @@ function attachGradesEvents(container) {
       const handle = e.target.closest('.cat-drag-handle');
       if (handle) {
         isHandleGrabbed = true;
-        const card = handle.closest('.category-card');
+        const card = handle.closest('.category-breakdown-section') || handle.closest('.category-card');
         if (card) card.setAttribute('draggable', 'true');
       } else {
         isHandleGrabbed = false;
@@ -1574,12 +1576,12 @@ function attachGradesEvents(container) {
     document.addEventListener('mouseup', () => {
       isHandleGrabbed = false;
       if (categoryList) {
-        categoryList.querySelectorAll('.category-card').forEach(c => c.removeAttribute('draggable'));
+        categoryList.querySelectorAll('.category-breakdown-section, .category-card').forEach(c => c.removeAttribute('draggable'));
       }
     }, { once: true });
 
     categoryList.addEventListener('dragstart', (e) => {
-      const card = e.target.closest('.category-card');
+      const card = e.target.closest('.category-breakdown-section') || e.target.closest('.category-card');
       if (!card || !isHandleGrabbed) {
         e.preventDefault();
         return;
@@ -1602,28 +1604,20 @@ function attachGradesEvents(container) {
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
       if (!draggedCard) return;
 
-      const targetCard = e.target.closest('.category-card');
+      const targetCard = e.target.closest('.category-breakdown-section') || e.target.closest('.category-card');
       if (!targetCard || targetCard === draggedCard) {
         return;
       }
 
-      const cards = Array.from(categoryList.querySelectorAll('.category-card'));
+      const cards = Array.from(categoryList.querySelectorAll('.category-breakdown-section, .category-card'));
       const draggedIdx = cards.indexOf(draggedCard);
       const targetIdx = cards.indexOf(targetCard);
       if (draggedIdx === -1 || targetIdx === -1) return;
 
       const rect = targetCard.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
 
-      let isInsertBefore;
-      if (targetIdx > draggedIdx) {
-        // Dragging forward/downward
-        isInsertBefore = (e.clientY < centerY - 15) && (e.clientX < centerX);
-      } else {
-        // Dragging backward/upward
-        isInsertBefore = (e.clientY < centerY + 15) || (e.clientX < centerX);
-      }
+      let isInsertBefore = e.clientY < centerY;
 
       // Check if position would actually change
       if (isInsertBefore && draggedIdx === targetIdx - 1) return;
@@ -1640,8 +1634,8 @@ function attachGradesEvents(container) {
         categoryList.insertBefore(draggedCard, targetCard.nextSibling);
       }
 
-      // 3. FLIP - Invert & Play (supports both X and Y grid movement)
-      const updatedCards = Array.from(categoryList.querySelectorAll('.category-card'));
+      // 3. FLIP - Invert & Play
+      const updatedCards = Array.from(categoryList.querySelectorAll('.category-breakdown-section, .category-card'));
       updatedCards.forEach(c => {
         const first = firstRects.get(c);
         if (!first) return;
@@ -1667,7 +1661,7 @@ function attachGradesEvents(container) {
 
       currentDragged.classList.remove('is-dragging');
 
-      const cards = Array.from(categoryList.querySelectorAll('.category-card'));
+      const cards = Array.from(categoryList.querySelectorAll('.category-breakdown-section, .category-card'));
       cards.forEach(c => {
         c.removeAttribute('draggable');
         c.style.transition = '';

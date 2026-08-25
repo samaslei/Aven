@@ -7998,9 +7998,12 @@ body.mobile-drawer-locked {
 }
 
 .grade-entries-table .cat-totals-row td {
-  background: var(--bg-surface-hover);
-  border-top: 1px solid var(--border-default);
-  padding: 9px 16px;
+  background: transparent !important;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: none;
+  padding: 11px 16px;
+  color: var(--text-primary);
+  font-size: 13px;
 }
 
 .btn-del-entry {
