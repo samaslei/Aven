@@ -641,6 +641,33 @@ export function renderTrackerView(container) {
         </div>
       </div>
     </div>
+
+    <!-- Confirm Skip Pomodoro Phase Modal -->
+    <div class="modal-overlay" id="pomo-skip-modal">
+      <div class="modal-card" style="max-width: 440px;">
+        <div class="modal-header">
+          <h3 class="modal-title" id="pomo-skip-title">Skip Phase?</h3>
+          <button type="button" class="btn btn-ghost btn-icon close-skip-modal-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p style="margin: 0 0 10px 0; color: var(--text-primary); font-size: 13.5px; line-height: 1.5;" id="pomo-skip-message">
+            Skip to break? Your current focus time won't be counted.
+          </p>
+          <p style="margin: 0; color: var(--text-muted); font-size: 12.5px; line-height: 1.4;">
+            You can resume or restart your timer sequence at any time.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost close-skip-modal-btn">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btn-confirm-skip-phase">Confirm Skip</button>
+        </div>
+      </div>
+    </div>
   `;
 
   attachTrackerEvents(container);
@@ -937,9 +964,40 @@ function attachTrackerEvents(container) {
     });
   }
 
+  // Skip Phase Confirmation Modal Handling
+  const skipModal = container.querySelector('#pomo-skip-modal');
+  const skipTitle = container.querySelector('#pomo-skip-title');
+  const skipMessage = container.querySelector('#pomo-skip-message');
+  const confirmSkipBtn = container.querySelector('#btn-confirm-skip-phase');
+
   const pomoSwitchPhaseBtn = container.querySelector('#btn-pomo-switch-phase');
   if (pomoSwitchPhaseBtn) {
     pomoSwitchPhaseBtn.addEventListener('click', () => {
+      const settings = store.getSettings();
+      const targetCycles = settings.pomodoro_cycles || 4;
+
+      if (pomoPhase === 'focus') {
+        const isLastCycle = pomoCurrentCycle >= targetCycles;
+        if (skipTitle) skipTitle.textContent = isLastCycle ? 'Skip to Long Break?' : 'Skip to Break?';
+        if (skipMessage) skipMessage.textContent = "Skip to break? Your current focus time won't be counted.";
+        if (confirmSkipBtn) confirmSkipBtn.textContent = isLastCycle ? 'Skip to Long Break' : 'Skip to Break';
+      } else {
+        if (skipTitle) skipTitle.textContent = 'Skip to Focus?';
+        if (skipMessage) skipMessage.textContent = 'Skip to focus? This break will end early.';
+        if (confirmSkipBtn) confirmSkipBtn.textContent = 'Skip to Focus';
+      }
+      skipModal?.classList.add('open');
+    });
+  }
+
+  container.querySelectorAll('.close-skip-modal-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      skipModal?.classList.remove('open');
+    });
+  });
+
+  if (confirmSkipBtn) {
+    confirmSkipBtn.addEventListener('click', () => {
       pomoIsRunning = false;
       if (pomoInterval) {
         clearInterval(pomoInterval);
@@ -965,6 +1023,7 @@ function attachTrackerEvents(container) {
         pomoPhase = 'focus';
         pomoTimeRemaining = pomoWorkMins * 60;
       }
+      skipModal?.classList.remove('open');
       renderTrackerView(container);
     });
   }
