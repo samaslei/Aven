@@ -543,22 +543,30 @@ class AvenApp {
 
   setupGlobalEvents() {
     window.addEventListener('hashchange', () => {
-      const hash = window.location.hash.replace('#', '');
+      const fullHash = window.location.hash.replace(/^#/, '');
+      const rawRoute = fullHash.split('?')[0];
       if (this.currentUser) {
-        if (this.pages[hash] && hash !== this.currentPage) {
-          this.navigateTo(hash);
-        } else if (!this.pages[hash]) {
+        if (this.pages[rawRoute] && rawRoute !== this.currentPage) {
+          this.navigateTo(rawRoute);
+        } else if (!this.pages[rawRoute] && !fullHash.startsWith('signin') && !fullHash.startsWith('signup')) {
           this.navigateTo('subjects');
         }
       } else {
-        if (hash === 'signin' || hash === 'auth') {
+        if (rawRoute === 'signin' || rawRoute === 'auth') {
           this.showAuthView(false);
-        } else if (hash === 'signup') {
+        } else if (rawRoute === 'signup') {
           this.showAuthView(true);
         } else {
           this.showLandingView();
         }
       }
+    });
+
+    events.on('app:navigate', ({ page, subjectId, section }) => {
+      if (subjectId) {
+        events.emit('plans:select-subject', subjectId);
+      }
+      this.navigateTo(page, section);
     });
 
     window.addEventListener('keydown', (e) => {

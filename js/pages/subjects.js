@@ -1034,7 +1034,11 @@ function attachSubjectsEvents(container) {
       const subjectId = btn.dataset.subjectId;
       if (subjectId) {
         events.emit('plans:select-subject', subjectId);
-        window.location.hash = `plans?subjectId=${subjectId}`;
+        if (window.avenApp && typeof window.avenApp.navigateTo === 'function') {
+          window.avenApp.navigateTo('plans');
+        } else {
+          window.location.hash = 'plans';
+        }
       }
     });
   });
