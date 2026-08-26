@@ -464,21 +464,23 @@ export function renderTrackerView(container) {
             ${calendarData.totalSessions} sessions &middot; ${calendarData.totalHours}h studied in ${heatmapYear}
           </p>
 
-          <!-- Heatmap body: day labels + 12 month blocks -->
-          <div class="heatmap-body-row">
-            <!-- Day labels (alternating: blank, M, blank, W, blank, F, blank) -->
-            <div class="day-labels-col">
-              <div class="day-label-item"></div>
-              <div class="day-label-item">M</div>
-              <div class="day-label-item"></div>
-              <div class="day-label-item">W</div>
-              <div class="day-label-item"></div>
-              <div class="day-label-item">F</div>
-              <div class="day-label-item"></div>
-            </div>
-            <!-- Month blocks -->
-            <div class="months-area">
-              ${calendarData.months.map(m => renderMonthBlock(m)).join('')}
+          <!-- Heatmap body: day labels + 12 month blocks inside scrollable container -->
+          <div class="heatmap-scroll-container">
+            <div class="heatmap-body-row">
+              <!-- Day labels (alternating: blank, M, blank, W, blank, F, blank) -->
+              <div class="day-labels-col">
+                <div class="day-label-item"></div>
+                <div class="day-label-item">M</div>
+                <div class="day-label-item"></div>
+                <div class="day-label-item">W</div>
+                <div class="day-label-item"></div>
+                <div class="day-label-item">F</div>
+                <div class="day-label-item"></div>
+              </div>
+              <!-- Month blocks -->
+              <div class="months-area">
+                ${calendarData.months.map(m => renderMonthBlock(m)).join('')}
+              </div>
             </div>
           </div>
 

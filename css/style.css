@@ -2001,6 +2001,49 @@ button, input, select, textarea {
   gap: 14px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Scrollable container for the heatmap grid */
+.heatmap-scroll-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 176, 130, 0.35) transparent;
+}
+
+[data-theme="light"] .heatmap-scroll-container {
+  scrollbar-color: rgba(0, 0, 0, 0.20) transparent;
+}
+
+.heatmap-scroll-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.heatmap-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.heatmap-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(168, 176, 130, 0.35);
+  border-radius: 4px;
+}
+
+[data-theme="light"] .heatmap-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.20);
+}
+
+.heatmap-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 176, 130, 0.6);
 }
 
 /* Header: 3-column layout — label | year nav | legend */
@@ -2095,9 +2138,8 @@ button, input, select, textarea {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   box-sizing: border-box;
 }
 
@@ -5077,6 +5119,33 @@ button, input, select, textarea {
   }
   .term-header-row .btn {
     width: 100%;
+  }
+
+  .heatmap-container-card {
+    padding: 16px 14px 14px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .heatmap-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+  }
+
+  .heatmap-legend {
+    width: 100%;
+    justify-content: flex-start;
+    padding-top: 2px;
+  }
+
+  .heatmap-scroll-container {
+    mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
   }
 }
 
