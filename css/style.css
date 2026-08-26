@@ -2734,13 +2734,11 @@ button, input, select, textarea {
 .manual-log-card {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
   width: 100%;
   flex: 1 1 auto;
   min-height: 0;
-}
-
-.manual-log-header-label {
-  margin-bottom: 12px !important;
 }
 
 #manual-session-form {
@@ -2748,7 +2746,7 @@ button, input, select, textarea {
   flex-direction: column;
   width: 100%;
   flex: 1 1 auto;
-  gap: 11px;
+  gap: 10px;
   min-height: 0;
 }
 
@@ -2793,8 +2791,8 @@ button, input, select, textarea {
   width: 100%;
   box-sizing: border-box;
   margin-top: auto;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding-top: 9px;
+  padding-bottom: 9px;
 }
 
 .tool-card-title {
