@@ -25,6 +25,8 @@ let stopwatchElapsed = 0; // seconds for count-up stopwatch
 let pomoIsRunning = false;
 let pomoInterval = null;
 let pomoSubjectId = '';
+let pipWindow = null;
+const isPipSupported = typeof window !== 'undefined' && 'documentPictureInPicture' in window;
 
 export function renderTrackerView(container) {
   const activeSubjects = store.getSubjects(false);
@@ -248,14 +250,48 @@ export function renderTrackerView(container) {
 
   // Render Bentodoro-Style Bento Timer Tile
   function renderPomodoroCard(activeSubjects, pomoTargetCycles) {
+    if (pipWindow && !pipWindow.closed) {
+      return `
+        <div class="tool-card pomodoro-card bento-timer-card pomo-pip-active-card">
+          <div class="pomodoro-header">
+            <div class="pomodoro-header-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>POMODORO</span>
+            </div>
+          </div>
+          <div class="pomo-pip-placeholder-body">
+            <div class="pomo-pip-icon-wrap">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="2"></rect>
+                <rect x="12" y="12" width="8" height="8" rx="1"></rect>
+                <path d="m14 10 4-4"></path>
+                <path d="M14 6h4v4"></path>
+              </svg>
+            </div>
+            <div class="pomo-pip-msg">Timer in Picture-in-Picture</div>
+            <div class="pomo-pip-submsg">Floating above all windows</div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-return-from-pip" style="margin-top: 8px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 14 4 9 9 4"></polyline>
+                <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+              </svg>
+              <span>Return Timer</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
     const isStopwatch = pomoMode === 'stopwatch';
     const totalSecs = (pomoPhase === 'focus' ? pomoWorkMins : (pomoPhase === 'long-break' ? pomoLongBreakMins : pomoShortBreakMins)) * 60;
     const progressPct = isStopwatch ? (pomoIsRunning ? 100 : (stopwatchElapsed > 0 ? 50 : 0)) : Math.min(100, Math.max(0, ((totalSecs - pomoTimeRemaining) / totalSecs) * 100));
-    const phaseLabel = pomoPhase === 'focus' ? '25M FOCUS' : (pomoPhase === 'long-break' ? '15M LONG BREAK' : '5M BREAK');
 
     return `
       <div class="tool-card pomodoro-card bento-timer-card">
-        <!-- Top Row: Title & 3-Way Mode Switch (Classic / Reverse / Stopwatch) -->
+        <!-- Top Row: Title & 3-Way Mode Switch + Popout PiP -->
         <div class="pomodoro-header">
           <div class="pomodoro-header-label">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -265,11 +301,23 @@ export function renderTrackerView(container) {
             <span>POMODORO</span>
           </div>
 
-          <!-- 3-Way Mode Toggle: Classic vs Reverse vs Stopwatch -->
-          <div class="pomo-mode-switch" id="pomo-mode-switch" title="Toggle Timer Mode">
-            <button type="button" class="pomo-mode-btn ${pomoMode === 'classic' ? 'active' : ''}" data-mode="classic">Classic</button>
-            <button type="button" class="pomo-mode-btn ${pomoMode === 'reverse' ? 'active' : ''}" data-mode="reverse">Reverse</button>
-            <button type="button" class="pomo-mode-btn ${pomoMode === 'stopwatch' ? 'active' : ''}" data-mode="stopwatch">Stopwatch</button>
+          <!-- 3-Way Mode Toggle + Popout PiP Action -->
+          <div class="pomo-header-actions">
+            <div class="pomo-mode-switch" id="pomo-mode-switch" title="Toggle Timer Mode">
+              <button type="button" class="pomo-mode-btn ${pomoMode === 'classic' ? 'active' : ''}" data-mode="classic">Classic</button>
+              <button type="button" class="pomo-mode-btn ${pomoMode === 'reverse' ? 'active' : ''}" data-mode="reverse">Reverse</button>
+              <button type="button" class="pomo-mode-btn ${pomoMode === 'stopwatch' ? 'active' : ''}" data-mode="stopwatch">Stopwatch</button>
+            </div>
+            ${isPipSupported ? `
+              <button type="button" class="pomo-pip-btn" id="btn-pomo-pip" title="Pop out floating timer (Picture-in-Picture)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="2"></rect>
+                  <rect x="12" y="12" width="8" height="8" rx="1"></rect>
+                  <path d="m14 10 4-4"></path>
+                  <path d="M14 6h4v4"></path>
+                </svg>
+              </button>
+            ` : ''}
           </div>
         </div>
 
@@ -788,6 +836,212 @@ function attachTrackerEvents(container) {
     });
   });
 
+  async function openPipTimer() {
+    if (!isPipSupported) return;
+    try {
+      pipWindow = await window.documentPictureInPicture.requestWindow({
+        width: 320,
+        height: 200
+      });
+
+      const theme = document.documentElement.getAttribute('data-theme') || 'pure-black';
+      pipWindow.document.documentElement.setAttribute('data-theme', theme);
+      pipWindow.document.title = 'Aven Floating Timer';
+
+      [...document.styleSheets].forEach((styleSheet) => {
+        try {
+          const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+          const style = pipWindow.document.createElement('style');
+          style.textContent = cssRules;
+          pipWindow.document.head.appendChild(style);
+        } catch (e) {
+          const link = pipWindow.document.createElement('link');
+          link.rel = 'stylesheet';
+          link.type = styleSheet.type;
+          link.media = styleSheet.media;
+          link.href = styleSheet.href;
+          pipWindow.document.head.appendChild(link);
+        }
+      });
+
+      const pipCustomStyle = pipWindow.document.createElement('style');
+      pipCustomStyle.textContent = `
+        body {
+          margin: 0;
+          padding: 12px 14px;
+          background: var(--bg-surface, #000);
+          color: var(--text-primary, #fff);
+          font-family: var(--font-sans, system-ui, sans-serif);
+          box-sizing: border-box;
+          overflow: hidden;
+          user-select: none;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          height: 100vh;
+        }
+        .pip-timer-container {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          height: 100%;
+          justify-content: space-between;
+        }
+        .pip-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .pip-time-display {
+          font-family: var(--font-numeric);
+          font-size: 40px;
+          font-weight: 800;
+          text-align: center;
+          line-height: 1;
+          letter-spacing: -0.03em;
+          font-variant-numeric: tabular-nums;
+        }
+        .pip-controls {
+          display: flex;
+          gap: 6px;
+        }
+        .pip-controls .btn {
+          flex: 1;
+          height: 32px;
+          font-size: 12px;
+          font-weight: 700;
+          padding: 0 8px;
+        }
+      `;
+      pipWindow.document.head.appendChild(pipCustomStyle);
+
+      renderPipContent();
+
+      pipWindow.addEventListener('pagehide', () => {
+        pipWindow = null;
+        renderTrackerView(container);
+      });
+
+      renderTrackerView(container);
+    } catch (err) {
+      console.error('Failed to open PiP window:', err);
+      window.avenApp?.showToast('Unable to open Picture-in-Picture window.', 'error');
+    }
+  }
+
+  function renderPipContent() {
+    if (!pipWindow || pipWindow.closed) return;
+    const isStopwatch = pomoMode === 'stopwatch';
+    const settings = store.getSettings();
+    const targetCycles = settings.pomodoro_cycles || 4;
+    const timeStr = formatMinutesAndSeconds(isStopwatch ? stopwatchElapsed : pomoTimeRemaining);
+
+    pipWindow.document.body.innerHTML = `
+      <div class="pip-timer-container">
+        <div class="pip-header">
+          ${isStopwatch ? `
+            <div class="pomo-phase-badge focus-mode">
+              <span class="pomo-phase-dot"></span>
+              <span>STOPWATCH</span>
+            </div>
+          ` : `
+            <div class="pomo-phase-badge ${pomoPhase === 'focus' ? 'focus-mode' : (pomoPhase === 'long-break' ? 'long-break-mode' : 'break-mode')}">
+              <span class="pomo-phase-dot"></span>
+              <span>${pomoPhase === 'focus' ? 'Focus' : (pomoPhase === 'long-break' ? 'Long Break' : 'Break')} &middot; ${pomoCurrentCycle}/${targetCycles}</span>
+            </div>
+          `}
+          <span style="font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em;">AVEN</span>
+        </div>
+
+        <div class="pip-time-display" id="pip-time-display">${timeStr}</div>
+
+        <div class="pip-controls">
+          <button type="button" class="btn ${pomoIsRunning ? 'btn-secondary' : 'btn-primary'}" id="btn-pip-toggle">
+            ${pomoIsRunning ? 'Pause' : (isStopwatch && stopwatchElapsed > 0 ? 'Resume' : 'Start')}
+          </button>
+          ${!isStopwatch ? `
+            <button type="button" class="btn btn-secondary" id="btn-pip-skip">
+              Skip
+            </button>
+          ` : `
+            <button type="button" class="btn btn-secondary" id="btn-pip-stop" style="${stopwatchElapsed > 0 ? 'color: var(--danger);' : ''}">
+              ${pomoIsRunning || stopwatchElapsed > 0 ? 'Stop & Log' : 'Reset'}
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+
+    const pipToggle = pipWindow.document.querySelector('#btn-pip-toggle');
+    if (pipToggle) {
+      pipToggle.addEventListener('click', () => {
+        if (pomoIsRunning) {
+          pomoIsRunning = false;
+          if (pomoInterval) {
+            clearInterval(pomoInterval);
+            pomoInterval = null;
+          }
+        } else {
+          pomoIsRunning = true;
+          if (pomoInterval) clearInterval(pomoInterval);
+          pomoInterval = setInterval(tickPomodoro, 1000);
+        }
+        renderPipContent();
+      });
+    }
+
+    const pipSkip = pipWindow.document.querySelector('#btn-pip-skip');
+    if (pipSkip) {
+      pipSkip.addEventListener('click', () => {
+        const s = store.getSettings();
+        const tc = s.pomodoro_cycles || 4;
+        if (pomoPhase === 'focus') {
+          if (pomoCurrentCycle >= tc) {
+            pomoPhase = 'long-break';
+            pomoTimeRemaining = pomoLongBreakMins * 60;
+          } else {
+            pomoPhase = 'break';
+            pomoTimeRemaining = pomoShortBreakMins * 60;
+          }
+        } else if (pomoPhase === 'break') {
+          pomoCurrentCycle++;
+          pomoPhase = 'focus';
+          pomoTimeRemaining = pomoWorkMins * 60;
+        } else {
+          pomoCurrentCycle = 1;
+          pomoPhase = 'focus';
+          pomoTimeRemaining = pomoWorkMins * 60;
+        }
+        renderPipContent();
+      });
+    }
+
+    const pipStop = pipWindow.document.querySelector('#btn-pip-stop');
+    if (pipStop) {
+      pipStop.addEventListener('click', () => {
+        pomoIsRunning = false;
+        if (pomoInterval) {
+          clearInterval(pomoInterval);
+          pomoInterval = null;
+        }
+        if (stopwatchElapsed >= 30) {
+          const mins = Math.max(1, Math.round(stopwatchElapsed / 60));
+          const todayStr = new Date().toISOString().split('T')[0];
+          store.saveSession({
+            subject_id: pomoSubjectId || null,
+            duration: mins,
+            date: todayStr,
+            notes: 'Stopwatch Session'
+          });
+          const sub = pomoSubjectId ? store.getSubjectById(pomoSubjectId) : null;
+          window.avenApp?.showToast(`Logged ${mins} min stopwatch session${sub ? ` for ${sub.name}` : ''}!`, 'success');
+        }
+        stopwatchElapsed = 0;
+        renderPipContent();
+      });
+    }
+  }
+
   function notifyPhaseTransition(title, body) {
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
       try {
@@ -810,6 +1064,10 @@ function attachTrackerEvents(container) {
       if (timeDisplay) {
         timeDisplay.textContent = formatMinutesAndSeconds(stopwatchElapsed);
       }
+      if (pipWindow && !pipWindow.closed) {
+        const pipTime = pipWindow.document.querySelector('#pip-time-display');
+        if (pipTime) pipTime.textContent = formatMinutesAndSeconds(stopwatchElapsed);
+      }
     } else {
       if (pomoTimeRemaining > 0) {
         pomoTimeRemaining--;
@@ -817,6 +1075,10 @@ function attachTrackerEvents(container) {
         const progressFill = container.querySelector('#pomo-progress-fill');
         if (timeDisplay) {
           timeDisplay.textContent = formatMinutesAndSeconds(pomoTimeRemaining);
+        }
+        if (pipWindow && !pipWindow.closed) {
+          const pipTime = pipWindow.document.querySelector('#pip-time-display');
+          if (pipTime) pipTime.textContent = formatMinutesAndSeconds(pomoTimeRemaining);
         }
         if (progressFill) {
           const totalSecs = (pomoPhase === 'focus' ? pomoWorkMins : (pomoPhase === 'long-break' ? pomoLongBreakMins : pomoShortBreakMins)) * 60;
@@ -878,9 +1140,28 @@ function attachTrackerEvents(container) {
             pomoInterval = null;
           }
         }
+        if (pipWindow && !pipWindow.closed) {
+          renderPipContent();
+        }
         renderTrackerView(container);
       }
     }
+  }
+
+  const pomoPipBtn = container.querySelector('#btn-pomo-pip');
+  if (pomoPipBtn) {
+    pomoPipBtn.addEventListener('click', openPipTimer);
+  }
+
+  const returnPipBtn = container.querySelector('#btn-return-from-pip');
+  if (returnPipBtn) {
+    returnPipBtn.addEventListener('click', () => {
+      if (pipWindow && !pipWindow.closed) {
+        pipWindow.close();
+      }
+      pipWindow = null;
+      renderTrackerView(container);
+    });
   }
 
   const pomoToggleBtn = container.querySelector('#btn-pomo-toggle');

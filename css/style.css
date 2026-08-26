@@ -2758,6 +2758,69 @@ button, input, select, textarea {
   border-color: var(--border-default);
 }
 
+/* Picture-in-Picture Button & Placeholder State */
+.pomo-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pomo-pip-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-hover);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.pomo-pip-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-surface);
+}
+
+.pomo-pip-placeholder-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 12px;
+  gap: 6px;
+}
+
+.pomo-pip-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--accent-surface);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  animation: pulse-glow 2.5s infinite ease-in-out;
+}
+
+.pomo-pip-msg {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pomo-pip-submsg {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .tracker-tools-right-col {
   display: flex;
   flex-direction: column;
