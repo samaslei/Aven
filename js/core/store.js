@@ -6,14 +6,14 @@
  */
 
 import { supabase, getCurrentUser, deleteAccount as deleteSupabaseAccount } from './supabase.js';
-import { events } from './core/events.js';
+import { events } from './events.js';
 import {
   YEAR_LEVELS,
   SEMESTERS,
   DEFAULT_COLOR_SWATCHES,
   GRADE_CATEGORIES,
   PHILIPPINE_GRADE_SCALE
-} from './domain/scale-definitions.js';
+} from '../domain/scale-definitions.js';
 import {
   getPhilippineGrade,
   getGradeStandingTier,
@@ -21,13 +21,13 @@ import {
   getStandingClass,
   calculateTermGradeBreakdown,
   calculateSubjectGradeBreakdown
-} from './domain/grade-calculator.js';
+} from '../domain/grade-calculator.js';
 import {
   calculateStreakStats,
   generateYearCalendarMatrix,
   calculateMilestoneData,
   calculateDistributionStats
-} from './domain/tracker-calculator.js';
+} from '../domain/tracker-calculator.js';
 
 // Re-export domain constants & functions for full backward compatibility
 export {
