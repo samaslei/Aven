@@ -1429,14 +1429,29 @@ button, input, select, textarea {
   width: 36px;
   height: 36px;
   border-radius: var(--radius-full);
-  background: rgba(80, 85, 55, 0.08);
-  color: var(--olive-deep);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 13px;
   flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+}
+
+[data-theme="light"] .subject-icon-badge,
+[data-theme="pure-white"] .subject-icon-badge {
+  background: rgba(80, 85, 55, 0.09);
+  color: #444930;
+  border-color: transparent;
+}
+
+[data-theme="dark"] .subject-icon-badge,
+[data-theme="pure-black"] .subject-icon-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(245, 243, 236, 0.90);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .subject-title-area {
