@@ -303,6 +303,33 @@ export function renderPlansView(container) {
         </form>
       </div>
     </div>
+
+    <!-- Confirm Delete Study Plan Modal -->
+    <div class="modal-overlay" id="plan-delete-modal">
+      <div class="modal-card" style="max-width: 440px;">
+        <div class="modal-header">
+          <h3 class="modal-title" style="color: var(--danger);">Delete Study Plan</h3>
+          <button class="btn btn-ghost btn-icon close-delete-plan-modal-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p style="margin: 0 0 10px 0; color: var(--text-primary); font-size: 13.5px; line-height: 1.5;">
+            Are you sure you want to delete <strong id="delete-plan-name-display">this study plan</strong>?
+          </p>
+          <p style="margin: 0; color: var(--text-muted); font-size: 12.5px; line-height: 1.4;">
+            This action permanently removes the interactive document and cannot be undone.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost close-delete-plan-modal-btn">Cancel</button>
+          <button type="button" class="btn btn-danger" id="btn-confirm-delete-plan">Delete Plan</button>
+        </div>
+      </div>
+    </div>
   `;
 
   attachPlansEvents(container);
@@ -444,12 +471,35 @@ function attachPlansEvents(container) {
     });
   }
 
-  // Delete Plan
+  // Delete Confirmation Modal Handling
+  const deleteModal = container.querySelector('#plan-delete-modal');
+  const deletePlanNameDisplay = container.querySelector('#delete-plan-name-display');
+
   container.querySelector('#btn-delete-plan')?.addEventListener('click', () => {
+    if (!selectedPlanId) return;
+    const plan = store.getStudyPlanById(selectedPlanId);
+    if (!plan) return;
+
+    if (deletePlanNameDisplay) {
+      deletePlanNameDisplay.textContent = `"${plan.title}"`;
+    }
+    deleteModal?.classList.add('open');
+  });
+
+  container.querySelectorAll('.close-delete-plan-modal-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      deleteModal?.classList.remove('open');
+    });
+  });
+
+  container.querySelector('#btn-confirm-delete-plan')?.addEventListener('click', () => {
     if (selectedPlanId) {
+      const planToDelete = store.getStudyPlanById(selectedPlanId);
+      const planTitle = planToDelete ? planToDelete.title : 'Study plan';
       store.deleteStudyPlan(selectedPlanId);
       selectedPlanId = null;
-      window.avenApp?.showToast('Study plan deleted', 'info');
+      deleteModal?.classList.remove('open');
+      window.avenApp?.showToast(`Deleted "${planTitle}"`, 'info');
       renderPlansView(container);
     }
   });
