@@ -3,8 +3,8 @@
  * Integrated with Supabase Auth, Cloud Sync, and Local Data Migration
  */
 
-import { store, events } from './store.js';
-import { supabase, getCurrentSession, signOut, onAuthStateChange } from './supabase.js';
+import { store, events } from './core/store.js';
+import { supabase, getCurrentSession, signOut, onAuthStateChange } from './core/supabase.js';
 import { renderStartupSkeleton } from './ui/skeleton.js';
 
 function extractAuthUrlParams() {
@@ -42,27 +42,27 @@ class AvenApp {
       subjects: {
         title: 'Subjects',
         subtitle: 'Track your enrolled courses, study progress, and academic standing at a glance.',
-        load: () => import('./subjects.js').then(m => m.renderSubjectsView)
+        load: () => import('./pages/subjects.js').then(m => m.renderSubjectsView)
       },
       tracker: {
         title: 'Study Tracker',
         subtitle: 'Log study sessions, track your activity heatmap, and keep your streak going.',
-        load: () => import('./tracker.js').then(m => m.renderTrackerView)
+        load: () => import('./pages/tracker.js').then(m => m.renderTrackerView)
       },
       grades: {
         title: 'Grades',
         subtitle: 'Calculate weighted grades by category, and see exactly what you need on the final.',
-        load: () => import('./grades.js').then(m => m.renderGradesView)
+        load: () => import('./pages/grades.js').then(m => m.renderGradesView)
       },
       plans: {
         title: 'Study Plans',
         subtitle: 'Upload and view your syllabi, schedules, and study guides in one place.',
-        load: () => import('./plans.js').then(m => m.renderPlansView)
+        load: () => import('./pages/plans.js').then(m => m.renderPlansView)
       },
       settings: {
         title: 'Settings',
         subtitle: 'Manage your academic defaults, grading scale, account, and data.',
-        load: () => import('./settings.js').then(m => m.renderSettingsView)
+        load: () => import('./pages/settings.js').then(m => m.renderSettingsView)
       }
     };
 
@@ -254,7 +254,7 @@ class AvenApp {
     if (this.landingScreen) {
       this.landingScreen.classList.remove('hidden');
       if (!this.landingPage) {
-        const { LandingPage } = await import('./landing.js');
+        const { LandingPage } = await import('./pages/landing.js');
         this.landingPage = new LandingPage(
           (isSignUp) => {
             window.location.hash = isSignUp ? 'signup' : 'signin';
@@ -276,7 +276,7 @@ class AvenApp {
     if (this.authScreen) {
       this.authScreen.classList.remove('hidden');
       if (!this.authController) {
-        const { AuthController } = await import('./auth.js');
+        const { AuthController } = await import('./pages/auth.js');
         this.authController = new AuthController(
           async (session) => {
             this.setStartupStatus('Connecting to cloud...');
