@@ -2,8 +2,8 @@
  * Aven - Export Grades to Excel (.xlsx) Module
  * Generates formatted, multi-section academic grade reports with SheetJS.
  */
-import { store } from './store.js';
-import { getTodayISO } from './utils/date-utils.js';
+import { store } from '../core/store.js';
+import { getTodayISO } from './date-utils.js';
 
 /**
  * Ensures SheetJS (XLSX) library is loaded in the window.
