@@ -331,3 +331,19 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ==============================================================================
+-- 9. USER ACCOUNT SELF-DELETION FUNCTION (RPC)
+-- Allows authenticated users to permanently delete their auth account & cascade data
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.delete_user_account()
+RETURNS void AS $$
+BEGIN
+  -- Cascades delete to all child tables (profiles, subjects, study_sessions,
+  -- grade_categories, grade_entries, subject_grade_configs, study_plans, settings)
+  DELETE FROM auth.users WHERE id = auth.uid();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.delete_user_account() TO authenticated;
+

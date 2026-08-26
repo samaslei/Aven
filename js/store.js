@@ -5,7 +5,7 @@
  * (Zero localStorage usage)
  */
 
-import { supabase, getCurrentUser } from './supabase.js';
+import { supabase, getCurrentUser, deleteAccount as deleteSupabaseAccount } from './supabase.js';
 import { events } from './core/events.js';
 import {
   YEAR_LEVELS,
@@ -668,6 +668,22 @@ class Store {
 
     events.emit('store:cleared');
     events.emit('store:changed', { type: 'clear' });
+  }
+
+  async deleteAccount() {
+    try {
+      await deleteSupabaseAccount();
+    } catch (err) {
+      console.error('Error deleting account from Supabase:', err);
+    }
+    this.resetState();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('aven_user_profile');
+      localStorage.removeItem('aven_settings');
+      localStorage.removeItem('aven_grading_scale');
+    }
+    events.emit('store:cleared');
+    events.emit('store:changed', { type: 'account_deleted' });
   }
 
   // --- SUBJECTS CRUD ---

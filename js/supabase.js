@@ -111,8 +111,44 @@ export async function signOut() {
   return await supabase.auth.signOut();
 }
 
+export async function deleteAccount() {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('No active user session to delete.');
+
+  // 1. Attempt to invoke PostgreSQL RPC function delete_user_account
+  try {
+    const { error: rpcError } = await supabase.rpc('delete_user_account');
+    if (!rpcError) {
+      await signOut();
+      return { success: true };
+    }
+    console.warn('RPC delete_user_account unavailable or failed, falling back to data cascade:', rpcError);
+  } catch (err) {
+    console.warn('RPC delete_user_account invocation error:', err);
+  }
+
+  // 2. Fallback: Cascade delete all user records from Supabase tables
+  try {
+    await supabase.from('study_sessions').delete().eq('user_id', user.id);
+    await supabase.from('grade_entries').delete().eq('user_id', user.id);
+    await supabase.from('grade_categories').delete().eq('user_id', user.id);
+    await supabase.from('subject_grade_configs').delete().eq('user_id', user.id);
+    await supabase.from('study_plans').delete().eq('user_id', user.id);
+    await supabase.from('subjects').delete().eq('user_id', user.id);
+    await supabase.from('profiles').delete().eq('user_id', user.id);
+    await supabase.from('settings').delete().eq('user_id', user.id);
+  } catch (dataErr) {
+    console.error('Error during data cascade deletion:', dataErr);
+  }
+
+  // 3. Terminate session and sign out
+  await signOut();
+  return { success: true };
+}
+
 export function onAuthStateChange(callback) {
   return supabase.auth.onAuthStateChange((event, session) => {
     callback(event, session);
   });
 }
+

@@ -254,11 +254,21 @@ export function renderSettingsView(container) {
             </div>
           </div>
 
-          <!-- Pointer Note to Data Management -->
-          <div class="settings-row" style="background: var(--bg-surface); padding: 10px 20px;">
-            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">
-              To permanently delete all your data, use <a href="#settings-data" id="link-goto-data" style="color: var(--accent); text-decoration: underline; cursor: pointer;">Clear all workspace data</a> below.
-            </p>
+          <!-- Delete Account Danger Row -->
+          <div class="settings-row" style="border-bottom: none; border-top: 1px solid var(--border-subtle); background: var(--bg-surface); padding: 14px 20px;">
+            <div class="setting-info">
+              <strong class="setting-title" style="color: var(--danger);">Delete Account</strong>
+              <p class="setting-desc">Permanently delete your account, login credentials, and all synchronized academic data</p>
+            </div>
+            <div class="setting-control">
+              <button type="button" class="btn btn-danger" id="btn-delete-account">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Delete Account
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -365,6 +375,39 @@ export function renderSettingsView(container) {
         <div class="modal-footer">
           <button type="button" class="btn btn-ghost close-clear-modal-btn">Cancel</button>
           <button type="button" class="btn btn-danger" id="btn-confirm-wipe">Yes, Wipe All Data</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Account Confirmation Modal -->
+    <div class="modal-overlay" id="delete-account-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title" style="color: var(--danger);">Delete Account Permanently?</h3>
+          <button class="btn btn-ghost btn-icon close-delete-modal-btn" aria-label="Close modal">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="alert-box danger">
+            <strong>Warning: This action is permanent and cannot be undone.</strong>
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 10px; line-height: 1.5;">
+            Deleting your account will permanently remove your student profile, login credentials, enrolled subjects, weighted grade calculations, study tracker logs, and study plans.
+          </p>
+          <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">
+            To confirm, please type <code style="color: var(--danger); font-weight: 600;">DELETE</code> below:
+          </p>
+          <div style="margin-top: 10px;">
+            <input type="text" id="delete-account-confirm-input" class="form-input" placeholder="Type DELETE to confirm" style="width: 100%; font-size: 13px;">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost close-delete-modal-btn">Cancel</button>
+          <button type="button" class="btn btn-danger" id="btn-confirm-delete-account" disabled>Permanently Delete Account</button>
         </div>
       </div>
     </div>
@@ -622,7 +665,54 @@ function attachSettingsEvents(container) {
     });
   }
 
-  // 11. Release Notes Modal
+  // 11. Delete Account Modal & Action
+  const deleteAccountModal = container.querySelector('#delete-account-modal');
+  const deleteAccountBtn = container.querySelector('#btn-delete-account');
+  const confirmDeleteBtn = container.querySelector('#btn-confirm-delete-account');
+  const deleteConfirmInput = container.querySelector('#delete-account-confirm-input');
+
+  if (deleteAccountBtn && deleteAccountModal) {
+    deleteAccountBtn.addEventListener('click', () => {
+      if (deleteConfirmInput) deleteConfirmInput.value = '';
+      if (confirmDeleteBtn) confirmDeleteBtn.disabled = true;
+      deleteAccountModal.classList.add('open');
+      setTimeout(() => deleteConfirmInput?.focus(), 80);
+    });
+  }
+
+  container.querySelectorAll('.close-delete-modal-btn').forEach(b => {
+    b.addEventListener('click', () => deleteAccountModal?.classList.remove('open'));
+  });
+
+  if (deleteConfirmInput && confirmDeleteBtn) {
+    deleteConfirmInput.addEventListener('input', () => {
+      const val = deleteConfirmInput.value.trim();
+      confirmDeleteBtn.disabled = val !== 'DELETE';
+    });
+  }
+
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', async () => {
+      if (deleteConfirmInput && deleteConfirmInput.value.trim() !== 'DELETE') return;
+      confirmDeleteBtn.disabled = true;
+      confirmDeleteBtn.textContent = 'Deleting Account...';
+
+      try {
+        window.avenApp?.showToast('Permanently deleting account and workspace...', 'info');
+        await store.deleteAccount();
+        deleteAccountModal?.classList.remove('open');
+        window.avenApp?.handleUnauthenticated();
+        window.avenApp?.showToast('Your account and all records have been deleted.', 'info');
+      } catch (err) {
+        console.error('Account deletion error:', err);
+        confirmDeleteBtn.disabled = false;
+        confirmDeleteBtn.textContent = 'Permanently Delete Account';
+        window.avenApp?.showToast(err.message || 'Failed to delete account', 'danger');
+      }
+    });
+  }
+
+  // 12. Release Notes Modal
   const releaseModal = container.querySelector('#release-notes-modal');
   const releaseBtn = container.querySelector('#btn-release-notes');
 
