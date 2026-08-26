@@ -3,11 +3,11 @@
  * Features: LeetCode-style activity heatmap, Milestone progress journey, Study time distribution, Manual Hours+Minutes logger, Streaks.
  */
 
-import { store, events } from './store.js';
-import { calculateDistributionStats, calculateMilestoneData } from './domain/tracker-calculator.js';
-import { playDualToneChime } from './utils/audio.js';
-import { formatMinutesAndSeconds, getTodayISO } from './utils/date-utils.js';
-import { renderSubjectSelectOptions } from './ui/dropdown.js';
+import { store, events } from '../core/store.js';
+import { calculateDistributionStats, calculateMilestoneData } from '../domain/tracker-calculator.js';
+import { playDualToneChime } from '../utils/audio.js';
+import { formatMinutesAndSeconds, getTodayISO } from '../utils/date-utils.js';
+import { renderSubjectSelectOptions } from '../ui/dropdown.js';
 
 let selectedSubjectId = '';
 let heatmapYear = new Date().getFullYear(); // Year-view navigation state

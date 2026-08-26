@@ -4,7 +4,7 @@
  * archive reason dialog, bulk End Semester archiver, and term-grouped archived view.
  */
 
-import { store, events, YEAR_LEVELS, SEMESTERS, DEFAULT_COLOR_SWATCHES, getStandingColor } from './store.js';
+import { store, events, YEAR_LEVELS, SEMESTERS, DEFAULT_COLOR_SWATCHES, getStandingColor } from '../core/store.js';
 
 let currentFilter = 'active'; // 'active' | 'archived' | 'all'
 let currentYearFilter = 'all';

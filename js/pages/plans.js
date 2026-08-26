@@ -8,7 +8,7 @@
  * - File upload and direct HTML paste
  */
 
-import { store, events } from './store.js';
+import { store, events } from '../core/store.js';
 
 let selectedPlanId = null;
 let isFullscreenActive = false;

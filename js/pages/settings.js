@@ -4,8 +4,8 @@
  * Account management with inline pointer, Data Management with live storage indicator, and App About/Release notes.
  */
 
-import { store, events, YEAR_LEVELS, DEFAULT_COLOR_SWATCHES } from './store.js';
-import { exportAllSubjectsGradesToExcel } from './export-excel.js';
+import { store, events, YEAR_LEVELS, DEFAULT_COLOR_SWATCHES } from '../core/store.js';
+import { exportAllSubjectsGradesToExcel } from '../utils/export-excel.js';
 
 
 export function renderSettingsView(container) {

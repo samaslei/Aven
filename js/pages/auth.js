@@ -2,7 +2,7 @@
  * Aven - Supabase Authentication UI & Flows
  */
 
-import { signIn, signUp, isSupabaseConfigured } from './supabase.js';
+import { signIn, signUp, isSupabaseConfigured } from '../core/supabase.js';
 
 export class AuthController {
   constructor(onAuthSuccess, onBackToLanding = null) {

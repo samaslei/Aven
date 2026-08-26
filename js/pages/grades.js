@@ -5,9 +5,9 @@
  * Predefined Category Templates (bulk quick-start), and Copy Categories to Finals.
  */
 
-import { store, events, GRADE_CATEGORIES, PHILIPPINE_GRADE_SCALE, getPhilippineGrade, getStandingColor, getStandingClass } from './store.js';
+import { store, events, GRADE_CATEGORIES, PHILIPPINE_GRADE_SCALE, getPhilippineGrade, getStandingColor, getStandingClass } from '../core/store.js';
 import { sortSubjectsList } from './subjects.js';
-import { exportSubjectGradesToExcel, exportAllSubjectsGradesToExcel } from './export-excel.js';
+import { exportSubjectGradesToExcel, exportAllSubjectsGradesToExcel } from '../utils/export-excel.js';
 
 export const GRADE_CATEGORY_TEMPLATES = [
   {
