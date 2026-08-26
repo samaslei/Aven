@@ -343,6 +343,7 @@ export function aggregateRecentStudyHistory(sessions = []) {
     const duration = Number(s.duration) || 0;
     const isSubHour = duration < 60;
     const hasSubject = Boolean(s.subject_id);
+    const initialNote = (s.notes && s.notes.trim()) ? s.notes.trim() : 'Manually logged';
 
     if (isSubHour && hasSubject) {
       const groupKey = `${s.subject_id}__${s.date}`;
@@ -354,7 +355,7 @@ export function aggregateRecentStudyHistory(sessions = []) {
           duration: duration,
           date: s.date,
           created_at: s.created_at,
-          notesList: s.notes && s.notes.trim() ? [s.notes.trim()] : [],
+          notesList: [initialNote],
           isMerged: false
         };
         subHourGroups.set(groupKey, entry);
@@ -364,8 +365,8 @@ export function aggregateRecentStudyHistory(sessions = []) {
         existing.ids.push(s.id);
         existing.duration += duration;
         existing.isMerged = true;
-        if (s.notes && s.notes.trim() && !existing.notesList.includes(s.notes.trim())) {
-          existing.notesList.push(s.notes.trim());
+        if (!existing.notesList.includes(initialNote)) {
+          existing.notesList.push(initialNote);
         }
       }
     } else {
@@ -377,7 +378,7 @@ export function aggregateRecentStudyHistory(sessions = []) {
         duration: duration,
         date: s.date,
         created_at: s.created_at,
-        notes: s.notes || '',
+        notes: initialNote,
         isMerged: false
       });
     }

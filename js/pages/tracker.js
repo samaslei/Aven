@@ -820,7 +820,8 @@ function attachTrackerEvents(container) {
       store.saveSession({
         subject_id,
         duration: totalMins,
-        date
+        date,
+        notes: 'Manually logged'
       });
 
       const sub = subject_id ? store.getSubjectById(subject_id) : null;
