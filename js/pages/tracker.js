@@ -766,6 +766,21 @@ function attachTrackerEvents(container) {
     });
   });
 
+  function notifyPhaseTransition(title, body) {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification(title, {
+          body,
+          icon: '/favicon.svg',
+          badge: '/favicon.svg',
+          silent: false
+        });
+      } catch (err) {
+        // Fallback for environments where Notification constructor errors
+      }
+    }
+  }
+
   function tickPomodoro() {
     if (pomoMode === 'stopwatch') {
       stopwatchElapsed++;
@@ -804,6 +819,7 @@ function attachTrackerEvents(container) {
 
           if (pomoCurrentCycle >= targetCycles) {
             // Final cycle completed -> Transition to Long Break (15 min)
+            notifyPhaseTransition('Break time!', `All ${targetCycles} focus cycles completed — starting your 15-minute long break.`);
             window.avenApp?.showToast(
               `Final focus cycle (${pomoCurrentCycle}/${targetCycles}) completed! ${pomoWorkMins} mins logged${sub ? ` for ${sub.name}` : ''}. Starting 15 min long break!`,
               'success'
@@ -812,6 +828,7 @@ function attachTrackerEvents(container) {
             pomoTimeRemaining = pomoLongBreakMins * 60;
           } else {
             // Standard cycle -> Transition to Short Break (5 min)
+            notifyPhaseTransition('Break time!', `Focus cycle ${pomoCurrentCycle}/${targetCycles} completed — take a 5-minute break.`);
             window.avenApp?.showToast(
               `Focus cycle ${pomoCurrentCycle}/${targetCycles} completed! ${pomoWorkMins} mins logged${sub ? ` for ${sub.name}` : ''}. Starting 5 min break.`,
               'success'
@@ -824,9 +841,11 @@ function attachTrackerEvents(container) {
           pomoCurrentCycle++;
           pomoPhase = 'focus';
           pomoTimeRemaining = pomoWorkMins * 60;
+          notifyPhaseTransition('Back to focus', `Break finished. Ready for Focus cycle ${pomoCurrentCycle} of ${targetCycles}.`);
           window.avenApp?.showToast(`Break finished! Starting Focus cycle ${pomoCurrentCycle} of ${targetCycles}.`, 'info');
         } else if (pomoPhase === 'long-break') {
           // Long break completed -> Full Pomodoro sequence completed!
+          notifyPhaseTransition('Session complete — nice work!', `All ${targetCycles} Pomodoro cycles completed.`);
           window.avenApp?.showToast(`Long break finished! All ${targetCycles} Pomodoro cycles completed. Great job!`, 'success');
           pomoPhase = 'focus';
           pomoCurrentCycle = 1;
@@ -844,7 +863,7 @@ function attachTrackerEvents(container) {
 
   const pomoToggleBtn = container.querySelector('#btn-pomo-toggle');
   if (pomoToggleBtn) {
-    pomoToggleBtn.addEventListener('click', () => {
+    pomoToggleBtn.addEventListener('click', async () => {
       if (pomoIsRunning) {
         pomoIsRunning = false;
         if (pomoInterval) {
@@ -852,6 +871,12 @@ function attachTrackerEvents(container) {
           pomoInterval = null;
         }
       } else {
+        // Request notification permission on first user start interaction
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+          try {
+            await Notification.requestPermission();
+          } catch (err) {}
+        }
         pomoIsRunning = true;
         if (pomoInterval) clearInterval(pomoInterval);
         pomoInterval = setInterval(tickPomodoro, 1000);
