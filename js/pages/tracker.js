@@ -327,8 +327,7 @@ export function renderTrackerView(container) {
           <div class="pomo-meta-row">
             <div class="pomo-phase-badge ${pomoPhase === 'focus' ? 'focus-mode' : (pomoPhase === 'long-break' ? 'long-break-mode' : 'break-mode')}">
               <span class="pomo-phase-dot"></span>
-              <span>${phaseLabel}</span>
-              <span class="pomo-cycle-indicator">(${pomoCurrentCycle}/${pomoTargetCycles})</span>
+              <span>${pomoPhase === 'focus' ? 'Focus' : (pomoPhase === 'long-break' ? 'Long Break' : 'Break')} &middot; Cycle ${pomoCurrentCycle} of ${pomoTargetCycles}</span>
             </div>
 
             <div class="pomo-meta-controls">
@@ -347,10 +346,6 @@ export function renderTrackerView(container) {
 
           <!-- Large Bento Digits Display -->
           <div class="pomo-display-block">
-            <div class="pomo-status-subbadge ${pomoPhase === 'focus' ? 'focus-mode' : (pomoPhase === 'long-break' ? 'long-break-mode' : 'break-mode')}">
-              <span class="pomo-phase-dot"></span>
-              <span>${pomoPhase === 'focus' ? 'Focus' : (pomoPhase === 'long-break' ? 'Long Break' : 'Break')} &middot; Cycle ${pomoCurrentCycle} of ${pomoTargetCycles}</span>
-            </div>
             <div class="pomo-time-display" id="pomo-time-display">${formatMinutesAndSeconds(pomoTimeRemaining)}</div>
             <div class="pomo-progress-track">
               <div class="pomo-progress-fill ${pomoPhase === 'break' ? 'break-fill' : (pomoPhase === 'long-break' ? 'long-break-fill' : '')}" id="pomo-progress-fill" style="width: ${progressPct}%;"></div>
