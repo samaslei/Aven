@@ -400,8 +400,16 @@ export function renderTrackerView(container) {
             </div>
           </div>
 
-          <!-- Timer Controls Row (Single Horizontal Row) -->
+          <!-- Timer Controls Row: Reset, Start/Pause, Skip -->
           <div class="pomo-controls-row">
+            <button type="button" class="btn btn-secondary pomo-btn-reset" id="btn-pomo-reset" title="Reset Timer">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              <span>Reset</span>
+            </button>
+
             <button type="button" class="btn ${pomoIsRunning ? 'btn-secondary pomo-btn-pause' : 'btn-primary pomo-btn-start'}" id="btn-pomo-toggle">
               ${pomoIsRunning ? `
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
@@ -415,14 +423,6 @@ export function renderTrackerView(container) {
                 </svg>
                 <span>Start</span>
               `}
-            </button>
-
-            <button type="button" class="btn btn-secondary pomo-btn-reset" id="btn-pomo-reset" title="Reset Timer">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                <path d="M3 3v5h5"></path>
-              </svg>
-              <span>Reset</span>
             </button>
 
             <button type="button" class="btn btn-secondary pomo-btn-skip" id="btn-pomo-switch-phase" title="${pomoPhase === 'focus' ? (pomoCurrentCycle >= pomoTargetCycles ? 'Skip to Long Break' : 'Skip to Break') : 'Skip to Focus'}">
