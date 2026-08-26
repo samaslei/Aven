@@ -16,8 +16,13 @@ export function getTodayISO() {
  * @returns {string}
  */
 export function formatMinutesAndSeconds(seconds) {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
+  const totalSecs = Math.max(0, Math.floor(seconds || 0));
+  const h = Math.floor(totalSecs / 3600);
+  const m = Math.floor((totalSecs % 3600) / 60);
+  const s = totalSecs % 60;
+  if (h > 0) {
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
