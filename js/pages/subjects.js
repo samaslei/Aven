@@ -669,7 +669,13 @@ function renderSubjectCard(sub) {
         </div>
         <div class="subject-metric-col">
           <span class="subject-metric-lbl">Plan</span>
-          <span class="subject-metric-val">${plan ? 'Ready' : '—'}</span>
+          ${plan ? `
+            <button type="button" class="subject-metric-val subject-plan-link" data-subject-id="${sub.id}" title="View ${sub.name} Study Plan">
+              Attached
+            </button>
+          ` : `
+            <span class="subject-metric-val subject-plan-none">None</span>
+          `}
         </div>
       </div>
 
@@ -738,9 +744,15 @@ function renderSubjectListRow(sub) {
         </div>
       </td>
       <td>
-        <span class="subject-plan-pill ${plan ? 'ready' : ''}">
-          ${plan ? '● Ready' : '—'}
-        </span>
+        ${plan ? `
+          <button type="button" class="subject-plan-pill ready subject-plan-link" data-subject-id="${sub.id}" title="View ${sub.name} Study Plan">
+            ● Attached
+          </button>
+        ` : `
+          <span class="subject-plan-pill subject-plan-none">
+            None
+          </span>
+        `}
       </td>
       <td style="text-align: right;">
         <div class="row-actions-dropdown-wrapper">
@@ -1012,6 +1024,19 @@ function attachSubjectsEvents(container) {
 
   bulkCheckboxes.forEach(cb => {
     cb.addEventListener('change', updateBulkCount);
+  });
+
+  // Click on Subject Plan Link (Navigates to Study Plans with subject pre-selected)
+  container.querySelectorAll('.subject-plan-link').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const subjectId = btn.dataset.subjectId;
+      if (subjectId) {
+        events.emit('plans:select-subject', subjectId);
+        window.location.hash = `plans?subjectId=${subjectId}`;
+      }
+    });
   });
 
   // Confirm Bulk Archive

@@ -1496,6 +1496,36 @@ button, input, select, textarea {
   font-family: var(--font-numeric);
 }
 
+.subject-metric-val.subject-plan-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: var(--olive-deep, #505537);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(80, 85, 55, 0.4);
+  text-underline-offset: 3px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  display: inline-block;
+  line-height: 1.2;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.subject-metric-val.subject-plan-link:hover {
+  color: var(--text-primary);
+  text-decoration-color: var(--text-primary);
+}
+
+.subject-metric-val.subject-plan-none {
+  color: var(--text-muted);
+  font-weight: 500;
+  text-decoration: none;
+}
+
 .subject-card-actions {
   display: flex;
   align-items: center;
@@ -1799,6 +1829,28 @@ button, input, select, textarea {
 
 .subject-plan-pill.ready {
   color: var(--success);
+}
+
+.subject-plan-pill.subject-plan-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(80, 85, 55, 0.35);
+  text-underline-offset: 2px;
+  font: inherit;
+  transition: color 0.15s ease;
+}
+
+.subject-plan-pill.subject-plan-link:hover {
+  color: var(--text-primary);
+  text-decoration-color: var(--text-primary);
+}
+
+.subject-plan-pill.subject-plan-none {
+  color: var(--text-muted);
 }
 
 /* Row Actions Overflow Menu */

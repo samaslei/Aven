@@ -13,9 +13,35 @@ import { store, events } from '../core/store.js';
 let selectedPlanId = null;
 let isFullscreenActive = false;
 
+// Listen for cross-page subject plan selection
+events.on('plans:select-subject', (subjectId) => {
+  const plan = store.getStudyPlanBySubject(subjectId);
+  if (plan) {
+    selectedPlanId = plan.id;
+  }
+});
+
+export function setSelectedStudyPlanBySubjectId(subjectId) {
+  const plan = store.getStudyPlanBySubject(subjectId);
+  if (plan) {
+    selectedPlanId = plan.id;
+  }
+}
+
 export function renderPlansView(container) {
   const activeSubjects = store.getSubjects(false);
   const allPlans = store.getStudyPlans().sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+  // Check URL query parameters for pre-selected subject
+  if (window.location.hash.includes('subjectId=')) {
+    const hashQuery = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '';
+    const params = new URLSearchParams(hashQuery);
+    const subId = params.get('subjectId');
+    if (subId) {
+      const p = store.getStudyPlanBySubject(subId);
+      if (p) selectedPlanId = p.id;
+    }
+  }
 
   // Standalone general plans (no subject_id)
   const standalonePlans = allPlans.filter(p => !p.subject_id);
