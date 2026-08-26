@@ -26,7 +26,6 @@ export function renderTrackerView(container) {
   const streakStats = store.getStreakStats();
   const sessions = store.getSessions().sort((a, b) => new Date(b.date + ' ' + (b.created_at || '')) - new Date(a.date + ' ' + (a.created_at || '')));
   const displaySessions = aggregateRecentStudyHistory(sessions);
-  const subjects = store.getActiveSubjects();
   const calendarData = store.getYearCalendarMatrix(heatmapYear);
 
   // Compute color mapping consistent with Donut Chart slices
