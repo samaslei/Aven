@@ -254,7 +254,7 @@ export function renderTrackerView(container) {
               <circle cx="12" cy="12" r="10"></circle>
               <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
-            <span>BENTODORO</span>
+            <span>POMODORO</span>
           </div>
 
           <!-- Mode Toggle: Classic (25m->5m) vs Reverse (5m->25m) -->

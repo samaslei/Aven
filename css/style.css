@@ -2739,12 +2739,16 @@ button, input, select, textarea {
   min-height: 0;
 }
 
+.manual-log-header-label {
+  margin-bottom: 12px !important;
+}
+
 #manual-session-form {
   display: flex;
   flex-direction: column;
   width: 100%;
   flex: 1 1 auto;
-  gap: 16px;
+  gap: 11px;
   min-height: 0;
 }
 
@@ -2789,8 +2793,8 @@ button, input, select, textarea {
   width: 100%;
   box-sizing: border-box;
   margin-top: auto;
-  padding-top: 11px;
-  padding-bottom: 11px;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .tool-card-title {
