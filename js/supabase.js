@@ -83,14 +83,26 @@ export async function signIn(email, password) {
   });
 }
 
-export async function signUp(email, password, displayName = '') {
+export async function signUp(email, password, displayName = '', options = {}) {
+  // Explicitly configure email confirmation redirect destination.
+  // Resolves to current window origin /#subjects (or production URL) so Supabase routes confirmed users directly to the in-app Subjects view.
+  let origin = 'https://aven-livid.vercel.app';
+  if (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin !== 'null') {
+    origin = window.location.origin;
+  }
+  const defaultRedirectTo = `${origin}/#subjects`;
+  const emailRedirectTo = options.emailRedirectTo || defaultRedirectTo;
+
   return await supabase.auth.signUp({
     email,
     password,
     options: {
+      emailRedirectTo,
       data: {
-        display_name: displayName || email.split('@')[0]
-      }
+        display_name: displayName || email.split('@')[0],
+        ...(options.data || {})
+      },
+      ...options
     }
   });
 }

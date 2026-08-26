@@ -7,6 +7,30 @@ import { store, events } from './store.js';
 import { supabase, getCurrentSession, signOut, onAuthStateChange } from './supabase.js';
 import { renderStartupSkeleton } from './ui/skeleton.js';
 
+function extractAuthUrlParams() {
+  if (typeof window === 'undefined') return {};
+
+  const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+  const search = window.location.search.startsWith('?') ? window.location.search.slice(1) : window.location.search;
+
+  const hashParams = new URLSearchParams(hash);
+  const searchParams = new URLSearchParams(search);
+
+  const error = hashParams.get('error') || searchParams.get('error');
+  const errorCode = hashParams.get('error_code') || searchParams.get('error_code');
+  const errorDescription = hashParams.get('error_description') || searchParams.get('error_description');
+  const type = hashParams.get('type') || searchParams.get('type');
+  const hasAuthTokens = Boolean(hashParams.get('access_token') || hashParams.get('refresh_token') || searchParams.get('code'));
+
+  return {
+    error,
+    errorCode,
+    errorDescription,
+    type,
+    hasAuthTokens
+  };
+}
+
 class AvenApp {
   constructor() {
     this.currentPage = 'subjects';
@@ -74,6 +98,22 @@ class AvenApp {
     this.setupGlobalEvents();
     this.setupSyncIndicator();
     this.setupAuthListener();
+
+    // Check for auth errors in URL (e.g. expired or invalid email confirmation link)
+    const authParams = extractAuthUrlParams();
+    if (authParams.error || authParams.errorDescription) {
+      const message = decodeURIComponent((authParams.errorDescription || authParams.error || 'Authentication link failed').replace(/\+/g, ' '));
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname + '#signin');
+      }
+      this.handleUnauthenticated();
+      setTimeout(() => {
+        this.authController?.showAlert(`Email confirmation error: ${message}`, 'error');
+        this.showToast(`Confirmation error: ${message}`, 'danger');
+      }, 150);
+      this.dismissStartupLoader();
+      return;
+    }
 
     // Check active session on startup
     try {
@@ -152,6 +192,9 @@ class AvenApp {
   async handleAuthenticated(session, isFreshLogin = false) {
     this.currentUser = session.user;
 
+    const authParams = extractAuthUrlParams();
+    const isConfirmedSignup = authParams.type === 'signup' || authParams.hasAuthTokens;
+
     // Show App, Hide Landing and Auth Screens
     if (this.landingScreen) this.landingScreen.classList.add('hidden');
     if (this.authScreen) this.authScreen.classList.add('hidden');
@@ -166,13 +209,24 @@ class AvenApp {
     await store.syncFromCloud(session.user.id, isFreshLogin);
     this.renderUser();
 
-    // 3. Initial page load (check hash or default to subjects)
-    const hash = window.location.hash.replace('#', '');
-    const targetRoute = this.pages[hash] ? hash : 'subjects';
+    // 3. Clean up URL search / hash if they contained auth tokens / query params
+    if (authParams.hasAuthTokens && window.history && window.history.replaceState) {
+      window.history.replaceState({}, document.title, window.location.pathname + '#subjects');
+    }
+
+    // 4. Initial page load (check hash or default to subjects)
+    const rawHash = window.location.hash.replace('#', '');
+    const targetRoute = this.pages[rawHash] ? rawHash : 'subjects';
     if (typeof window.renderStartupSkeleton === 'function') {
       window.renderStartupSkeleton(targetRoute);
     }
     this.navigateTo(targetRoute);
+
+    if (isConfirmedSignup) {
+      setTimeout(() => {
+        this.showToast('Email confirmed successfully! Welcome to Aven.', 'success');
+      }, 300);
+    }
 
     // Smoothly reveal sharp, interactive content
     this.dismissStartupLoader();

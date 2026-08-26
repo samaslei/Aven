@@ -262,7 +262,7 @@ export class AuthController {
           this.showAlert('Account created successfully! Loading...', 'success');
           if (this.onAuthSuccess) this.onAuthSuccess(data.session);
         } else if (data?.user) {
-          this.showAlert('Account created! Please check your email inbox to confirm your account, then sign in.', 'success');
+          this.showAlert('Confirmation link sent! Please check your email inbox and click the link to confirm your account and open Aven.', 'success');
           this.setMode(false);
         }
       } else {
