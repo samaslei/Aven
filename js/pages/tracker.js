@@ -4,7 +4,7 @@
  */
 
 import { store, events } from '../core/store.js';
-import { calculateDistributionStats, calculateMilestoneData } from '../domain/tracker-calculator.js';
+import { calculateDistributionStats, calculateMilestoneData, aggregateRecentStudyHistory } from '../domain/tracker-calculator.js';
 import { playDualToneChime } from '../utils/audio.js';
 import { formatMinutesAndSeconds, getTodayISO } from '../utils/date-utils.js';
 import { renderSubjectSelectOptions } from '../ui/dropdown.js';
@@ -25,6 +25,8 @@ export function renderTrackerView(container) {
   const activeSubjects = store.getSubjects(false);
   const streakStats = store.getStreakStats();
   const sessions = store.getSessions().sort((a, b) => new Date(b.date + ' ' + (b.created_at || '')) - new Date(a.date + ' ' + (a.created_at || '')));
+  const displaySessions = aggregateRecentStudyHistory(sessions);
+  const subjects = store.getActiveSubjects();
   const calendarData = store.getYearCalendarMatrix(heatmapYear);
 
   // Compute color mapping consistent with Donut Chart slices
@@ -517,13 +519,13 @@ export function renderTrackerView(container) {
               </tr>
             </thead>
             <tbody>
-              ${sessions.length === 0 ? `
+              ${displaySessions.length === 0 ? `
                 <tr>
                   <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 32px;">
                     No study sessions recorded yet. Use the manual study log above!
                   </td>
                 </tr>
-              ` : sessions.slice(0, 15).map(s => {
+              ` : displaySessions.slice(0, 15).map(s => {
                 const sub = s.subject_id ? store.getSubjectById(s.subject_id) : null;
                 const subId = s.subject_id || 'general';
                 const subColor = distColorMap[subId] || (sub && sub.color) || '#8A9A5B';
@@ -553,7 +555,7 @@ export function renderTrackerView(container) {
                       ${s.notes || '—'}
                     </td>
                     <td style="text-align: right;">
-                      <button class="btn btn-ghost btn-sm btn-del-session" data-id="${s.id}" style="color: var(--danger); padding: 3px 6px;">
+                      <button class="btn btn-ghost btn-sm btn-del-session" data-ids="${(s.ids || [s.id]).join(',')}" data-id="${s.id}" style="color: var(--danger); padding: 3px 6px;">
                         Delete
                       </button>
                     </td>
@@ -827,11 +829,12 @@ function attachTrackerEvents(container) {
     });
   }
 
-  // Delete Session
+  // Delete Session (Supports single or merged sub-hour session entries)
   container.querySelectorAll('.btn-del-session').forEach(btn => {
     btn.addEventListener('click', () => {
-      store.deleteSession(btn.dataset.id);
-      window.avenApp?.showToast('Session deleted', 'info');
+      const ids = btn.dataset.ids ? btn.dataset.ids.split(',') : [btn.dataset.id];
+      ids.forEach(id => store.deleteSession(id));
+      window.avenApp?.showToast(ids.length > 1 ? `${ids.length} study sessions deleted` : 'Session deleted', 'info');
       renderTrackerView(container);
     });
   });

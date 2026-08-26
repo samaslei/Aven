@@ -326,3 +326,72 @@ export function calculateDistributionStats(sessions = [], scope = 'all', getSubj
     slices
   };
 }
+
+/**
+ * Merges sub-hour sessions (<60m) for the same subject on the same day for display in Recent Study History.
+ * Sessions >= 60m and General Study (no subject_id) sessions remain unmerged.
+ * @param {Array<Object>} sessions - Raw sorted session objects
+ * @returns {Array<Object>} Display sessions list
+ */
+export function aggregateRecentStudyHistory(sessions = []) {
+  if (!sessions || sessions.length === 0) return [];
+
+  const result = [];
+  const subHourGroups = new Map();
+
+  for (const s of sessions) {
+    const duration = Number(s.duration) || 0;
+    const isSubHour = duration < 60;
+    const hasSubject = Boolean(s.subject_id);
+
+    if (isSubHour && hasSubject) {
+      const groupKey = `${s.subject_id}__${s.date}`;
+      if (!subHourGroups.has(groupKey)) {
+        const entry = {
+          id: s.id,
+          ids: [s.id],
+          subject_id: s.subject_id,
+          duration: duration,
+          date: s.date,
+          created_at: s.created_at,
+          notesList: s.notes && s.notes.trim() ? [s.notes.trim()] : [],
+          isMerged: false
+        };
+        subHourGroups.set(groupKey, entry);
+        result.push(entry);
+      } else {
+        const existing = subHourGroups.get(groupKey);
+        existing.ids.push(s.id);
+        existing.duration += duration;
+        existing.isMerged = true;
+        if (s.notes && s.notes.trim() && !existing.notesList.includes(s.notes.trim())) {
+          existing.notesList.push(s.notes.trim());
+        }
+      }
+    } else {
+      // Sessions >= 60m OR General Study sessions stay as individual rows
+      result.push({
+        id: s.id,
+        ids: [s.id],
+        subject_id: s.subject_id,
+        duration: duration,
+        date: s.date,
+        created_at: s.created_at,
+        notes: s.notes || '',
+        isMerged: false
+      });
+    }
+  }
+
+  // Format notes field for each entry
+  return result.map(entry => {
+    if (entry.notesList !== undefined) {
+      const { notesList, ...rest } = entry;
+      return {
+        ...rest,
+        notes: notesList.join(' · ')
+      };
+    }
+    return entry;
+  });
+}
