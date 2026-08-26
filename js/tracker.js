@@ -360,7 +360,7 @@ export function renderTrackerView(container) {
           <div class="milestone-stat-divider"></div>
           <div class="milestone-stat-col">
             <span class="milestone-stat-value">${data.longestSessionHours}h</span>
-            <span class="milestone-stat-label">Longest Session</span>
+            <span class="milestone-stat-label">Longest</span>
           </div>
         </div>
       </div>
