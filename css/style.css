@@ -292,7 +292,7 @@ button, input, select, textarea {
 .sidebar-top {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 0;
 }
 
 /* Brand Logo */
@@ -303,7 +303,7 @@ button, input, select, textarea {
   padding: 4px 10px;
   text-decoration: none;
   color: var(--text-primary);
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .brand-icon {
@@ -346,8 +346,8 @@ button, input, select, textarea {
   gap: 12px;
   padding: 9px 14px;
   border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-weight: 500;
+  color: #1e201a;
+  font-weight: 550;
   font-size: 13.5px;
   text-decoration: none;
   transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
@@ -356,6 +356,10 @@ button, input, select, textarea {
   width: 100%;
   background: transparent;
   text-align: left;
+}
+
+[data-theme="dark"] .nav-link {
+  color: rgba(245, 243, 236, 0.80);
 }
 
 .nav-link:hover {
@@ -385,9 +389,18 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
+  color: #2e3126;
   transition: var(--transition);
   flex-shrink: 0;
+}
+
+.nav-icon svg {
+  color: inherit;
+  stroke: currentColor;
+}
+
+[data-theme="dark"] .nav-icon {
+  color: rgba(245, 243, 236, 0.70);
 }
 
 /* ==========================================================================
@@ -513,6 +526,10 @@ button, input, select, textarea {
   margin: 6px 4px 8px 4px;
 }
 
+.sidebar-brand-divider {
+  margin: 12px 4px 8px 4px;
+}
+
 /* User Popover anchored upwards from bottom */
 .sidebar-user-block .user-popover {
   bottom: calc(100% + 8px);
@@ -532,12 +549,40 @@ button, input, select, textarea {
 .footer-nav-link {
   padding: 8px 12px;
   font-size: 13px;
+  color: #1e201a;
+  font-weight: 550;
+}
+
+.footer-nav-link .nav-icon {
+  color: #2e3126;
+}
+
+[data-theme="dark"] .footer-nav-link {
+  color: rgba(245, 243, 236, 0.80);
+}
+
+[data-theme="dark"] .footer-nav-link .nav-icon {
+  color: rgba(245, 243, 236, 0.70);
 }
 
 .sidebar-logout-btn {
   border: none;
   background: transparent;
   font-family: inherit;
+  color: #1e201a;
+  font-weight: 550;
+}
+
+.sidebar-logout-btn .nav-icon {
+  color: #2e3126;
+}
+
+[data-theme="dark"] .sidebar-logout-btn {
+  color: rgba(245, 243, 236, 0.80);
+}
+
+[data-theme="dark"] .sidebar-logout-btn .nav-icon {
+  color: rgba(245, 243, 236, 0.70);
 }
 
 .sidebar-logout-btn:hover {
