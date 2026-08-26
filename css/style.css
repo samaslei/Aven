@@ -3194,6 +3194,14 @@ button, input, select, textarea {
   user-select: none;
 }
 
+.tab-label-full {
+  display: inline;
+}
+
+.tab-label-short {
+  display: none;
+}
+
 .browser-tab:hover {
   color: var(--text-primary);
   background: var(--bg-surface-hover);
@@ -4969,6 +4977,10 @@ button, input, select, textarea {
     margin-bottom: 20px;
   }
 
+  .header-actions-group {
+    display: none;
+  }
+
   .page-title {
     font-size: 22px;
   }
@@ -5092,9 +5104,18 @@ button, input, select, textarea {
   }
 
   .browser-tab {
-    padding: 8px 12px;
+    padding: 8px 10px;
     font-size: 12px;
     white-space: nowrap;
+    gap: 5px;
+  }
+
+  .tab-label-full {
+    display: none !important;
+  }
+
+  .tab-label-short {
+    display: inline !important;
   }
 
   .browser-tab-badge {
@@ -5146,6 +5167,125 @@ button, input, select, textarea {
   .heatmap-scroll-container {
     mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
     -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+  }
+
+  /* Subjects Toolbar on Phone: Collapse End Semester and New Subject to accessible icon buttons */
+  .controls-bar {
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .filter-group {
+    gap: 5px;
+  }
+
+  .filter-chip {
+    padding: 6px 11px;
+    font-size: 12px;
+  }
+
+  .controls-actions-group {
+    gap: 6px !important;
+  }
+
+  #btn-bulk-end-semester .btn-text,
+  #btn-create-subject .btn-text {
+    display: none !important;
+  }
+
+  #btn-bulk-end-semester.btn-responsive-action,
+  #btn-create-subject.btn-responsive-action {
+    padding: 0 !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: var(--radius-md) !important;
+    flex-shrink: 0 !important;
+  }
+
+  #btn-bulk-end-semester.btn-responsive-action svg,
+  #btn-create-subject.btn-responsive-action svg {
+    margin: 0 !important;
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  /* Grades Category Card Header: Collapse + Entry to accessible plus icon button */
+  .btn-add-entry .btn-text {
+    display: none !important;
+  }
+
+  .btn-add-entry {
+    padding: 0 6px !important;
+    min-width: 26px !important;
+    height: 26px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: var(--radius-sm) !important;
+  }
+
+  .btn-add-entry .btn-add-entry-icon {
+    width: 13px !important;
+    height: 13px !important;
+    margin: 0 !important;
+  }
+
+  /* Grade Entries Table: Contained horizontal scroll & right-edge fade cue on phone */
+  .category-breakdown-body {
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  .cat-table-wrap {
+    mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+    padding-bottom: 4px;
+  }
+
+  /* Grades Toolbar on Phone: Collapse Export and Add Category to accessible icon buttons */
+  .btn-grades-export-toggle .btn-text,
+  #btn-open-add-cat .btn-text {
+    display: none !important;
+  }
+
+  .btn-grades-export-toggle.btn-responsive-action {
+    padding: 0 7px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    border-radius: var(--radius-md) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .btn-grades-export-toggle.btn-responsive-action svg {
+    margin: 0 !important;
+  }
+
+  #btn-open-add-cat.btn-responsive-action {
+    padding: 0 !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: var(--radius-md) !important;
+    flex-shrink: 0 !important;
+  }
+
+  #btn-open-add-cat.btn-responsive-action svg {
+    margin: 0 !important;
+    width: 15px !important;
+    height: 15px !important;
   }
 }
 
@@ -7618,8 +7758,7 @@ body.mobile-drawer-locked {
   }
 
   .header-actions-group {
-    width: 100%;
-    justify-content: space-between;
+    display: none;
   }
 
   .subjects-grid {
@@ -7911,12 +8050,42 @@ body.mobile-drawer-locked {
 
 .cat-table-wrap {
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   background: transparent;
   border: none;
   border-radius: 0;
   box-shadow: none;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 176, 130, 0.35) transparent;
+}
+
+[data-theme="light"] .cat-table-wrap {
+  scrollbar-color: rgba(0, 0, 0, 0.20) transparent;
+}
+
+.cat-table-wrap::-webkit-scrollbar {
+  height: 4px;
+}
+
+.cat-table-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cat-table-wrap::-webkit-scrollbar-thumb {
+  background: rgba(168, 176, 130, 0.35);
+  border-radius: 4px;
+}
+
+[data-theme="light"] .cat-table-wrap::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.20);
+}
+
+.cat-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 176, 130, 0.6);
 }
 
 .cat-table {
@@ -8072,6 +8241,182 @@ body.mobile-drawer-locked {
   transform: rotate(90deg);
 }
 
+/* Category Title Row Responsive Layout on Phone (≤540px / 390-430px) */
+@media (max-width: 540px) {
+  /* Populated Categories (has entries): 2-line stacked layout so name and metrics both have ample room */
+  .category-breakdown-section.has-entries .category-breakdown-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 12px 14px 10px !important;
+    gap: 8px !important;
+  }
+
+  .category-breakdown-section.has-entries .cat-header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+
+  .category-breakdown-section.has-entries .cat-header-left .cat-drag-handle {
+    margin-right: 2px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .category-breakdown-section.has-entries .cat-chevron-btn {
+    flex-shrink: 0 !important;
+  }
+
+  .category-breakdown-section.has-entries .cat-breakdown-name {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .category-breakdown-section.has-entries .cat-header-right {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 8px !important;
+    margin-left: 0 !important;
+    padding-top: 6px !important;
+    border-top: 1px dashed var(--border-subtle) !important;
+  }
+
+  .category-breakdown-section.has-entries .cat-weight-editable {
+    padding: 2px 7px !important;
+    margin-right: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .category-breakdown-section.has-entries .cat-header-summary {
+    gap: 6px !important;
+    font-size: 11.5px !important;
+    margin-left: auto !important;
+    margin-right: 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Empty Categories (0 entries): Clean single-line compact layout */
+  .category-breakdown-section.is-empty-category .category-breakdown-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 11px 14px !important;
+    gap: 10px !important;
+  }
+
+  .category-breakdown-section.is-empty-category .cat-header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .category-breakdown-section.is-empty-category .cat-header-left .cat-drag-handle {
+    margin-right: 2px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .category-breakdown-section.is-empty-category .cat-chevron-btn {
+    flex-shrink: 0 !important;
+  }
+
+  .category-breakdown-section.is-empty-category .cat-breakdown-name {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .category-breakdown-section.is-empty-category .cat-header-right {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+    padding-top: 0 !important;
+    border-top: none !important;
+    width: auto !important;
+  }
+
+  .category-breakdown-section.is-empty-category .cat-weight-editable {
+    padding: 2px 7px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Shared phone adjustments */
+  .cat-weight-editable .cat-weight-edit-icon {
+    display: none !important;
+  }
+
+  .cat-summary-divider {
+    margin: 0 2px !important;
+  }
+
+  .btn-add-entry {
+    padding: 0 6px !important;
+    min-width: 28px !important;
+    height: 28px !important;
+    margin-left: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .btn-del-cat {
+    padding: 2px 6px !important;
+    margin-left: 2px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Grade Entries Table: Header Abbreviations & Unified Table Scrolling on Phone */
+  .th-label-full {
+    display: none !important;
+  }
+
+  .th-label-short {
+    display: inline !important;
+    white-space: nowrap !important;
+  }
+
+  .grade-entries-table {
+    min-width: 390px !important;
+    width: 100% !important;
+    table-layout: auto !important;
+  }
+
+  .grade-entries-table th,
+  .grade-entries-table td {
+    white-space: nowrap !important;
+    padding: 9px 12px !important;
+  }
+
+  .cat-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+    box-sizing: border-box !important;
+  }
+}
+
 .category-breakdown-body {
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-surface);
@@ -8093,6 +8438,7 @@ body.mobile-drawer-locked {
 /* Minimal Assessment Entries Table */
 .grade-entries-table {
   width: 100%;
+  min-width: 440px;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -8106,6 +8452,14 @@ body.mobile-drawer-locked {
   color: var(--text-muted);
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-surface-hover);
+}
+
+.th-label-full {
+  display: inline;
+}
+
+.th-label-short {
+  display: none;
 }
 
 .grade-entries-table td {

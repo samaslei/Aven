@@ -193,21 +193,24 @@ export function renderGradesView(container) {
           <!-- Browser-Style Tab Strip (Arc / Chrome Tabs) -->
           <div class="browser-tab-strip">
             <div class="browser-tab ${activeTab === 'Midterm' ? 'active' : ''}" data-tab="Midterm">
-              <span>Midterm Term</span>
+              <span class="tab-label-full">Midterm Term</span>
+              <span class="tab-label-short">Midterm</span>
               <span class="browser-tab-badge" style="color: ${getStandingColor(gradeStats.midterm.percentage)}; font-weight: 600;">
                 ${gradeStats.midterm.percentage !== null ? `${gradeStats.midterm.percentage}%` : '—'}
               </span>
             </div>
 
             <div class="browser-tab ${activeTab === 'Final' ? 'active' : ''}" data-tab="Final">
-              <span>Final Term</span>
+              <span class="tab-label-full">Final Term</span>
+              <span class="tab-label-short">Final</span>
               <span class="browser-tab-badge" style="color: ${getStandingColor(gradeStats.final.percentage)}; font-weight: 600;">
                 ${gradeStats.final.percentage !== null ? `${gradeStats.final.percentage}%` : '—'}
               </span>
             </div>
 
             <div class="browser-tab ${activeTab === 'Overall' ? 'active' : ''}" data-tab="Overall">
-              <span>Overall Composite</span>
+              <span class="tab-label-full">Overall Composite</span>
+              <span class="tab-label-short">Overall</span>
               <span class="browser-tab-badge" style="color: ${getStandingColor(gradeStats.overallPercentage)}; font-weight: 600;">
                 ${gradeStats.overallPercentage !== null ? `${gradeStats.overallPercentage}% · ${gradeStats.philGrade.grade}` : '—'}
               </span>
@@ -474,7 +477,7 @@ function renderTermTabContent(subject, term, gradeStats) {
 
             <!-- Export to Excel Dropdown Menu -->
             <div style="position: relative;">
-              <button class="btn btn-secondary btn-sm btn-grades-export-toggle" title="Export grade report to Excel (.xlsx)">
+              <button class="btn btn-secondary btn-sm btn-grades-export-toggle btn-responsive-action" title="Export grade report to Excel (.xlsx)" aria-label="Export">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
@@ -482,8 +485,8 @@ function renderTermTabContent(subject, term, gradeStats) {
                   <line x1="16" y1="17" x2="8" y2="17"></line>
                   <polyline points="10 9 9 9 8 9"></polyline>
                 </svg>
-                <span>Export</span>
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left: 2px;">
+                <span class="btn-text">Export</span>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="export-chevron-icon" style="margin-left: 2px;">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </button>
@@ -502,12 +505,12 @@ function renderTermTabContent(subject, term, gradeStats) {
               </div>
             </div>
 
-            <button class="btn btn-primary btn-sm" id="btn-open-add-cat">
+            <button class="btn btn-primary btn-sm btn-responsive-action" id="btn-open-add-cat" title="Add Assessment Category" aria-label="Add Category">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              Add Category
+              <span class="btn-text">Add Category</span>
             </button>
           </div>
 
@@ -565,7 +568,7 @@ function renderTermTabContent(subject, term, gradeStats) {
           const weightedPts = totalOutOf > 0 ? (((totalScore / totalOutOf) * cat.weight)).toFixed(2) : '—';
 
           return `
-            <div class="category-breakdown-section ${isExpanded ? 'is-expanded' : 'is-collapsed'}" data-cat-id="${cat.id}">
+            <div class="category-breakdown-section ${isExpanded ? 'is-expanded' : 'is-collapsed'} ${entries.length === 0 ? 'is-empty-category' : 'has-entries'}" data-cat-id="${cat.id}">
               <!-- Header Row (Notion-Style: Drag Handle -> Chevron -> Name -> Weight) -->
               <div class="category-breakdown-header" data-cat-id="${cat.id}">
                 <div class="cat-header-left">
@@ -596,8 +599,12 @@ function renderTermTabContent(subject, term, gradeStats) {
                       <span>${weightedPts} pts</span>
                     </div>
                   ` : ''}
-                  <button type="button" class="btn btn-ghost btn-sm btn-add-entry" data-cat-id="${cat.id}" title="Add assessment entry">
-                    + Entry
+                  <button type="button" class="btn btn-ghost btn-sm btn-add-entry" data-cat-id="${cat.id}" title="Add assessment entry" aria-label="Add Entry">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="btn-add-entry-icon">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span class="btn-text">Entry</span>
                   </button>
                   <button type="button" class="btn btn-ghost btn-sm btn-del-cat" data-cat-id="${cat.id}" style="color: var(--danger); padding: 4px 7px;" title="Delete Category">
                     ✕
@@ -616,10 +623,21 @@ function renderTermTabContent(subject, term, gradeStats) {
                     <table class="cat-table grade-entries-table">
                       <thead>
                         <tr>
-                          <th style="text-align: left;">Entry Name</th>
-                          <th style="text-align: center; width: 85px;">Score</th>
-                          <th style="text-align: center; width: 85px;">Out Of</th>
-                          <th style="text-align: center; width: 85px;">Percentage</th>
+                          <th style="text-align: left;">
+                            <span class="th-label-full">Entry Name</span>
+                            <span class="th-label-short">Entry</span>
+                          </th>
+                          <th style="text-align: center; width: 85px;">
+                            <span>Score</span>
+                          </th>
+                          <th style="text-align: center; width: 85px;">
+                            <span class="th-label-full">Out Of</span>
+                            <span class="th-label-short">Out of</span>
+                          </th>
+                          <th style="text-align: center; width: 85px;">
+                            <span class="th-label-full">Percentage</span>
+                            <span class="th-label-short">%</span>
+                          </th>
                           <th style="text-align: right; width: 45px;"></th>
                         </tr>
                       </thead>
@@ -736,7 +754,7 @@ function renderOverallTabContent(subject, gradeStats) {
 
         <!-- Export to Excel Dropdown Menu -->
         <div style="position: relative;">
-          <button class="btn btn-secondary btn-sm btn-grades-export-toggle" title="Export grade report to Excel (.xlsx)">
+          <button class="btn btn-secondary btn-sm btn-grades-export-toggle btn-responsive-action" title="Export grade report to Excel (.xlsx)" aria-label="Export">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
@@ -744,8 +762,8 @@ function renderOverallTabContent(subject, gradeStats) {
               <line x1="16" y1="17" x2="8" y2="17"></line>
               <polyline points="10 9 9 9 8 9"></polyline>
             </svg>
-            <span>Export to Excel</span>
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left: 2px;">
+            <span class="btn-text">Export to Excel</span>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="export-chevron-icon" style="margin-left: 2px;">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </button>

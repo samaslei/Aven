@@ -253,10 +253,10 @@ export function renderSubjectsView(container) {
         </div>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 10px;">
+      <div class="controls-actions-group" style="display: flex; align-items: center; gap: 8px;">
         <!-- Grid / List View Switcher Buttons -->
         <div class="segmented-control" id="view-mode-toggle">
-          <button class="seg-btn ${viewMode === 'grid' ? 'active' : ''}" data-view="grid" title="Grid View">
+          <button class="seg-btn ${viewMode === 'grid' ? 'active' : ''}" data-view="grid" title="Grid View" aria-label="Grid View">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="7" height="7"></rect>
               <rect x="14" y="3" width="7" height="7"></rect>
@@ -264,7 +264,7 @@ export function renderSubjectsView(container) {
               <rect x="3" y="14" width="7" height="7"></rect>
             </svg>
           </button>
-          <button class="seg-btn ${viewMode === 'list' ? 'active' : ''}" data-view="list" title="Compact List View">
+          <button class="seg-btn ${viewMode === 'list' ? 'active' : ''}" data-view="list" title="Compact List View" aria-label="Compact List View">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="8" y1="6" x2="21" y2="6"></line>
               <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -277,20 +277,20 @@ export function renderSubjectsView(container) {
         </div>
 
         <!-- Bulk End Semester Action Button -->
-        <button id="btn-bulk-end-semester" class="btn" ${activeSubjects.length === 0 ? 'disabled' : ''} title="Archive all or selected completed subjects for this semester">
+        <button id="btn-bulk-end-semester" class="btn btn-responsive-action" ${activeSubjects.length === 0 ? 'disabled' : ''} title="End Semester (Archive completed subjects)" aria-label="End Semester">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
             <polyline points="22 4 12 14.01 9 11.01"></polyline>
           </svg>
-          End Semester
+          <span class="btn-text">End Semester</span>
         </button>
 
-        <button id="btn-create-subject" class="btn btn-primary">
+        <button id="btn-create-subject" class="btn btn-primary btn-responsive-action" title="New Subject (Create Course)" aria-label="New Subject">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          New Subject
+          <span class="btn-text">New Subject</span>
         </button>
       </div>
     </div>
