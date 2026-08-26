@@ -112,22 +112,57 @@ export async function signOut() {
 }
 
 export async function deleteAccount() {
-  const user = await getCurrentUser();
+  const session = await getCurrentSession();
+  const user = session?.user || await getCurrentUser();
   if (!user) throw new Error('No active user session to delete.');
 
-  // 1. Attempt to invoke PostgreSQL RPC function delete_user_account
-  try {
-    const { error: rpcError } = await supabase.rpc('delete_user_account');
-    if (!rpcError) {
-      await signOut();
-      return { success: true };
+  let deleted = false;
+  let lastError = null;
+
+  // 1. Try serverless backend endpoint (/api/delete-user) if available
+  if (session && session.access_token) {
+    try {
+      const res = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.success) {
+          deleted = true;
+        }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        if (res.status !== 404 && res.status !== 405) {
+          lastError = errData.error || `API returned status ${res.status}`;
+        }
+      }
+    } catch (apiErr) {
+      console.warn('Backend API /api/delete-user not reachable, trying direct RPC:', apiErr);
     }
-    console.warn('RPC delete_user_account unavailable or failed, falling back to data cascade:', rpcError);
-  } catch (err) {
-    console.warn('RPC delete_user_account invocation error:', err);
   }
 
-  // 2. Fallback: Cascade delete all user records from Supabase tables
+  // 2. Try direct PostgreSQL RPC function delete_user_account()
+  if (!deleted) {
+    try {
+      const { error: rpcError } = await supabase.rpc('delete_user_account');
+      if (!rpcError) {
+        deleted = true;
+      } else {
+        console.error('RPC delete_user_account failed:', rpcError);
+        lastError = rpcError.message || rpcError.details || 'RPC execution error';
+      }
+    } catch (rpcErr) {
+      console.error('RPC invocation error:', rpcErr);
+      lastError = rpcErr.message;
+    }
+  }
+
+  // 3. Fallback: Clean up all user data tables in public schema
   try {
     await supabase.from('study_sessions').delete().eq('user_id', user.id);
     await supabase.from('grade_entries').delete().eq('user_id', user.id);
@@ -138,10 +173,17 @@ export async function deleteAccount() {
     await supabase.from('profiles').delete().eq('user_id', user.id);
     await supabase.from('settings').delete().eq('user_id', user.id);
   } catch (dataErr) {
-    console.error('Error during data cascade deletion:', dataErr);
+    console.warn('Data cascade error:', dataErr);
   }
 
-  // 3. Terminate session and sign out
+  // 4. If Supabase auth user deletion failed on both backend API and RPC, report the clear error
+  if (!deleted) {
+    throw new Error(
+      `Could not delete Supabase auth account: ${lastError || 'Function not found'}. Please copy and run the SQL migration in supabase_migration_delete_user.sql in your Supabase SQL Editor.`
+    );
+  }
+
+  // 5. Terminate session and sign out locally
   await signOut();
   return { success: true };
 }
