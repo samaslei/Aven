@@ -519,7 +519,7 @@ function attachPlansEvents(container) {
     window.avenApp?.showToast('Exported interactive HTML study plan', 'info');
   });
 
-  // Fullscreen Viewer Toggle
+  // Fullscreen Viewer Toggle (Full Browser Window — leaves browser tabs & URL bar visible)
   const viewerWrapper = container.querySelector('#plan-viewer-wrapper');
   const fullscreenBtn = container.querySelector('#btn-fullscreen-plan');
   const expandIcon = container.querySelector('.fs-icon-expand');
@@ -536,41 +536,18 @@ function attachPlansEvents(container) {
     if (labelText) labelText.textContent = isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
   };
 
-  const toggleFullscreen = async () => {
+  const toggleFullscreen = () => {
     if (!viewerWrapper) return;
     const nowFullscreen = !viewerWrapper.classList.contains('is-fullscreen');
-
     updateFullscreenUI(nowFullscreen);
-
-    try {
-      if (nowFullscreen) {
-        if (viewerWrapper.requestFullscreen && !document.fullscreenElement) {
-          await viewerWrapper.requestFullscreen();
-        }
-      } else {
-        if (document.fullscreenElement && document.exitFullscreen) {
-          await document.exitFullscreen();
-        }
-      }
-    } catch (err) {
-      // Graceful fallback to CSS full-viewport overlay mode
-    }
   };
 
   fullscreenBtn?.addEventListener('click', toggleFullscreen);
 
-  // Sync state if user exits via browser Escape key or OS controls
-  const handleFullscreenChange = () => {
-    if (!document.fullscreenElement && viewerWrapper?.classList.contains('is-fullscreen')) {
-      updateFullscreenUI(false);
-    }
-  };
-  document.addEventListener('fullscreenchange', handleFullscreenChange);
-
-  // Esc key fallback for CSS overlay mode
+  // Esc key exits browser-level fullscreen overlay
   const handleKeyDown = (evt) => {
     if (evt.key === 'Escape' && viewerWrapper?.classList.contains('is-fullscreen')) {
-      toggleFullscreen();
+      updateFullscreenUI(false);
     }
   };
   document.addEventListener('keydown', handleKeyDown);
