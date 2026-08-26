@@ -2707,55 +2707,42 @@ button, input, select, textarea {
 .pomo-controls-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.pomo-controls-row .btn {
+  height: 34px;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 5px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border-radius: var(--radius-md);
 }
 
 .pomo-btn-start,
 .pomo-btn-pause {
-  flex: 1 1 calc(50% - 4px);
-  min-width: 80px;
-  height: 36px;
-  font-size: 13px;
-  font-weight: 700;
-  gap: 6px;
-  justify-content: center;
+  flex: 1.15 1 0;
+  min-width: 0;
 }
 
 .pomo-btn-reset {
-  flex: 1 1 calc(50% - 4px);
-  min-width: 80px;
-  height: 36px;
-  padding: 0 10px;
-  font-size: 12.5px;
-  gap: 5px;
-  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
-.pomo-phase-toggle-btn {
-  flex: 1 1 100%;
-  width: 100%;
-  background: transparent;
-  border: 1px solid var(--border-subtle);
-  color: var(--text-muted);
-  border-radius: var(--radius-md);
-  padding: 0 10px;
-  height: 32px;
-  font-size: 11.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+.pomo-btn-skip {
+  flex: 0.95 1 0;
+  min-width: 0;
+  color: var(--text-secondary);
 }
 
-.pomo-phase-toggle-btn:hover {
-  background: var(--bg-surface-hover);
+.pomo-btn-skip:hover {
   color: var(--text-primary);
-  border-color: var(--border-default);
 }
 
 /* Picture-in-Picture Button & Placeholder State */
