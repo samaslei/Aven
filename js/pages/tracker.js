@@ -14,9 +14,13 @@ let heatmapYear = new Date().getFullYear(); // Year-view navigation state
 let distributionScope = 'all'; // 'all' | 'week'
 
 // Pomodoro Timer State (Persists across view switches)
-let pomoMode = localStorage.getItem('aven_pomo_mode') || 'classic'; // 'classic' (work->break) | 'reverse' (break->work)
-let pomoPhase = pomoMode === 'reverse' ? 'break' : 'focus'; // 'focus' (25m) | 'break' (5m)
-let pomoTimeRemaining = (pomoPhase === 'focus' ? 25 : 5) * 60; // seconds
+let pomoMode = 'classic'; // 'classic' (work->break) | 'reverse' (break->work)
+let pomoPhase = 'focus'; // 'focus' | 'break' | 'long-break'
+let pomoCurrentCycle = 1;
+let pomoWorkMins = 25;
+let pomoShortBreakMins = 5;
+let pomoLongBreakMins = 15;
+let pomoTimeRemaining = 25 * 60; // seconds
 let pomoIsRunning = false;
 let pomoInterval = null;
 let pomoSubjectId = '';
@@ -242,9 +246,10 @@ export function renderTrackerView(container) {
   }
 
   // Render Bentodoro-Style Bento Timer Tile
-  function renderPomodoroCard(activeSubjects) {
-    const totalSecs = (pomoPhase === 'focus' ? 25 : 5) * 60;
+  function renderPomodoroCard(activeSubjects, pomoTargetCycles) {
+    const totalSecs = (pomoPhase === 'focus' ? pomoWorkMins : (pomoPhase === 'long-break' ? pomoLongBreakMins : pomoShortBreakMins)) * 60;
     const progressPct = Math.min(100, Math.max(0, ((totalSecs - pomoTimeRemaining) / totalSecs) * 100));
+    const phaseLabel = pomoPhase === 'focus' ? '25M FOCUS' : (pomoPhase === 'long-break' ? '15M LONG BREAK' : '5M BREAK');
 
     return `
       <div class="tool-card pomodoro-card bento-timer-card">
@@ -265,16 +270,25 @@ export function renderTrackerView(container) {
           </div>
         </div>
 
-        <!-- Sub-Header: Phase Indicator & Subject Selector -->
+        <!-- Sub-Header: Phase Indicator & Subject Selector & Cycles Input -->
         <div class="pomo-meta-row">
-          <div class="pomo-phase-badge ${pomoPhase === 'focus' ? 'focus-mode' : 'break-mode'}">
+          <div class="pomo-phase-badge ${pomoPhase === 'focus' ? 'focus-mode' : (pomoPhase === 'long-break' ? 'long-break-mode' : 'break-mode')}">
             <span class="pomo-phase-dot"></span>
-            <span>${pomoPhase === 'focus' ? '25M FOCUS' : '5M BREAK'}</span>
+            <span>${phaseLabel}</span>
+            <span class="pomo-cycle-indicator">(${pomoCurrentCycle}/${pomoTargetCycles})</span>
           </div>
-          <div class="pomo-subject-wrap">
-            <select id="pomo-subject-select" class="form-select pomo-subject-select" title="Link session to subject">
-              ${renderSubjectSelectOptions(activeSubjects, pomoSubjectId, true)}
-            </select>
+
+          <div class="pomo-meta-controls">
+            <div class="pomo-subject-wrap">
+              <select id="pomo-subject-select" class="form-select pomo-subject-select" title="Link session to subject">
+                ${renderSubjectSelectOptions(activeSubjects, pomoSubjectId, true)}
+              </select>
+            </div>
+
+            <div class="pomo-cycles-control" title="Set number of cycles (editable when timer is idle)">
+              <label for="pomo-cycles-input" class="pomo-cycles-label">Cycles</label>
+              <input type="number" id="pomo-cycles-input" class="form-input pomo-cycles-input" min="1" max="12" value="${pomoTargetCycles}" ${pomoIsRunning ? 'disabled' : ''}>
+            </div>
           </div>
         </div>
 
@@ -312,7 +326,7 @@ export function renderTrackerView(container) {
           </button>
 
           <button type="button" class="pomo-phase-toggle-btn" id="btn-pomo-switch-phase" title="Skip to next phase">
-            ${pomoPhase === 'focus' ? 'Skip to Break' : 'Skip to Focus'}
+            ${pomoPhase === 'focus' ? (pomoCurrentCycle >= pomoTargetCycles ? 'Skip to Long Break' : 'Skip to Break') : 'Skip to Focus'}
           </button>
         </div>
       </div>
@@ -368,12 +382,15 @@ export function renderTrackerView(container) {
     `;
   }
 
+  const settings = store.getSettings();
+  const pomoTargetCycles = settings.pomodoro_cycles || 4;
+
   container.innerHTML = `
     <div class="tracker-layout">
-      <!-- Tracker Action Top Row: Bentodoro Timer + Milestone Progress + Manual Study Log (3-Column Grid) -->
+      <!-- Tracker Action Top Row: Pomodoro Timer + Milestone Progress + Manual Study Log (3-Column Grid) -->
       <div class="tracker-tools-grid">
-        <!-- Bentodoro Timer Card (Left) -->
-        ${renderPomodoroCard(activeSubjects)}
+        <!-- Pomodoro Timer Card (Left) -->
+        ${renderPomodoroCard(activeSubjects, pomoTargetCycles)}
 
         <!-- Journey to Next Milestone Card (Middle) -->
         ${renderMilestoneCard(sessions)}
@@ -696,59 +713,59 @@ function attachTrackerEvents(container) {
         timeDisplay.textContent = formatMinutesAndSeconds(pomoTimeRemaining);
       }
       if (progressFill) {
-        const totalSecs = (pomoPhase === 'focus' ? 25 : 5) * 60;
+        const totalSecs = (pomoPhase === 'focus' ? pomoWorkMins : (pomoPhase === 'long-break' ? pomoLongBreakMins : pomoShortBreakMins)) * 60;
         const pct = ((totalSecs - pomoTimeRemaining) / totalSecs) * 100;
         progressFill.style.width = `${pct}%`;
       }
     } else {
       // Phase completed!
       playDualToneChime();
+      const settings = store.getSettings();
+      const targetCycles = settings.pomodoro_cycles || 4;
+
       if (pomoPhase === 'focus') {
         const todayStr = new Date().toISOString().split('T')[0];
         store.saveSession({
           subject_id: pomoSubjectId || null,
-          duration: 25,
+          duration: pomoWorkMins,
           date: todayStr,
-          notes: `Pomodoro ${pomoMode === 'reverse' ? 'Reverse' : 'Classic'} Focus Session`
+          notes: `Pomodoro Focus (Cycle ${pomoCurrentCycle}/${targetCycles})`
         });
         const sub = pomoSubjectId ? store.getSubjectById(pomoSubjectId) : null;
 
-        if (pomoMode === 'classic') {
+        if (pomoCurrentCycle >= targetCycles) {
+          // Final cycle completed -> Transition to Long Break (15 min)
           window.avenApp?.showToast(
-            `Focus session completed! 25 mins logged${sub ? ` for ${sub.name}` : ''}. Starting 5 min break.`,
+            `Final focus cycle (${pomoCurrentCycle}/${targetCycles}) completed! ${pomoWorkMins} mins logged${sub ? ` for ${sub.name}` : ''}. Starting 15 min long break!`,
             'success'
           );
-          pomoPhase = 'break';
-          pomoTimeRemaining = 5 * 60;
+          pomoPhase = 'long-break';
+          pomoTimeRemaining = pomoLongBreakMins * 60;
         } else {
-          // Reverse mode: Finished the 25m work phase
+          // Standard cycle -> Transition to Short Break (5 min)
           window.avenApp?.showToast(
-            `Earned focus session completed! 25 mins logged${sub ? ` for ${sub.name}` : ''}. Sequence finished.`,
+            `Focus cycle ${pomoCurrentCycle}/${targetCycles} completed! ${pomoWorkMins} mins logged${sub ? ` for ${sub.name}` : ''}. Starting 5 min break.`,
             'success'
           );
           pomoPhase = 'break';
-          pomoTimeRemaining = 5 * 60;
-          pomoIsRunning = false;
-          if (pomoInterval) {
-            clearInterval(pomoInterval);
-            pomoInterval = null;
-          }
+          pomoTimeRemaining = pomoShortBreakMins * 60;
         }
-      } else {
-        // Break phase finished
-        if (pomoMode === 'reverse') {
-          window.avenApp?.showToast('5 min break finished! Ready to begin your earned 25m focus session.', 'info');
-          pomoPhase = 'focus';
-          pomoTimeRemaining = 25 * 60;
-        } else {
-          window.avenApp?.showToast('Break finished! Ready for your next focus session.', 'info');
-          pomoPhase = 'focus';
-          pomoTimeRemaining = 25 * 60;
-          pomoIsRunning = false;
-          if (pomoInterval) {
-            clearInterval(pomoInterval);
-            pomoInterval = null;
-          }
+      } else if (pomoPhase === 'break') {
+        // Short break completed -> Advance to next focus cycle
+        pomoCurrentCycle++;
+        pomoPhase = 'focus';
+        pomoTimeRemaining = pomoWorkMins * 60;
+        window.avenApp?.showToast(`Break finished! Starting Focus cycle ${pomoCurrentCycle} of ${targetCycles}.`, 'info');
+      } else if (pomoPhase === 'long-break') {
+        // Long break completed -> Full Pomodoro sequence completed!
+        window.avenApp?.showToast(`Long break finished! All ${targetCycles} Pomodoro cycles completed. Great job!`, 'success');
+        pomoPhase = 'focus';
+        pomoCurrentCycle = 1;
+        pomoTimeRemaining = pomoWorkMins * 60;
+        pomoIsRunning = false;
+        if (pomoInterval) {
+          clearInterval(pomoInterval);
+          pomoInterval = null;
         }
       }
       renderTrackerView(container);
@@ -773,6 +790,20 @@ function attachTrackerEvents(container) {
     });
   }
 
+  const pomoCyclesInput = container.querySelector('#pomo-cycles-input');
+  if (pomoCyclesInput) {
+    pomoCyclesInput.addEventListener('change', (e) => {
+      let val = parseInt(e.target.value, 10);
+      if (isNaN(val) || val < 1) val = 1;
+      if (val > 12) val = 12;
+      store.saveSettings({ pomodoro_cycles: val });
+      if (pomoCurrentCycle > val) {
+        pomoCurrentCycle = 1;
+      }
+      renderTrackerView(container);
+    });
+  }
+
   const pomoResetBtn = container.querySelector('#btn-pomo-reset');
   if (pomoResetBtn) {
     pomoResetBtn.addEventListener('click', () => {
@@ -781,7 +812,9 @@ function attachTrackerEvents(container) {
         clearInterval(pomoInterval);
         pomoInterval = null;
       }
-      pomoTimeRemaining = (pomoPhase === 'focus' ? 25 : 5) * 60;
+      pomoCurrentCycle = 1;
+      pomoPhase = 'focus';
+      pomoTimeRemaining = pomoWorkMins * 60;
       renderTrackerView(container);
     });
   }
@@ -794,8 +827,26 @@ function attachTrackerEvents(container) {
         clearInterval(pomoInterval);
         pomoInterval = null;
       }
-      pomoPhase = pomoPhase === 'focus' ? 'break' : 'focus';
-      pomoTimeRemaining = (pomoPhase === 'focus' ? 25 : 5) * 60;
+      const settings = store.getSettings();
+      const targetCycles = settings.pomodoro_cycles || 4;
+
+      if (pomoPhase === 'focus') {
+        if (pomoCurrentCycle >= targetCycles) {
+          pomoPhase = 'long-break';
+          pomoTimeRemaining = pomoLongBreakMins * 60;
+        } else {
+          pomoPhase = 'break';
+          pomoTimeRemaining = pomoShortBreakMins * 60;
+        }
+      } else if (pomoPhase === 'break') {
+        pomoCurrentCycle++;
+        pomoPhase = 'focus';
+        pomoTimeRemaining = pomoWorkMins * 60;
+      } else {
+        pomoCurrentCycle = 1;
+        pomoPhase = 'focus';
+        pomoTimeRemaining = pomoWorkMins * 60;
+      }
       renderTrackerView(container);
     });
   }

@@ -132,6 +132,8 @@ class Store {
       default_timer_mode: 'stopwatch',
       pomodoro_work_mins: 25,
       pomodoro_break_mins: 5,
+      pomodoro_long_break_mins: 15,
+      pomodoro_cycles: 4,
       sound_notifications: true,
       subjects_view_mode: 'grid',
       neutral_colors: false
