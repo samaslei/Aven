@@ -2946,7 +2946,18 @@ button, input, select, textarea {
   min-width: 0;
 }
 
-.pomo-btn-reset {
+.pomo-btn-start-full {
+  width: 100%;
+  flex: 1 1 auto;
+}
+
+.pomo-btn-stop-log {
+  flex: 1.15 1 0;
+  min-width: 0;
+}
+
+.pomo-btn-reset,
+.pomo-btn-reset-cycle {
   flex: 1 1 0;
   min-width: 0;
 }
@@ -5820,21 +5831,29 @@ button, input, select, textarea {
     min-width: 26px;
   }
 
-  /* Phone-only: Collapse button row to icon-only */
+  /* Phone-only: Collapse button row to icon-only when running; keep text on single idle start button */
   .pomo-controls-row {
     gap: 6px;
   }
 
-  .pomo-controls-row .pomo-btn-text {
+  .pomo-controls-row:not(.pomo-controls-idle) .pomo-btn-text {
     display: none !important;
   }
 
+  .pomo-controls-row.pomo-controls-idle .pomo-btn-text {
+    display: inline !important;
+  }
+
   .pomo-controls-row .btn {
-    padding: 0 !important;
+    padding: 0 12px !important;
     min-width: 0 !important;
     flex: 1 1 0 !important;
     height: 38px !important;
     justify-content: center !important;
+  }
+
+  .pomo-controls-row:not(.pomo-controls-idle) .btn {
+    padding: 0 !important;
   }
 
   .pomo-controls-row .btn svg {

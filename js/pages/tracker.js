@@ -26,6 +26,7 @@ let pomoAutoStartPomodoros = false;
 let pomoTimeRemaining = 25 * 60; // seconds for countdown
 let stopwatchElapsed = 0; // seconds for count-up stopwatch
 let pomoIsRunning = false;
+let pomoIsPausedAfterSkip = false; // State: paused after skipping a phase
 let pomoInterval = null;
 let pomoSubjectId = '';
 let isPomoSettingsOpen = false;
@@ -406,39 +407,66 @@ export function renderTrackerView(container) {
             </div>
           </div>
 
-          <!-- Timer Controls Row: Reset, Start/Pause, Skip -->
-          <div class="pomo-controls-row">
-            <button type="button" class="btn btn-secondary pomo-btn-reset" id="btn-pomo-reset" title="Reset Timer" aria-label="Reset">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                <path d="M3 3v5h5"></path>
-              </svg>
-              <span class="pomo-btn-text">Reset</span>
-            </button>
-
-            <button type="button" class="btn ${pomoIsRunning ? 'btn-secondary pomo-btn-pause' : 'btn-primary pomo-btn-start'}" id="btn-pomo-toggle" aria-label="${pomoIsRunning ? 'Pause' : 'Start'}">
-              ${pomoIsRunning ? `
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16" rx="1"></rect>
-                  <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+          <!-- Timer Controls Row: State-dependent (Idle: Start only; Running: Reset + Stop & Log + Skip; Paused-after-skip: Start + Reset Cycle + Stop & Log) -->
+          ${pomoIsRunning ? `
+            <div class="pomo-controls-row pomo-controls-running">
+              <button type="button" class="btn btn-secondary pomo-btn-reset-cycle" id="btn-pomo-reset-cycle" title="Reset Cycle Progress" aria-label="Reset">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                  <path d="M3 3v5h5"></path>
                 </svg>
-                <span class="pomo-btn-text">Pause</span>
-              ` : `
+                <span class="pomo-btn-text">Reset</span>
+              </button>
+
+              <button type="button" class="btn btn-secondary pomo-btn-stop-log" id="btn-pomo-stop-log" title="Stop & Log Session" style="color: var(--danger); font-weight: 600;" aria-label="Stop & Log">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+                </svg>
+                <span class="pomo-btn-text">Stop & Log</span>
+              </button>
+
+              <button type="button" class="btn btn-secondary pomo-btn-skip" id="btn-pomo-switch-phase" title="${pomoPhase === 'focus' ? (pomoCurrentCycle % pomoLongBreakInterval === 0 ? 'Skip to Long Break' : 'Skip to Break') : 'Skip to Focus'}" aria-label="Skip">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                  <line x1="19" y1="5" x2="19" y2="19"></line>
+                </svg>
+                <span class="pomo-btn-text">Skip</span>
+              </button>
+            </div>
+          ` : (pomoIsPausedAfterSkip ? `
+            <div class="pomo-controls-row pomo-controls-paused-skip">
+              <button type="button" class="btn btn-primary pomo-btn-start" id="btn-pomo-toggle" aria-label="Start">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
                   <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
                 <span class="pomo-btn-text">Start</span>
-              `}
-            </button>
+              </button>
 
-            <button type="button" class="btn btn-secondary pomo-btn-skip" id="btn-pomo-switch-phase" title="${pomoPhase === 'focus' ? (pomoCurrentCycle % pomoLongBreakInterval === 0 ? 'Skip to Long Break' : 'Skip to Break') : 'Skip to Focus'}" aria-label="Skip">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="5 4 15 12 5 20 5 4"></polygon>
-                <line x1="19" y1="5" x2="19" y2="19"></line>
-              </svg>
-              <span class="pomo-btn-text">Skip</span>
-            </button>
-          </div>
+              <button type="button" class="btn btn-secondary pomo-btn-reset-cycle" id="btn-pomo-reset-cycle" title="Reset Cycle Progress" aria-label="Reset Cycle">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                  <path d="M3 3v5h5"></path>
+                </svg>
+                <span class="pomo-btn-text">Reset Cycle</span>
+              </button>
+
+              <button type="button" class="btn btn-secondary pomo-btn-stop-log" id="btn-pomo-stop-log" title="Stop & Log Session" style="color: var(--danger); font-weight: 600;" aria-label="Stop & Log">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+                </svg>
+                <span class="pomo-btn-text">Stop & Log</span>
+              </button>
+            </div>
+          ` : `
+            <div class="pomo-controls-row pomo-controls-idle">
+              <button type="button" class="btn btn-primary pomo-btn-start pomo-btn-start-full" id="btn-pomo-toggle" aria-label="Start">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span class="pomo-btn-text">Start</span>
+              </button>
+            </div>
+          `)}
         `}
       </div>
     `;
@@ -800,6 +828,38 @@ export function renderTrackerView(container) {
         </div>
       </div>
     </div>
+
+    <!-- Reset Cycle Confirmation Modal (Prompt 54) -->
+    <div class="modal-overlay" id="pomo-reset-cycle-modal">
+      <div class="modal-card" style="max-width: 480px;">
+        <div class="modal-header">
+          <h3 class="modal-title">Reset Cycle Progress</h3>
+          <button type="button" class="btn-icon close-reset-cycle-modal-btn" aria-label="Close modal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p style="margin: 0 0 10px 0; color: var(--text-primary); font-size: 13.5px; line-height: 1.5;">
+            Choose how you would like to reset your Pomodoro session:
+          </p>
+          <p style="margin: 0; color: var(--text-muted); font-size: 12.5px; line-height: 1.4;">
+            You can discard all session progress or log completed focus time to Study History before returning to idle state.
+          </p>
+        </div>
+        <div class="modal-footer" style="gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+          <button type="button" class="btn btn-ghost close-reset-cycle-modal-btn">Cancel</button>
+          <button type="button" class="btn btn-secondary" id="btn-discard-cycle-progress" style="color: var(--danger); font-weight: 600;">
+            Discard progress
+          </button>
+          <button type="button" class="btn btn-primary" id="btn-log-cycle-progress">
+            Stop & Log
+          </button>
+        </div>
+      </div>
+    </div>
   `;
 
   attachTrackerEvents(container);
@@ -1043,17 +1103,26 @@ function attachTrackerEvents(container) {
         <div class="pip-time-display" id="pip-time-display">${timeStr}</div>
 
         <div class="pip-controls">
-          <button type="button" class="btn ${pomoIsRunning ? 'btn-secondary' : 'btn-primary'}" id="btn-pip-toggle">
-            ${pomoIsRunning ? 'Pause' : (isStopwatch && stopwatchElapsed > 0 ? 'Resume' : 'Start')}
-          </button>
-          ${!isStopwatch ? `
-            <button type="button" class="btn btn-secondary" id="btn-pip-skip">
-              Skip
+          ${isStopwatch ? `
+            <button type="button" class="btn ${pomoIsRunning ? 'btn-secondary' : 'btn-primary'}" id="btn-pip-toggle">
+              ${pomoIsRunning ? 'Pause' : (stopwatchElapsed > 0 ? 'Resume' : 'Start')}
             </button>
-          ` : `
             <button type="button" class="btn btn-secondary" id="btn-pip-stop" style="${stopwatchElapsed > 0 ? 'color: var(--danger);' : ''}">
               ${pomoIsRunning || stopwatchElapsed > 0 ? 'Stop & Log' : 'Reset'}
             </button>
+          ` : `
+            ${!pomoIsRunning ? `
+              <button type="button" class="btn btn-primary" id="btn-pip-toggle" style="flex: 1;">
+                Start
+              </button>
+            ` : `
+              <button type="button" class="btn btn-secondary" id="btn-pip-stop-log" style="flex: 1.15; color: var(--danger); font-weight: 600;">
+                Stop & Log
+              </button>
+              <button type="button" class="btn btn-secondary" id="btn-pip-skip" style="flex: 0.95;">
+                Skip
+              </button>
+            `}
           `}
         </div>
       </div>
@@ -1080,6 +1149,12 @@ function attachTrackerEvents(container) {
     const pipSkip = pipWindow.document.querySelector('#btn-pip-skip');
     if (pipSkip) {
       pipSkip.addEventListener('click', () => {
+        pomoIsRunning = false;
+        if (pomoInterval) {
+          clearInterval(pomoInterval);
+          pomoInterval = null;
+        }
+
         if (pomoPhase === 'focus') {
           if (pomoCurrentCycle % pomoLongBreakInterval === 0) {
             pomoPhase = 'long-break';
@@ -1093,7 +1168,62 @@ function attachTrackerEvents(container) {
           pomoPhase = 'focus';
           pomoTimeRemaining = pomoWorkMins * 60;
         }
+        pomoIsPausedAfterSkip = true;
         renderPipContent();
+        renderTrackerView(container);
+      });
+    }
+
+    const pipStopLog = pipWindow.document.querySelector('#btn-pip-stop-log');
+    if (pipStopLog) {
+      pipStopLog.addEventListener('click', () => {
+        pomoIsRunning = false;
+        if (pomoInterval) {
+          clearInterval(pomoInterval);
+          pomoInterval = null;
+        }
+        pomoIsPausedAfterSkip = false;
+
+        if (pomoPhase === 'focus') {
+          const elapsedSecs = (pomoWorkMins * 60) - pomoTimeRemaining;
+          if (elapsedSecs >= 30) {
+            const mins = Math.max(1, Math.round(elapsedSecs / 60));
+            const todayStr = new Date().toISOString().split('T')[0];
+            store.saveSession({
+              subject_id: pomoSubjectId || null,
+              duration: mins,
+              date: todayStr,
+              notes: `Pomodoro Focus (Cycle ${pomoCurrentCycle} partial)`
+            });
+            const sub = pomoSubjectId ? store.getSubjectById(pomoSubjectId) : null;
+            window.avenApp?.showToast(`Logged ${mins} min focus session${sub ? ` for ${sub.name}` : ''}!`, 'success');
+          }
+        } else {
+          // Break or Long Break phase: log if elapsed break time is >= 5 minutes (300s)
+          const totalBreakSecs = (pomoPhase === 'long-break' ? pomoLongBreakMins : pomoShortBreakMins) * 60;
+          const elapsedBreakSecs = totalBreakSecs - pomoTimeRemaining;
+          if (elapsedBreakSecs >= 300) {
+            const breakMins = Math.max(5, Math.round(elapsedBreakSecs / 60));
+            const todayStr = new Date().toISOString().split('T')[0];
+            store.saveSession({
+              subject_id: pomoSubjectId || null,
+              duration: breakMins,
+              date: todayStr,
+              notes: pomoPhase === 'long-break' ? 'Pomodoro Long Break' : 'Pomodoro Break'
+            });
+            const sub = pomoSubjectId ? store.getSubjectById(pomoSubjectId) : null;
+            window.avenApp?.showToast(`Logged ${breakMins} min break session${sub ? ` for ${sub.name}` : ''}!`, 'success');
+          } else {
+            window.avenApp?.showToast('Pomodoro session ended (break under 5m not logged).', 'info');
+          }
+        }
+
+        pomoCurrentCycle = 1;
+        pomoPhase = 'focus';
+        pomoTimeRemaining = pomoWorkMins * 60;
+
+        renderPipContent();
+        renderTrackerView(container);
       });
     }
 
@@ -1277,6 +1407,7 @@ function attachTrackerEvents(container) {
             await Notification.requestPermission();
           } catch (err) {}
         }
+        pomoIsPausedAfterSkip = false;
         pomoIsRunning = true;
         if (pomoInterval) clearInterval(pomoInterval);
         pomoInterval = setInterval(tickPomodoro, 1000);
@@ -1384,17 +1515,115 @@ function attachTrackerEvents(container) {
           window.avenApp?.showToast('Stopwatch reset (under 30s session not logged)', 'info');
         }
         stopwatchElapsed = 0;
-      } else {
-        pomoIsRunning = false;
-        if (pomoInterval) {
-          clearInterval(pomoInterval);
-          pomoInterval = null;
-        }
-        pomoCurrentCycle = 1;
-        pomoPhase = 'focus';
-        pomoTimeRemaining = pomoWorkMins * 60;
       }
       renderTrackerView(container);
+    });
+  }
+
+  // Helper for Pomodoro Stop & Log action across buttons & modal choices
+  const executePomoStopAndLog = () => {
+    pomoIsRunning = false;
+    if (pomoInterval) {
+      clearInterval(pomoInterval);
+      pomoInterval = null;
+    }
+    pomoIsPausedAfterSkip = false;
+
+    if (pomoPhase === 'focus') {
+      const elapsedSecs = (pomoWorkMins * 60) - pomoTimeRemaining;
+      if (elapsedSecs >= 30) {
+        const mins = Math.max(1, Math.round(elapsedSecs / 60));
+        const todayStr = new Date().toISOString().split('T')[0];
+        store.saveSession({
+          subject_id: pomoSubjectId || null,
+          duration: mins,
+          date: todayStr,
+          notes: `Pomodoro Focus (Cycle ${pomoCurrentCycle} partial)`
+        });
+        const sub = pomoSubjectId ? store.getSubjectById(pomoSubjectId) : null;
+        window.avenApp?.showToast(`Logged ${mins} min focus session${sub ? ` for ${sub.name}` : ''}!`, 'success');
+      } else {
+        window.avenApp?.showToast('Session ended (under 30s focus not logged)', 'info');
+      }
+    } else {
+      // Break or Long Break: log if elapsed break time is >= 5 minutes (300s)
+      const totalBreakSecs = (pomoPhase === 'long-break' ? pomoLongBreakMins : pomoShortBreakMins) * 60;
+      const elapsedBreakSecs = totalBreakSecs - pomoTimeRemaining;
+      if (elapsedBreakSecs >= 300) {
+        const breakMins = Math.max(5, Math.round(elapsedBreakSecs / 60));
+        const todayStr = new Date().toISOString().split('T')[0];
+        store.saveSession({
+          subject_id: pomoSubjectId || null,
+          duration: breakMins,
+          date: todayStr,
+          notes: pomoPhase === 'long-break' ? 'Pomodoro Long Break' : 'Pomodoro Break'
+        });
+        const sub = pomoSubjectId ? store.getSubjectById(pomoSubjectId) : null;
+        window.avenApp?.showToast(`Logged ${breakMins} min break session${sub ? ` for ${sub.name}` : ''}!`, 'success');
+      } else {
+        window.avenApp?.showToast('Pomodoro session ended (break under 5m not logged).', 'info');
+      }
+    }
+
+    // Reset to idle state
+    pomoCurrentCycle = 1;
+    pomoPhase = 'focus';
+    pomoTimeRemaining = pomoWorkMins * 60;
+
+    if (pipWindow && !pipWindow.closed) {
+      renderPipContent();
+    }
+    renderTrackerView(container);
+  };
+
+  // Pomodoro "Stop & Log" Button Handler
+  const pomoStopLogBtn = container.querySelector('#btn-pomo-stop-log');
+  if (pomoStopLogBtn) {
+    pomoStopLogBtn.addEventListener('click', executePomoStopAndLog);
+  }
+
+  // Pomodoro "Reset Cycle" Modal Handlers (Prompts 54 & follow-up)
+  const resetCycleModal = container.querySelector('#pomo-reset-cycle-modal');
+  const pomoResetCycleBtns = container.querySelectorAll('.pomo-btn-reset-cycle, #btn-pomo-reset-cycle');
+  const discardCycleBtn = container.querySelector('#btn-discard-cycle-progress');
+  const logCycleBtn = container.querySelector('#btn-log-cycle-progress');
+
+  pomoResetCycleBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      resetCycleModal?.classList.add('open');
+    });
+  });
+
+  container.querySelectorAll('.close-reset-cycle-modal-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      resetCycleModal?.classList.remove('open');
+    });
+  });
+
+  if (discardCycleBtn) {
+    discardCycleBtn.addEventListener('click', () => {
+      pomoIsRunning = false;
+      if (pomoInterval) {
+        clearInterval(pomoInterval);
+        pomoInterval = null;
+      }
+      pomoIsPausedAfterSkip = false;
+      pomoCurrentCycle = 1;
+      pomoPhase = 'focus';
+      pomoTimeRemaining = pomoWorkMins * 60;
+      resetCycleModal?.classList.remove('open');
+      window.avenApp?.showToast('Cycle progress discarded. Timer reset.', 'info');
+      if (pipWindow && !pipWindow.closed) {
+        renderPipContent();
+      }
+      renderTrackerView(container);
+    });
+  }
+
+  if (logCycleBtn) {
+    logCycleBtn.addEventListener('click', () => {
+      resetCycleModal?.classList.remove('open');
+      executePomoStopAndLog();
     });
   }
 
@@ -1448,7 +1677,11 @@ function attachTrackerEvents(container) {
         pomoPhase = 'focus';
         pomoTimeRemaining = pomoWorkMins * 60;
       }
+      pomoIsPausedAfterSkip = true;
       skipModal?.classList.remove('open');
+      if (pipWindow && !pipWindow.closed) {
+        renderPipContent();
+      }
       renderTrackerView(container);
     });
   }
