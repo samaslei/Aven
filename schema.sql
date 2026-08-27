@@ -305,7 +305,11 @@ CREATE POLICY "Users can delete own settings" ON public.settings
 -- AUTOMATIC USER PROFILES & SETTINGS TRIGGER (ON SIGN-UP)
 -- ==============================================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
 BEGIN
   -- Auto-create profile row
   INSERT INTO public.profiles (user_id, display_name, email, avatar_color)
@@ -324,7 +328,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Trigger execution on auth.users insert
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
@@ -332,18 +336,38 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- Restrict handle_new_user() to internal trigger execution only
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated;
+
 -- ==============================================================================
 -- 9. USER ACCOUNT SELF-DELETION FUNCTION (RPC)
 -- Allows authenticated users to permanently delete their auth account & cascade data
 -- ==============================================================================
 CREATE OR REPLACE FUNCTION public.delete_user_account()
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+  current_uid uuid;
 BEGIN
-  -- Cascades delete to all child tables (profiles, subjects, study_sessions,
-  -- grade_categories, grade_entries, subject_grade_configs, study_plans, settings)
-  DELETE FROM auth.users WHERE id = auth.uid();
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+  -- Retrieve the UID of the currently authenticated caller strictly from JWT session
+  current_uid := auth.uid();
 
+  IF current_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated. Cannot delete account.';
+  END IF;
+
+  -- Delete strictly WHERE id = current_uid (scoped to calling user)
+  DELETE FROM auth.users WHERE id = current_uid;
+END;
+$$;
+
+-- Revoke default public/anon access and grant strictly to authenticated users
+REVOKE EXECUTE ON FUNCTION public.delete_user_account() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.delete_user_account() FROM anon;
 GRANT EXECUTE ON FUNCTION public.delete_user_account() TO authenticated;
 
