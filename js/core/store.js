@@ -268,7 +268,7 @@ class Store {
           notification_sound: true,
           subjects_view_mode: 'grid',
           neutral_colors: false
-        }, { onConflict: 'user_id' });
+        }, { onConflict: 'user_id' }).catch(() => {});
       }
 
       // 3. Parallel fetch of all entities for maximum startup throughput
@@ -368,10 +368,10 @@ class Store {
     events.emit('settings:updated', updated);
     events.emit('store:changed', { type: 'settings' });
 
-    // Supabase Cloud sync
+    // Supabase Cloud sync with resilient column fallback
     getCurrentUser().then(user => {
       if (user) {
-        supabase.from('settings').upsert({
+        const payload = {
           user_id: user.id,
           theme: this.state.theme || 'dark',
           term_weight_default: updated.default_midterm_weight,
@@ -386,9 +386,18 @@ class Store {
           subjects_view_mode: updated.subjects_view_mode,
           neutral_colors: updated.neutral_colors || false,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' }).then(({ error }) => {
-          if (error) console.warn('Supabase settings sync error:', error);
-        });
+        };
+
+        supabase.from('settings').upsert(payload, { onConflict: 'user_id' }).then(({ error }) => {
+          if (error && error.code === 'PGRST204') {
+            // Column not found in remote DB schema cache yet - retry with base schema columns
+            delete payload.neutral_colors;
+            delete payload.subjects_view_mode;
+            supabase.from('settings').upsert(payload, { onConflict: 'user_id' }).catch(() => {});
+          } else if (error) {
+            console.warn('Supabase settings sync warning:', error.message || error);
+          }
+        }).catch(() => {});
       }
     });
 
