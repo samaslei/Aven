@@ -239,8 +239,7 @@ export function renderPlansView(container) {
             <!-- Secure isolated sandbox: allow-scripts, allow-forms, allow-modals, allow-popups, allow-downloads (allow-same-origin omitted for origin isolation) -->
             <iframe id="sandboxed-plan-iframe"
                     class="sandboxed-plan-frame"
-                    sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads"
-                    srcdoc="${escapeHtmlDoc(currentPlan.html_content, currentPlan.id)}">
+                    sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads">
             </iframe>
           </div>
         `}
@@ -319,6 +318,12 @@ export function renderPlansView(container) {
     </div>
   `;
 
+  // Safely assign iframe.srcdoc as a direct DOM property to avoid HTML attribute escaping bugs and preserve scripts byte-for-byte
+  const iframe = container.querySelector('#sandboxed-plan-iframe');
+  if (iframe && currentPlan && currentPlan.html_content) {
+    iframe.srcdoc = prepareSandboxedHtml(currentPlan.html_content, currentPlan.id);
+  }
+
   attachPlansEvents(container);
 }
 
@@ -362,7 +367,7 @@ function prepareSandboxedHtml(rawHtml, planId = '') {
   const autoSaveJs = `
 <script id="aven-autosave-bridge">
 (function() {
-  var planId = "${planId || ''}";
+  var planId = ${JSON.stringify(planId || '')};
   var debounceTimer = null;
 
   function syncFormAttributes() {
@@ -409,7 +414,7 @@ function prepareSandboxedHtml(rawHtml, planId = '') {
     var injectedScript = clone.querySelector('#aven-autosave-bridge');
     if (injectedScript) injectedScript.remove();
 
-    var doctype = document.doctype ? '<!DOCTYPE ' + document.doctype.name + '>\n' : '<!DOCTYPE html>\n';
+    var doctype = (document.doctype ? '<!DOCTYPE ' + document.doctype.name + '>' : '<!DOCTYPE html>') + '\\n';
     return doctype + clone.outerHTML;
   }
 
@@ -452,13 +457,6 @@ function prepareSandboxedHtml(rawHtml, planId = '') {
   } else {
     return `<!DOCTYPE html><html><head><meta charset="utf-8">${injectedCode}</head><body>${rawHtml}</body></html>`;
   }
-}
-
-function escapeHtmlDoc(html, planId = '') {
-  const prepared = prepareSandboxedHtml(html, planId);
-  return prepared
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;');
 }
 
 function attachPlansEvents(container) {
