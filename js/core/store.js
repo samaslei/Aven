@@ -890,7 +890,7 @@ class Store {
   }
 
   saveSession(sessionData) {
-    const sessions = this.state.sessions;
+    let sessions = this.state.sessions || [];
     let session;
     const cleanSubjectId = sessionData.subject_id && sessionData.subject_id.trim() ? sessionData.subject_id.trim() : null;
 
@@ -912,10 +912,20 @@ class Store {
       sessions.unshift(session);
     }
 
+    // Sort descending by date and creation timestamp
+    sessions.sort((a, b) => new Date(b.date + ' ' + (b.created_at || '')) - new Date(a.date + ' ' + (a.created_at || '')));
+
+    // Enforce 25 logs maximum: prune older sessions beyond 25
+    let deletedSessions = [];
+    if (sessions.length > 25) {
+      deletedSessions = sessions.splice(25);
+    }
+    this.state.sessions = sessions;
+
     events.emit('session:saved', session);
     events.emit('store:changed', { type: 'session' });
 
-    // Supabase Cloud sync
+    // Supabase Cloud sync: upsert current session and delete pruned older sessions
     getCurrentUser().then(user => {
       if (user && session) {
         supabase.from('study_sessions').upsert({
@@ -929,6 +939,13 @@ class Store {
         }, { onConflict: 'id' }).then(({ error }) => {
           if (error) console.warn('Supabase session sync error:', error);
         });
+
+        if (deletedSessions.length > 0) {
+          const deletedIds = deletedSessions.map(d => d.id).filter(Boolean);
+          if (deletedIds.length > 0) {
+            supabase.from('study_sessions').delete().in('id', deletedIds).eq('user_id', user.id).then();
+          }
+        }
       }
     });
 

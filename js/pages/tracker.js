@@ -14,7 +14,7 @@ let heatmapYear = new Date().getFullYear(); // Year-view navigation state
 let distributionScope = 'all'; // 'all' | 'week'
 
 // Pomodoro Timer State (Persists across view switches)
-let pomoMode = 'classic'; // 'classic' (work->break) | 'reverse' (break->work) | 'stopwatch' (count-up)
+let pomoMode = 'classic'; // 'classic' (pomodoro) | 'stopwatch' (count-up)
 let pomoPhase = 'focus'; // 'focus' | 'break' | 'long-break'
 let pomoCurrentCycle = 1;
 let pomoWorkMins = 25;
@@ -306,11 +306,10 @@ export function renderTrackerView(container) {
             <span>POMODORO</span>
           </div>
 
-          <!-- 3-Way Mode Toggle + Popout PiP Action -->
+          <!-- 2-Way Mode Toggle + Popout PiP Action -->
           <div class="pomo-header-actions">
             <div class="pomo-mode-switch" id="pomo-mode-switch" title="Toggle Timer Mode">
-              <button type="button" class="pomo-mode-btn ${pomoMode === 'classic' ? 'active' : ''}" data-mode="classic">Classic</button>
-              <button type="button" class="pomo-mode-btn ${pomoMode === 'reverse' ? 'active' : ''}" data-mode="reverse">Reverse</button>
+              <button type="button" class="pomo-mode-btn ${pomoMode === 'classic' ? 'active' : ''}" data-mode="classic">Pomodoro</button>
               <button type="button" class="pomo-mode-btn ${pomoMode === 'stopwatch' ? 'active' : ''}" data-mode="stopwatch">Stopwatch</button>
             </div>
             ${isPipSupported ? `
@@ -685,7 +684,7 @@ export function renderTrackerView(container) {
                     No study sessions recorded yet. Use the manual study log above!
                   </td>
                 </tr>
-              ` : displaySessions.slice(0, 15).map(s => {
+              ` : displaySessions.slice(0, 25).map(s => {
                 const sub = s.subject_id ? store.getSubjectById(s.subject_id) : null;
                 const subId = s.subject_id || 'general';
                 const subColor = distColorMap[subId] || (sub && sub.color) || '#8A9A5B';
@@ -963,13 +962,14 @@ function attachTrackerEvents(container) {
     });
   }
 
-  // Classic / Reverse / Stopwatch 3-Way Mode Toggle Buttons
+  // Pomodoro / Stopwatch 2-Way Mode Toggle Buttons
   container.querySelectorAll('.pomo-mode-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const mode = e.currentTarget.dataset.mode;
       if (mode === pomoMode) return;
       pomoMode = mode;
       pomoIsRunning = false;
+      pomoIsPausedAfterSkip = false;
       if (pomoInterval) {
         clearInterval(pomoInterval);
         pomoInterval = null;
@@ -977,9 +977,8 @@ function attachTrackerEvents(container) {
       if (pomoMode === 'stopwatch') {
         stopwatchElapsed = 0;
       } else {
-        pomoPhase = pomoMode === 'reverse' ? 'break' : 'focus';
-        pomoTimeRemaining = (pomoPhase === 'focus' ? pomoWorkMins : pomoShortBreakMins) * 60;
-        pomoCurrentCycle = 1;
+        pomoPhase = 'focus';
+        pomoTimeRemaining = pomoWorkMins * 60;
       }
       renderTrackerView(container);
     });
