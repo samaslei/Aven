@@ -224,10 +224,10 @@ export function renderPlansView(container) {
           </div>
 
           <div class="plan-frame-wrapper">
-            <!-- Full interactive sandbox support: allow-scripts, allow-same-origin, allow-forms, allow-modals, allow-popups -->
+            <!-- Secure isolated sandbox: allow-scripts, allow-forms, allow-modals, allow-popups, allow-downloads (allow-same-origin omitted for origin isolation) -->
             <iframe id="sandboxed-plan-iframe"
                     class="sandboxed-plan-frame"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-downloads"
+                    sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads"
                     srcdoc="${escapeHtmlDoc(currentPlan.html_content)}">
             </iframe>
           </div>
