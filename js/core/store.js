@@ -1714,7 +1714,7 @@ class Store {
     return plans.find(p => p.subject_id === subjectId) || null;
   }
 
-  saveStudyPlan(subjectIdOrObj, title, htmlContent, existingPlanId = null) {
+  saveStudyPlan(subjectIdOrObj, title, htmlContent, existingPlanId = null, isAutoSave = false) {
     let subjectId = null;
     let planTitle = title;
     let content = htmlContent;
@@ -1725,6 +1725,7 @@ class Store {
       planTitle = subjectIdOrObj.title;
       content = subjectIdOrObj.html_content || subjectIdOrObj.htmlContent;
       planId = subjectIdOrObj.id || null;
+      if (subjectIdOrObj.isAutoSave !== undefined) isAutoSave = subjectIdOrObj.isAutoSave;
     } else {
       subjectId = subjectIdOrObj || null;
     }
@@ -1754,7 +1755,7 @@ class Store {
     }
 
     events.emit('plan:saved', plan);
-    events.emit('store:changed', { type: 'plan' });
+    events.emit('store:changed', { type: isAutoSave ? 'plan_autosave' : 'plan' });
 
     // Supabase Cloud sync
     getCurrentUser().then(user => {

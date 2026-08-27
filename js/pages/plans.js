@@ -12,6 +12,7 @@ import { store, events } from '../core/store.js';
 
 let selectedPlanId = null;
 let isFullscreenActive = false;
+let activePlanMessageListener = null;
 
 // Listen for cross-page subject plan selection
 events.on('plans:select-subject', (subjectId) => {
@@ -402,6 +403,15 @@ function prepareSandboxedHtml(rawHtml, planId = '') {
           }
         }
       }
+
+      var details = document.querySelectorAll('details');
+      for (var d = 0; d < details.length; d++) {
+        if (details[d].open) {
+          details[d].setAttribute('open', '');
+        } else {
+          details[d].removeAttribute('open');
+        }
+      }
     } catch (err) {}
   }
 
@@ -432,16 +442,21 @@ function prepareSandboxedHtml(rawHtml, planId = '') {
 
   function scheduleAutoSave() {
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(notifyParent, 1800);
+    debounceTimer = setTimeout(notifyParent, 400);
   }
 
   document.addEventListener('input', scheduleAutoSave, true);
   document.addEventListener('change', scheduleAutoSave, true);
-  document.addEventListener('click', function(e) {
-    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('summary') || e.target.classList.contains('interactive-item') || e.target.classList.contains('check-box'))) {
-      scheduleAutoSave();
+  document.addEventListener('click', scheduleAutoSave, true);
+
+  // Immediate synchronous flush on navigation, refresh, or tab hidden
+  window.addEventListener('beforeunload', notifyParent);
+  window.addEventListener('pagehide', notifyParent);
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+      notifyParent();
     }
-  }, true);
+  });
 })();
 </script>
 `;
@@ -620,9 +635,13 @@ function attachPlansEvents(container) {
   };
   document.addEventListener('keydown', handleKeyDown);
 
-  // Listen for auto-save state snapshots from sandboxed iframe
-  let parentSaveDebounceTimer = null;
-  const handlePlanUpdateMessage = (event) => {
+  // Listen for auto-save state snapshots from sandboxed iframe (deduplicated)
+  if (activePlanMessageListener) {
+    window.removeEventListener('message', activePlanMessageListener);
+    activePlanMessageListener = null;
+  }
+
+  activePlanMessageListener = (event) => {
     if (!event.data || event.data.type !== 'aven-plan-update') return;
     const { planId, html } = event.data;
     if (!planId || !html) return;
@@ -635,20 +654,19 @@ function attachPlansEvents(container) {
 
     if (statusTextEl) statusTextEl.textContent = 'Saving...';
 
-    clearTimeout(parentSaveDebounceTimer);
-    parentSaveDebounceTimer = setTimeout(() => {
-      // Save updated HTML to store and Supabase (preserving existing plan ID & subject)
-      const updatedPlan = store.saveStudyPlan(plan.subject_id, plan.title, html, plan.id);
+    // Save updated HTML to store and Supabase with isAutoSave=true (preventing full view teardown)
+    const updatedPlan = store.saveStudyPlan(plan.subject_id, plan.title, html, plan.id, true);
 
-      if (statusTextEl) statusTextEl.textContent = 'Saved';
-      if (updatedTimeEl && updatedPlan) {
-        updatedTimeEl.textContent = `Updated ${new Date(updatedPlan.updated_at).toLocaleString()}`;
+    if (statusTextEl) statusTextEl.textContent = 'Saved';
+    if (updatedTimeEl && updatedPlan) {
+      updatedTimeEl.textContent = `Updated ${new Date(updatedPlan.updated_at).toLocaleString()}`;
+    }
+    setTimeout(() => {
+      if (statusTextEl && statusTextEl.textContent === 'Saved') {
+        statusTextEl.textContent = 'Synced';
       }
-      setTimeout(() => {
-        if (statusTextEl) statusTextEl.textContent = 'Synced';
-      }, 2500);
-    }, 400);
+    }, 2500);
   };
 
-  window.addEventListener('message', handlePlanUpdateMessage);
+  window.addEventListener('message', activePlanMessageListener);
 }

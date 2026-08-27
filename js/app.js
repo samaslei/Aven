@@ -590,6 +590,9 @@ class AvenApp {
         if (this.currentPage === 'settings' && data && (data.type === 'user' || data.type === 'settings')) {
           return;
         }
+        if (this.currentPage === 'plans' && data && data.type === 'plan_autosave') {
+          return;
+        }
         pageConfig.renderer(this.mainContainer);
       }
     });
