@@ -198,8 +198,8 @@ export function renderTrackerView(container) {
             </div>
           </div>
 
-          <!-- Detailed Breakdown Legend -->
-          <div class="dist-legend-list">
+          <!-- Detailed Breakdown Legend (Single-column for <= 3 subjects; 2-column grid for 4+ subjects) -->
+          <div class="dist-legend-list ${slices.length > 3 ? 'dist-legend-two-col' : 'dist-legend-single-col'}">
             ${legendHtml}
           </div>
         </div>
