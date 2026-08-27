@@ -2888,7 +2888,8 @@ button, input, select, textarea {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 0 2px;
+  padding: 0 4px;
+  box-sizing: border-box;
 }
 
 .milestone-scale-marker {
@@ -2899,6 +2900,16 @@ button, input, select, textarea {
   color: var(--text-muted);
   font-weight: 500;
   user-select: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.milestone-scale-marker:first-child {
+  text-align: left;
+}
+
+.milestone-scale-marker:last-child {
+  text-align: right;
 }
 
 .milestone-progress-line {
@@ -5562,6 +5573,23 @@ button, input, select, textarea {
     width: 16px !important;
     height: 16px !important;
     margin: 0 !important;
+  }
+
+  /* Journey to Next Milestone Card on Phone */
+  .milestone-scale-markers {
+    padding: 0 4px 0 2px;
+    box-sizing: border-box;
+  }
+
+  .milestone-scale-marker {
+    font-size: 9.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .milestone-scale-marker:last-child {
+    text-align: right;
+    padding-right: 2px;
   }
 
   .heatmap-container-card {
