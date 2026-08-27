@@ -2126,12 +2126,13 @@ button, input, select, textarea {
 
 
 /* ==========================================================================
-   Study Tracker View — Fixed-Height Dashboard Layout (Prompt 56)
+   Study Tracker View — Fixed-Height Dashboard Layout (Prompt 56 - 59)
    ========================================================================== */
 .tracker-dashboard-layout {
   display: grid;
   grid-template-columns: minmax(0, 2.15fr) minmax(0, 1fr);
-  gap: 14px;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px 14px;
   height: calc(100vh - 128px);
   min-height: 560px;
   max-height: calc(100vh - 128px);
@@ -2142,7 +2143,8 @@ button, input, select, textarea {
 
 .tracker-left-zone {
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: subgrid;
+  grid-row: 1 / 4;
   gap: 12px;
   height: 100%;
   min-height: 0;
@@ -2150,6 +2152,7 @@ button, input, select, textarea {
 }
 
 .tracker-left-row-1 {
+  grid-row: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
@@ -2157,6 +2160,7 @@ button, input, select, textarea {
 }
 
 .tracker-left-row-2 {
+  grid-row: 2;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
@@ -2164,6 +2168,7 @@ button, input, select, textarea {
 }
 
 .tracker-left-row-3 {
+  grid-row: 3;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -2199,27 +2204,30 @@ button, input, select, textarea {
 
 .tracker-right-zone {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: subgrid;
+  grid-row: 1 / 4;
   gap: 12px;
   height: 100%;
   min-height: 0;
   min-width: 0;
 }
 
-/* Monthly Calendar Card (Prompt 56) */
+/* Monthly Calendar Card (Prompt 56 - 59: Height matches Row 1 via subgrid) */
 .monthly-calendar-card {
+  grid-row: 1;
   background: var(--bg-surface);
   border: var(--border-card);
   border-radius: var(--radius-xl);
-  padding: 14px 16px;
+  padding: 12px 14px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px;
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
+  height: 100%;
 }
 
 .monthly-cal-header {
@@ -2268,9 +2276,11 @@ button, input, select, textarea {
 .monthly-cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 2px 3px;
   width: 100%;
   text-align: center;
+  flex: 1;
+  align-content: space-between;
 }
 
 .monthly-cal-day-label {
@@ -2278,7 +2288,7 @@ button, input, select, textarea {
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
-  padding: 2px 0;
+  padding: 1px 0;
 }
 
 .monthly-cal-day-cell {
@@ -2288,7 +2298,7 @@ button, input, select, textarea {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--text-secondary);
-  height: 22px;
+  height: 19px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2318,8 +2328,9 @@ button, input, select, textarea {
   background: var(--accent);
 }
 
-/* Todo / Deadlines Card (Prompt 56) */
+/* Todo / Deadlines Card (Prompt 56 & 57 & 59: Spans Row 2 through 3) */
 .todo-deadlines-card {
+  grid-row: 2 / 4;
   background: var(--bg-surface);
   border: var(--border-card);
   border-radius: var(--radius-xl);
@@ -2341,6 +2352,41 @@ button, input, select, textarea {
   justify-content: space-between;
   gap: 8px;
   flex-shrink: 0;
+}
+
+/* Todo Mode Switch Segmented Control */
+.todo-mode-switch {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 2px;
+  gap: 2px;
+}
+
+.todo-mode-btn {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.14s ease;
+  line-height: 1.2;
+}
+
+.todo-mode-btn:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+.todo-mode-btn.active {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-weight: 700;
 }
 
 .todo-add-form {
@@ -2488,20 +2534,30 @@ button, input, select, textarea {
   justify-content: center;
   width: 100%;
   flex: 1;
-  min-height: 110px;
+  min-height: 135px;
 }
 
 @media (max-width: 1180px) {
   .tracker-dashboard-layout {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
     height: auto;
     max-height: none;
     overflow: visible;
   }
   .tracker-left-zone, .tracker-right-zone {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    grid-row: auto;
+  }
+  .tracker-left-row-1, .tracker-left-row-2, .tracker-left-row-3,
+  .monthly-calendar-card, .todo-deadlines-card {
+    grid-row: auto;
     height: auto;
   }
   .tracker-left-row-2 {
+    display: grid;
     grid-template-columns: 1fr 1fr;
   }
   .tracker-left-row-3 .sessions-history-card,

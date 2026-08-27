@@ -13,6 +13,7 @@ let selectedSubjectId = '';
 let heatmapYear = new Date().getFullYear(); // Year-view navigation state
 let calendarDate = new Date(); // Monthly calendar state (Prompt 56)
 let distributionScope = 'all'; // 'all' | 'week'
+let todoFilterMode = 'both'; // 'both' | 'todo' | 'deadline' (Prompt 57)
 
 // Pomodoro Timer State (Persists across view switches)
 let pomoMode = 'classic'; // 'classic' (pomodoro) | 'stopwatch' (count-up)
@@ -82,7 +83,7 @@ export function renderTrackerView(container) {
 
 
 
-  // Render SVG Donut Chart Card (Prompt 56: Legend removed, donut with hover tooltip only)
+  // Render SVG Donut Chart Card (Prompt 56 & 57: Enlarge donut, legend removed, hover tooltip only)
   function renderDistributionCard(sessions) {
     const dist = calculateDistributionStats(sessions, distributionScope, id => store.getSubjectById(id));
     const totalHours = dist.totalHours;
@@ -111,8 +112,8 @@ export function renderTrackerView(container) {
       `;
     }
 
-    // Calculate SVG donut paths
-    const radius = 62;
+    // Calculate SVG donut paths (Enlarged for Prompt 57)
+    const radius = 70;
     const circumference = 2 * Math.PI * radius;
     let accumulatedOffset = 0;
 
@@ -127,7 +128,7 @@ export function renderTrackerView(container) {
                 cx="100" cy="100" r="${radius}"
                 fill="transparent"
                 stroke="${slice.color}"
-                stroke-width="19"
+                stroke-width="23"
                 stroke-dasharray="${dashLength.toFixed(2)} ${gapLength.toFixed(2)}"
                 stroke-dashoffset="${offset.toFixed(2)}"
                 data-name="${slice.name}"
@@ -157,9 +158,9 @@ export function renderTrackerView(container) {
 
         <div class="distribution-donut-only-wrap">
           <div class="donut-svg-box">
-            <svg class="donut-svg" viewBox="0 0 200 200" width="124" height="124">
+            <svg class="donut-svg" viewBox="0 0 200 200" width="144" height="144">
               <!-- Background Track Ring -->
-              <circle cx="100" cy="100" r="${radius}" fill="transparent" stroke="var(--border-subtle)" stroke-width="19" opacity="0.35" />
+              <circle cx="100" cy="100" r="${radius}" fill="transparent" stroke="var(--border-subtle)" stroke-width="23" opacity="0.35" />
               <!-- Colored Slices -->
               ${circlesHtml}
             </svg>
@@ -742,10 +743,16 @@ export function renderTrackerView(container) {
     `;
   }
 
-  // Render Todo / Deadlines Card (Prompt 56)
+  // Render Todo / Deadlines Card (Prompt 56 & 57: Added 3-way Todo/Deadline/Both filter toggle)
   function renderTodoListCard(activeSubjects, todayStr) {
     const todos = store.getTodos();
-    const pendingCount = todos.filter(t => !t.completed).length;
+    let filteredTodos = todos;
+    if (todoFilterMode === 'todo') {
+      filteredTodos = todos.filter(t => !t.due_date);
+    } else if (todoFilterMode === 'deadline') {
+      filteredTodos = todos.filter(t => Boolean(t.due_date));
+    }
+    const pendingCount = filteredTodos.filter(t => !t.completed).length;
 
     return `
       <div class="tool-card todo-deadlines-card">
@@ -757,12 +764,17 @@ export function renderTrackerView(container) {
             </svg>
             <span>TODO & DEADLINES</span>
           </div>
-          <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">${pendingCount} pending</span>
+
+          <div class="todo-mode-switch" id="todo-mode-switch" title="Filter Tasks">
+            <button type="button" class="todo-mode-btn ${todoFilterMode === 'todo' ? 'active' : ''}" data-mode="todo">Todo</button>
+            <button type="button" class="todo-mode-btn ${todoFilterMode === 'deadline' ? 'active' : ''}" data-mode="deadline">Deadline</button>
+            <button type="button" class="todo-mode-btn ${todoFilterMode === 'both' ? 'active' : ''}" data-mode="both">Both</button>
+          </div>
         </div>
 
         <form id="todo-add-form" class="todo-add-form">
           <div class="todo-input-row">
-            <input type="text" id="todo-input-text" class="form-input" placeholder="Add task or deadline..." required style="flex: 1;">
+            <input type="text" id="todo-input-text" class="form-input" placeholder="${todoFilterMode === 'deadline' ? 'Add a new deadline...' : (todoFilterMode === 'todo' ? 'Add a new todo...' : 'Add a task or deadline...')}" required style="flex: 1;">
             <button type="submit" class="btn btn-primary btn-sm" style="padding: 4px 10px; height: 30px;" aria-label="Add Task">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -775,21 +787,23 @@ export function renderTrackerView(container) {
               <option value="">General</option>
               ${activeSubjects.map(s => `<option value="${s.id}">${s.code || s.name}</option>`).join('')}
             </select>
-            <input type="date" id="todo-due-date" class="form-input" style="flex: 1;" title="Due date">
+            ${todoFilterMode === 'todo' ? '' : `
+              <input type="date" id="todo-due-date" class="form-input" style="flex: 1;" ${todoFilterMode === 'deadline' ? 'required' : ''} title="${todoFilterMode === 'deadline' ? 'Due date (required for deadlines)' : 'Due date (optional)'}">
+            `}
           </div>
         </form>
 
         <div class="todo-list-scroll-wrap">
-          ${todos.length === 0 ? `
+          ${filteredTodos.length === 0 ? `
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 100px; text-align: center; color: var(--text-muted); font-size: 12px; gap: 4px;">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity: 0.4;">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 14 14"></polyline>
               </svg>
-              <span>No tasks yet</span>
-              <span style="font-size: 11px; opacity: 0.7;">Use form above to add deadlines</span>
+              <span>No ${todoFilterMode === 'todo' ? 'todos' : (todoFilterMode === 'deadline' ? 'deadlines' : 'tasks')} recorded</span>
+              <span style="font-size: 11px; opacity: 0.7;">${todoFilterMode === 'deadline' ? 'Add a deadline with due date above' : 'Use the form above to add'}</span>
             </div>
-          ` : todos.map(t => {
+          ` : filteredTodos.map(t => {
             const sub = t.subject_id ? store.getSubjectById(t.subject_id) : null;
             const isOverdue = t.due_date && !t.completed && t.due_date < todayStr;
             const subColor = sub ? (sub.color || '#8A9A5B') : null;
@@ -844,10 +858,10 @@ export function renderTrackerView(container) {
           ${renderManualLogCard(activeSubjects, selectedSubjectId, todayStr)}
         </div>
 
-        <!-- Row 2: Milestone Progress + Distribution Donut + Yearly Heatmap -->
+        <!-- Row 2: Distribution Donut + Milestone Progress + Yearly Heatmap (Swapped order per Prompt 57) -->
         <div class="tracker-left-row-2">
-          ${renderMilestoneCard(sessions)}
           ${renderDistributionCard(sessions)}
+          ${renderMilestoneCard(sessions)}
           ${renderHeatmapCard(heatmapYear, sessions, calendarData)}
         </div>
 
@@ -1923,18 +1937,37 @@ function attachTrackerEvents(container) {
     });
   }
 
-  // Todo / Deadlines Form & Actions (Prompt 56)
+  // Todo / Deadlines Mode Switch & Form Actions (Prompt 56 & 57)
+  container.querySelectorAll('.todo-mode-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const mode = e.currentTarget.dataset.mode;
+      if (mode === todoFilterMode) return;
+      todoFilterMode = mode;
+      renderTrackerView(container);
+    });
+  });
+
   const todoForm = container.querySelector('#todo-add-form');
   if (todoForm) {
     todoForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const text = container.querySelector('#todo-input-text')?.value?.trim();
       const subject_id = container.querySelector('#todo-subject-select')?.value || null;
-      const due_date = container.querySelector('#todo-due-date')?.value || null;
+      const dueDateInput = container.querySelector('#todo-due-date');
+      const due_date = (dueDateInput && dueDateInput.value) ? dueDateInput.value : null;
 
       if (!text) return;
-      store.saveTodo({ text, subject_id, due_date });
-      window.avenApp?.showToast('Task added!', 'success');
+      if (todoFilterMode === 'deadline' && !due_date) {
+        window.avenApp?.showToast('Please select a due date for the deadline', 'danger');
+        return;
+      }
+
+      store.saveTodo({
+        text,
+        subject_id,
+        due_date: todoFilterMode === 'todo' ? null : due_date
+      });
+      window.avenApp?.showToast(due_date ? 'Deadline added!' : 'Task added!', 'success');
       renderTrackerView(container);
     });
   }
