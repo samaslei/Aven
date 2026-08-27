@@ -2148,10 +2148,10 @@ button, input, select, textarea {
   background: var(--bg-surface);
   border: var(--border-card);
   border-radius: var(--radius-xl);
-  padding: 20px 24px 18px;
+  padding: 16px 22px 10px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
   width: 100%;
@@ -2169,7 +2169,7 @@ button, input, select, textarea {
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
-  padding-bottom: 4px;
+  padding-bottom: 2px;
   scrollbar-width: thin;
   scrollbar-color: rgba(168, 176, 130, 0.35) transparent;
 }
@@ -3072,12 +3072,13 @@ button, input, select, textarea {
   background: var(--bg-surface);
   border: var(--border-card);
   border-radius: var(--radius-xl);
-  padding: 22px 24px;
+  padding: 16px 20px 10px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
+  justify-content: space-between;
 }
 
 .distribution-header {
@@ -3090,15 +3091,16 @@ button, input, select, textarea {
 
 .distribution-content-grid {
   display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 20px;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
   align-items: center;
+  flex: 1;
 }
 
 @media (max-width: 1400px) and (min-width: 1181px) {
   .distribution-content-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
     justify-items: center;
   }
   .dist-legend-list {
@@ -3109,7 +3111,7 @@ button, input, select, textarea {
 @media (max-width: 768px) {
   .distribution-content-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
     justify-items: center;
   }
   .dist-legend-list {
@@ -3122,13 +3124,13 @@ button, input, select, textarea {
   align-items: center;
   justify-content: center;
   position: relative;
-  min-height: 180px;
+  min-height: 130px;
 }
 
 .donut-svg-box {
   position: relative;
-  width: 175px;
-  height: 175px;
+  width: 130px;
+  height: 130px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3163,7 +3165,7 @@ button, input, select, textarea {
 }
 
 .donut-center-num {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 800;
   font-family: var(--font-numeric);
   font-variant-numeric: tabular-nums;
@@ -3173,19 +3175,19 @@ button, input, select, textarea {
 }
 
 .donut-center-sub {
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--text-muted);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* 2-Column Responsive Legend Grid */
 .dist-legend-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 14px;
+  gap: 4px 10px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -3201,8 +3203,8 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: 6px;
+  padding: 3.5px 6px;
   border-radius: var(--radius-md);
   transition: background-color 0.14s ease, transform 0.14s ease;
   cursor: default;
