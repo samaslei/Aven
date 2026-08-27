@@ -5478,6 +5478,92 @@ button, input, select, textarea {
     width: 100%;
   }
 
+  /* Pomodoro Timer Card Responsive Phone Fixes */
+  .pomodoro-header {
+    gap: 4px;
+    flex-wrap: nowrap;
+  }
+
+  .pomodoro-header-actions {
+    gap: 3px;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .pomo-mode-switch {
+    padding: 1.5px;
+    gap: 1px;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .pomo-mode-btn {
+    font-size: 9.5px;
+    padding: 2.5px 5px;
+    flex-shrink: 1;
+  }
+
+  .pomo-pip-btn {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  /* Phone-only: 2-row layout for meta row (Row 1: Phase + Subject, Row 2: Cycles) */
+  .pomo-meta-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pomo-meta-row .pomo-phase-badge {
+    order: 1;
+    flex: 0 0 auto;
+  }
+
+  .pomo-meta-controls {
+    order: 2;
+    display: contents;
+  }
+
+  .pomo-subject-wrap {
+    order: 2;
+    flex: 1 1 auto;
+    max-width: none;
+    min-width: 110px;
+  }
+
+  .pomo-cycles-control {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+    box-sizing: border-box;
+    padding: 3px 10px;
+    height: 32px;
+  }
+
+  /* Phone-only: Collapse button row to icon-only */
+  .pomo-controls-row {
+    gap: 6px;
+  }
+
+  .pomo-controls-row .pomo-btn-text {
+    display: none !important;
+  }
+
+  .pomo-controls-row .btn {
+    padding: 0 !important;
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+    height: 38px !important;
+    justify-content: center !important;
+  }
+
+  .pomo-controls-row .btn svg {
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
+  }
+
   .heatmap-container-card {
     padding: 16px 14px 14px;
     width: 100%;
