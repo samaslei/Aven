@@ -84,36 +84,20 @@ export function renderTrackerView(container) {
 
 
 
-  // Render SVG Donut Chart Card (Prompt 56 & 57: Enlarge donut, legend removed, hover tooltip only)
-  function renderDistributionCard(sessions) {
+  // Render SVG Donut Chart Body Content (Prompt 56 & 57 & 64)
+  function renderDistributionBodyHtml(sessions) {
     const dist = calculateDistributionStats(sessions, distributionScope, id => store.getSubjectById(id));
     const totalHours = dist.totalHours;
     const slices = dist.slices;
 
     if (dist.totalMinutes === 0 || slices.length === 0) {
       return `
-        <div class="tool-card distribution-container-card">
-          <div class="distribution-header">
-            <div class="card-header-label distribution-header-label">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
-                <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
-              </svg>
-              <span>DISTRIBUTION</span>
-            </div>
-            <div class="segmented-control" id="dist-scope-switcher">
-              <button class="seg-btn ${distributionScope === 'all' ? 'active' : ''}" data-scope="all">All</button>
-              <button class="seg-btn ${distributionScope === 'week' ? 'active' : ''}" data-scope="week">Week</button>
-            </div>
-          </div>
-          <div class="distribution-empty-state" style="padding: 16px 8px; flex: 1;">
-            <p style="font-size: 11.5px; font-weight: 500; color: var(--text-secondary); margin: 0;">No study activity</p>
-          </div>
+        <div class="distribution-empty-state" style="padding: 16px 8px; flex: 1;">
+          <p style="font-size: 11.5px; font-weight: 500; color: var(--text-secondary); margin: 0;">No study activity</p>
         </div>
       `;
     }
 
-    // Calculate SVG donut paths (Enlarged for Prompt 57)
     const radius = 70;
     const circumference = 2 * Math.PI * radius;
     let accumulatedOffset = 0;
@@ -142,6 +126,26 @@ export function renderTrackerView(container) {
     }).join('');
 
     return `
+      <div class="distribution-donut-only-wrap">
+        <div class="donut-svg-box">
+          <svg class="donut-svg" viewBox="0 0 200 200" width="144" height="144">
+            <!-- Background Track Ring -->
+            <circle cx="100" cy="100" r="${radius}" fill="transparent" stroke="var(--border-subtle)" stroke-width="23" opacity="0.35" />
+            <!-- Colored Slices -->
+            ${circlesHtml}
+          </svg>
+          <div class="donut-center-label">
+            <span class="donut-center-num">${totalHours}h</span>
+            <span class="donut-center-sub">${distributionScope === 'week' ? 'Week' : 'Total'}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Render SVG Donut Chart Card (Prompt 56 & 57: Enlarge donut, legend removed, hover tooltip only)
+  function renderDistributionCard(sessions) {
+    return `
       <div class="tool-card distribution-container-card">
         <div class="distribution-header">
           <div class="card-header-label distribution-header-label">
@@ -151,25 +155,14 @@ export function renderTrackerView(container) {
             </svg>
             <span>DISTRIBUTION</span>
           </div>
-          <div class="segmented-control" id="dist-scope-switcher">
+          <div class="segmented-control" id="dist-scope-switcher" data-active="${distributionScope}">
             <button class="seg-btn ${distributionScope === 'all' ? 'active' : ''}" data-scope="all">All</button>
             <button class="seg-btn ${distributionScope === 'week' ? 'active' : ''}" data-scope="week">Week</button>
           </div>
         </div>
 
-        <div class="distribution-donut-only-wrap">
-          <div class="donut-svg-box">
-            <svg class="donut-svg" viewBox="0 0 200 200" width="144" height="144">
-              <!-- Background Track Ring -->
-              <circle cx="100" cy="100" r="${radius}" fill="transparent" stroke="var(--border-subtle)" stroke-width="23" opacity="0.35" />
-              <!-- Colored Slices -->
-              ${circlesHtml}
-            </svg>
-            <div class="donut-center-label">
-              <span class="donut-center-num">${totalHours}h</span>
-              <span class="donut-center-sub">${distributionScope === 'week' ? 'Week' : 'Total'}</span>
-            </div>
-          </div>
+        <div id="dist-body-wrap" class="dist-body-wrap" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+          ${renderDistributionBodyHtml(sessions)}
         </div>
       </div>
     `;
@@ -221,8 +214,174 @@ export function renderTrackerView(container) {
     };
   }
 
+  // Render Pomodoro Card Body Content (Prompt 64)
+  function renderPomodoroBodyHtml(activeSubjects) {
+    const isStopwatch = pomoMode === 'stopwatch';
+    const totalSecs = (pomoPhase === 'focus' ? pomoWorkMins : (pomoPhase === 'long-break' ? pomoLongBreakMins : pomoShortBreakMins)) * 60;
+    const progressPct = isStopwatch ? (pomoIsRunning ? 100 : (stopwatchElapsed > 0 ? 50 : 0)) : Math.min(100, Math.max(0, ((totalSecs - pomoTimeRemaining) / totalSecs) * 100));
+
+    if (isStopwatch) {
+      return `
+        <!-- Stopwatch Sub-Header: Mode Badge & Subject Selector -->
+        <div class="pomo-meta-row">
+          <div class="pomo-phase-badge focus-mode">
+            <span class="pomo-phase-dot"></span>
+            <span>STOPWATCH</span>
+          </div>
+
+          <div class="pomo-meta-controls">
+            <div class="pomo-subject-wrap">
+              ${renderCustomSubjectDropdown({
+                id: 'pomo-subject-select',
+                selectedId: pomoSubjectId,
+                subjects: activeSubjects,
+                includeGeneral: true,
+                generalLabel: 'General Study',
+                searchPlaceholder: 'Search subject...',
+                customClass: 'pomo-subject-dd'
+              })}
+            </div>
+          </div>
+        </div>
+
+        <!-- Stopwatch Count-Up Display -->
+        <div class="pomo-display-block">
+          <div class="pomo-time-display" id="pomo-time-display">${formatMinutesAndSeconds(stopwatchElapsed)}</div>
+          <div class="pomo-progress-track">
+            <div class="pomo-progress-fill" id="pomo-progress-fill" style="width: ${progressPct}%;"></div>
+          </div>
+        </div>
+
+        <!-- Stopwatch Controls: Start/Pause + Stop & Save -->
+        <div class="pomo-controls-row">
+          <button type="button" class="btn ${pomoIsRunning ? 'btn-secondary pomo-btn-pause' : 'btn-primary pomo-btn-start'}" id="btn-pomo-toggle" aria-label="${pomoIsRunning ? 'Pause' : (stopwatchElapsed > 0 ? 'Resume' : 'Start')}">
+            ${pomoIsRunning ? `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+              </svg>
+              <span class="pomo-btn-text">Pause</span>
+            ` : `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span class="pomo-btn-text">${stopwatchElapsed > 0 ? 'Resume' : 'Start'}</span>
+            `}
+          </button>
+
+          <button type="button" class="btn btn-secondary pomo-btn-reset" id="btn-pomo-reset" title="${pomoIsRunning || stopwatchElapsed > 0 ? 'Stop & Log Session' : 'Reset'}" style="${stopwatchElapsed > 0 ? 'color: var(--danger); font-weight: 600;' : ''}" aria-label="${pomoIsRunning || stopwatchElapsed > 0 ? 'Stop & Save' : 'Reset'}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+            </svg>
+            <span class="pomo-btn-text">${pomoIsRunning || stopwatchElapsed > 0 ? 'Stop & Save' : 'Reset'}</span>
+          </button>
+        </div>
+      `;
+    }
+
+    return `
+      <!-- Pomodoro Sub-Header: Phase Indicator (Left) & Subject Selector + Settings Gear (Right) -->
+      <div class="pomo-meta-row">
+        <div class="pomo-phase-badge ${pomoPhase === 'focus' ? 'focus-mode' : (pomoPhase === 'long-break' ? 'long-break-mode' : 'break-mode')}">
+          <span class="pomo-phase-dot"></span>
+          <span>${pomoPhase === 'focus' ? 'Focus' : (pomoPhase === 'long-break' ? 'Long Break' : 'Break')} &middot; Cycle ${pomoCurrentCycle}</span>
+        </div>
+
+        <div class="pomo-meta-controls">
+          <div class="pomo-subject-wrap">
+            ${renderCustomSubjectDropdown({
+              id: 'pomo-subject-select',
+              selectedId: pomoSubjectId,
+              subjects: activeSubjects,
+              includeGeneral: true,
+              generalLabel: 'General Study',
+              searchPlaceholder: 'Search subject...',
+              customClass: 'pomo-subject-dd'
+            })}
+          </div>
+
+          <button type="button" class="pomo-settings-gear-btn" id="btn-pomo-settings" title="${pomoIsRunning ? 'Timer settings (editable while idle)' : 'Timer settings'}" aria-label="Open Timer Settings" ${pomoIsRunning ? 'disabled' : ''}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Large Bento Digits Display -->
+      <div class="pomo-display-block">
+        <div class="pomo-time-display" id="pomo-time-display">${formatMinutesAndSeconds(pomoTimeRemaining)}</div>
+        <div class="pomo-progress-track">
+          <div class="pomo-progress-fill ${pomoPhase === 'break' ? 'break-fill' : (pomoPhase === 'long-break' ? 'long-break-fill' : '')}" id="pomo-progress-fill" style="width: ${progressPct}%;"></div>
+        </div>
+      </div>
+
+      <!-- Timer Controls Row -->
+      ${pomoIsRunning ? `
+        <div class="pomo-controls-row pomo-controls-running">
+          <button type="button" class="btn btn-secondary pomo-btn-reset-cycle" id="btn-pomo-reset-cycle" title="Reset Cycle Progress" aria-label="Reset">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+            <span class="pomo-btn-text">Reset</span>
+          </button>
+
+          <button type="button" class="btn btn-secondary pomo-btn-stop-log" id="btn-pomo-stop-log" title="Stop & Log Session" style="color: var(--danger); font-weight: 600;" aria-label="Stop & Log">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+            </svg>
+            <span class="pomo-btn-text">Stop & Log</span>
+          </button>
+
+          <button type="button" class="btn btn-secondary pomo-btn-skip" id="btn-pomo-switch-phase" title="${pomoPhase === 'focus' ? (pomoCurrentCycle % pomoLongBreakInterval === 0 ? 'Skip to Long Break' : 'Skip to Break') : 'Skip to Focus'}" aria-label="Skip">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 4 15 12 5 20 5 4"></polygon>
+              <line x1="19" y1="5" x2="19" y2="19"></line>
+            </svg>
+            <span class="pomo-btn-text">Skip</span>
+          </button>
+        </div>
+      ` : (pomoIsPausedAfterSkip ? `
+        <div class="pomo-controls-row pomo-controls-paused-skip">
+          <button type="button" class="btn btn-primary pomo-btn-start" id="btn-pomo-toggle" aria-label="Start">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span class="pomo-btn-text">Start</span>
+          </button>
+
+          <button type="button" class="btn btn-secondary pomo-btn-reset-cycle" id="btn-pomo-reset-cycle" title="Reset Cycle Progress" aria-label="Reset Cycle">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+            <span class="pomo-btn-text">Reset Cycle</span>
+          </button>
+
+          <button type="button" class="btn btn-secondary pomo-btn-stop-log" id="btn-pomo-stop-log" title="Stop & Log Session" style="color: var(--danger); font-weight: 600;" aria-label="Stop & Log">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+            </svg>
+            <span class="pomo-btn-text">Stop & Log</span>
+          </button>
+        </div>
+      ` : `
+        <div class="pomo-controls-row pomo-controls-idle">
+          <button type="button" class="btn btn-primary pomo-btn-start pomo-btn-start-full" id="btn-pomo-toggle" aria-label="Start">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span class="pomo-btn-text">Start</span>
+          </button>
+        </div>
+      `)}
+    `;
+  }
+
   // Render Bentodoro-Style Bento Timer Tile
-  function renderPomodoroCard(activeSubjects, pomoTargetCycles) {
+  function renderPomodoroCard(activeSubjects) {
     if (pipWindow && !pipWindow.closed) {
       return `
         <div class="tool-card pomodoro-card bento-timer-card pomo-pip-active-card">
@@ -258,13 +417,9 @@ export function renderTrackerView(container) {
       `;
     }
 
-    const isStopwatch = pomoMode === 'stopwatch';
-    const totalSecs = (pomoPhase === 'focus' ? pomoWorkMins : (pomoPhase === 'long-break' ? pomoLongBreakMins : pomoShortBreakMins)) * 60;
-    const progressPct = isStopwatch ? (pomoIsRunning ? 100 : (stopwatchElapsed > 0 ? 50 : 0)) : Math.min(100, Math.max(0, ((totalSecs - pomoTimeRemaining) / totalSecs) * 100));
-
     return `
       <div class="tool-card pomodoro-card bento-timer-card">
-        <!-- Top Row: Title & 3-Way Mode Switch + Popout PiP -->
+        <!-- Top Row: Title & 2-Way Mode Switch + Popout PiP -->
         <div class="pomodoro-header">
           <div class="pomodoro-header-label">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -276,7 +431,7 @@ export function renderTrackerView(container) {
 
           <!-- 2-Way Mode Toggle + Popout PiP Action -->
           <div class="pomo-header-actions">
-            <div class="pomo-mode-switch" id="pomo-mode-switch" title="Toggle Timer Mode">
+            <div class="pomo-mode-switch" id="pomo-mode-switch" data-active="${pomoMode}" title="Toggle Timer Mode">
               <button type="button" class="pomo-mode-btn ${pomoMode === 'classic' ? 'active' : ''}" data-mode="classic">Pomodoro</button>
               <button type="button" class="pomo-mode-btn ${pomoMode === 'stopwatch' ? 'active' : ''}" data-mode="stopwatch">Stopwatch</button>
             </div>
@@ -293,160 +448,9 @@ export function renderTrackerView(container) {
           </div>
         </div>
 
-        ${isStopwatch ? `
-          <!-- Stopwatch Sub-Header: Mode Badge & Subject Selector -->
-          <div class="pomo-meta-row">
-            <div class="pomo-phase-badge focus-mode">
-              <span class="pomo-phase-dot"></span>
-              <span>STOPWATCH</span>
-            </div>
-
-            <div class="pomo-meta-controls">
-              <div class="pomo-subject-wrap">
-                ${renderCustomSubjectDropdown({
-                  id: 'pomo-subject-select',
-                  selectedId: pomoSubjectId,
-                  subjects: activeSubjects,
-                  includeGeneral: true,
-                  generalLabel: 'General Study',
-                  searchPlaceholder: 'Search subject...',
-                  customClass: 'pomo-subject-dd'
-                })}
-              </div>
-            </div>
-          </div>
-
-          <!-- Stopwatch Count-Up Display -->
-          <div class="pomo-display-block">
-            <div class="pomo-time-display" id="pomo-time-display">${formatMinutesAndSeconds(stopwatchElapsed)}</div>
-            <div class="pomo-progress-track">
-              <div class="pomo-progress-fill" id="pomo-progress-fill" style="width: ${progressPct}%;"></div>
-            </div>
-          </div>
-
-          <!-- Stopwatch Controls: Start/Pause + Stop & Save -->
-          <div class="pomo-controls-row">
-            <button type="button" class="btn ${pomoIsRunning ? 'btn-secondary pomo-btn-pause' : 'btn-primary pomo-btn-start'}" id="btn-pomo-toggle" aria-label="${pomoIsRunning ? 'Pause' : (stopwatchElapsed > 0 ? 'Resume' : 'Start')}">
-              ${pomoIsRunning ? `
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16" rx="1"></rect>
-                  <rect x="14" y="4" width="4" height="16" rx="1"></rect>
-                </svg>
-                <span class="pomo-btn-text">Pause</span>
-              ` : `
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                <span class="pomo-btn-text">${stopwatchElapsed > 0 ? 'Resume' : 'Start'}</span>
-              `}
-            </button>
-
-            <button type="button" class="btn btn-secondary pomo-btn-reset" id="btn-pomo-reset" title="${pomoIsRunning || stopwatchElapsed > 0 ? 'Stop & Log Session' : 'Reset'}" style="${stopwatchElapsed > 0 ? 'color: var(--danger); font-weight: 600;' : ''}" aria-label="${pomoIsRunning || stopwatchElapsed > 0 ? 'Stop & Save' : 'Reset'}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="6" y="6" width="12" height="12" rx="2"></rect>
-              </svg>
-              <span class="pomo-btn-text">${pomoIsRunning || stopwatchElapsed > 0 ? 'Stop & Save' : 'Reset'}</span>
-            </button>
-          </div>
-        ` : `
-          <!-- Pomodoro Sub-Header: Phase Indicator (Left) & Subject Selector + Settings Gear (Right) -->
-          <div class="pomo-meta-row">
-            <div class="pomo-phase-badge ${pomoPhase === 'focus' ? 'focus-mode' : (pomoPhase === 'long-break' ? 'long-break-mode' : 'break-mode')}">
-              <span class="pomo-phase-dot"></span>
-              <span>${pomoPhase === 'focus' ? 'Focus' : (pomoPhase === 'long-break' ? 'Long Break' : 'Break')} &middot; Cycle ${pomoCurrentCycle}</span>
-            </div>
-
-            <div class="pomo-meta-controls">
-              <div class="pomo-subject-wrap">
-                ${renderCustomSubjectDropdown({
-                  id: 'pomo-subject-select',
-                  selectedId: pomoSubjectId,
-                  subjects: activeSubjects,
-                  includeGeneral: true,
-                  generalLabel: 'General Study',
-                  searchPlaceholder: 'Search subject...',
-                  customClass: 'pomo-subject-dd'
-                })}
-              </div>
-
-              <button type="button" class="pomo-settings-gear-btn" id="btn-pomo-settings" title="${pomoIsRunning ? 'Timer settings (editable while idle)' : 'Timer settings'}" aria-label="Open Timer Settings" ${pomoIsRunning ? 'disabled' : ''}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="3"></circle>
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Large Bento Digits Display -->
-          <div class="pomo-display-block">
-            <div class="pomo-time-display" id="pomo-time-display">${formatMinutesAndSeconds(pomoTimeRemaining)}</div>
-            <div class="pomo-progress-track">
-              <div class="pomo-progress-fill ${pomoPhase === 'break' ? 'break-fill' : (pomoPhase === 'long-break' ? 'long-break-fill' : '')}" id="pomo-progress-fill" style="width: ${progressPct}%;"></div>
-            </div>
-          </div>
-
-          <!-- Timer Controls Row: State-dependent (Idle: Start only; Running: Reset + Stop & Log + Skip; Paused-after-skip: Start + Reset Cycle + Stop & Log) -->
-          ${pomoIsRunning ? `
-            <div class="pomo-controls-row pomo-controls-running">
-              <button type="button" class="btn btn-secondary pomo-btn-reset-cycle" id="btn-pomo-reset-cycle" title="Reset Cycle Progress" aria-label="Reset">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                  <path d="M3 3v5h5"></path>
-                </svg>
-                <span class="pomo-btn-text">Reset</span>
-              </button>
-
-              <button type="button" class="btn btn-secondary pomo-btn-stop-log" id="btn-pomo-stop-log" title="Stop & Log Session" style="color: var(--danger); font-weight: 600;" aria-label="Stop & Log">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="6" y="6" width="12" height="12" rx="2"></rect>
-                </svg>
-                <span class="pomo-btn-text">Stop & Log</span>
-              </button>
-
-              <button type="button" class="btn btn-secondary pomo-btn-skip" id="btn-pomo-switch-phase" title="${pomoPhase === 'focus' ? (pomoCurrentCycle % pomoLongBreakInterval === 0 ? 'Skip to Long Break' : 'Skip to Break') : 'Skip to Focus'}" aria-label="Skip">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="5 4 15 12 5 20 5 4"></polygon>
-                  <line x1="19" y1="5" x2="19" y2="19"></line>
-                </svg>
-                <span class="pomo-btn-text">Skip</span>
-              </button>
-            </div>
-          ` : (pomoIsPausedAfterSkip ? `
-            <div class="pomo-controls-row pomo-controls-paused-skip">
-              <button type="button" class="btn btn-primary pomo-btn-start" id="btn-pomo-toggle" aria-label="Start">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                <span class="pomo-btn-text">Start</span>
-              </button>
-
-              <button type="button" class="btn btn-secondary pomo-btn-reset-cycle" id="btn-pomo-reset-cycle" title="Reset Cycle Progress" aria-label="Reset Cycle">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                  <path d="M3 3v5h5"></path>
-                </svg>
-                <span class="pomo-btn-text">Reset Cycle</span>
-              </button>
-
-              <button type="button" class="btn btn-secondary pomo-btn-stop-log" id="btn-pomo-stop-log" title="Stop & Log Session" style="color: var(--danger); font-weight: 600;" aria-label="Stop & Log">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="6" y="6" width="12" height="12" rx="2"></rect>
-                </svg>
-                <span class="pomo-btn-text">Stop & Log</span>
-              </button>
-            </div>
-          ` : `
-            <div class="pomo-controls-row pomo-controls-idle">
-              <button type="button" class="btn btn-primary pomo-btn-start pomo-btn-start-full" id="btn-pomo-toggle" aria-label="Start">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                <span class="pomo-btn-text">Start</span>
-              </button>
-            </div>
-          `)}
-        `}
+        <div id="pomo-card-body" class="pomo-card-body" style="display: flex; flex-direction: column; flex: 1; justify-content: space-between; gap: 14px;">
+          ${renderPomodoroBodyHtml(activeSubjects)}
+        </div>
       </div>
     `;
   }
@@ -815,20 +819,8 @@ export function renderTrackerView(container) {
     `;
   }
 
-  // Render Todo / Deadlines Card (Prompt 56 - 60: Categorized Both view, readable dates, Google Tasks-style completed section)
-  function renderTodoListCard(activeSubjects, todayStr) {
-    const todos = store.getTodos();
-    let filteredTodos = todos;
-    if (todoFilterMode === 'todo') {
-      filteredTodos = todos.filter(t => !t.due_date);
-    } else if (todoFilterMode === 'deadline') {
-      filteredTodos = todos.filter(t => Boolean(t.due_date));
-    }
-
-    const activeItems = filteredTodos.filter(t => !t.completed);
-    const completedItems = filteredTodos.filter(t => t.completed);
-    const pendingCount = activeItems.length;
-
+  // Render Todo / Deadlines Items List Content (Prompt 60 & 64)
+  function renderTodoItemsHtml(activeItems, completedItems, todayStr) {
     let itemsHtml = '';
 
     if (activeItems.length === 0 && completedItems.length === 0) {
@@ -900,6 +892,25 @@ export function renderTrackerView(container) {
     }
 
     return `
+      ${itemsHtml}
+      ${completedHtml}
+    `;
+  }
+
+  // Render Todo / Deadlines Card (Prompt 56 - 60 & 64)
+  function renderTodoListCard(activeSubjects, todayStr) {
+    const todos = store.getTodos();
+    let filteredTodos = todos;
+    if (todoFilterMode === 'todo') {
+      filteredTodos = todos.filter(t => !t.due_date);
+    } else if (todoFilterMode === 'deadline') {
+      filteredTodos = todos.filter(t => Boolean(t.due_date));
+    }
+
+    const activeItems = filteredTodos.filter(t => !t.completed);
+    const completedItems = filteredTodos.filter(t => t.completed);
+
+    return `
       <div class="tool-card todo-deadlines-card">
         <div class="todo-deadlines-header">
           <div class="card-header-label" style="margin-bottom: 0;">
@@ -910,7 +921,7 @@ export function renderTrackerView(container) {
             <span>TODO & DEADLINES</span>
           </div>
 
-          <div class="todo-mode-switch" id="todo-mode-switch" title="Filter Tasks">
+          <div class="todo-mode-switch" id="todo-mode-switch" data-active="${todoFilterMode}" title="Filter Tasks">
             <button type="button" class="todo-mode-btn ${todoFilterMode === 'todo' ? 'active' : ''}" data-mode="todo">Todo</button>
             <button type="button" class="todo-mode-btn ${todoFilterMode === 'deadline' ? 'active' : ''}" data-mode="deadline">Deadline</button>
             <button type="button" class="todo-mode-btn ${todoFilterMode === 'both' ? 'active' : ''}" data-mode="both">Both</button>
@@ -943,9 +954,8 @@ export function renderTrackerView(container) {
           </div>
         </form>
 
-        <div class="todo-list-scroll-wrap">
-          ${itemsHtml}
-          ${completedHtml}
+        <div class="todo-list-scroll-wrap" id="todo-list-scroll-wrap">
+          ${renderTodoItemsHtml(activeItems, completedItems, todayStr)}
         </div>
       </div>
     `;
@@ -1227,27 +1237,42 @@ function attachTrackerEvents(container) {
     });
   }
 
-  // Pomodoro / Stopwatch 2-Way Mode Toggle Buttons
-  container.querySelectorAll('.pomo-mode-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const mode = e.currentTarget.dataset.mode;
-      if (mode === pomoMode) return;
-      pomoMode = mode;
-      pomoIsRunning = false;
-      pomoIsPausedAfterSkip = false;
-      if (pomoInterval) {
-        clearInterval(pomoInterval);
-        pomoInterval = null;
-      }
-      if (pomoMode === 'stopwatch') {
-        stopwatchElapsed = 0;
-      } else {
-        pomoPhase = 'focus';
-        pomoTimeRemaining = pomoWorkMins * 60;
-      }
-      renderTrackerView(container);
+  // Pomodoro / Stopwatch 2-Way Mode Toggle Buttons (Prompt 64: In-place animated sliding)
+  const pomoSwitch = container.querySelector('#pomo-mode-switch');
+  if (pomoSwitch) {
+    pomoSwitch.querySelectorAll('.pomo-mode-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mode = e.currentTarget.dataset.mode;
+        if (mode === pomoMode) return;
+        pomoMode = mode;
+        pomoIsRunning = false;
+        pomoIsPausedAfterSkip = false;
+        if (pomoInterval) {
+          clearInterval(pomoInterval);
+          pomoInterval = null;
+        }
+        if (pomoMode === 'stopwatch') {
+          stopwatchElapsed = 0;
+        } else {
+          pomoPhase = 'focus';
+          pomoTimeRemaining = pomoWorkMins * 60;
+        }
+
+        // 1. Update in-place so sliding indicator animates smoothly across the track
+        pomoSwitch.dataset.active = mode;
+        pomoSwitch.querySelectorAll('.pomo-mode-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.mode === mode);
+        });
+
+        // 2. Update only Pomodoro body and rebind timer controls
+        const pomoBody = container.querySelector('#pomo-card-body');
+        if (pomoBody) {
+          pomoBody.innerHTML = renderPomodoroBodyHtml(store.getActiveSubjects());
+          bindPomoBodyEvents();
+        }
+      });
     });
-  });
+  }
 
   async function openPipTimer() {
     if (!isPipSupported) return;
@@ -1655,33 +1680,104 @@ function attachTrackerEvents(container) {
     });
   }
 
-  const pomoToggleBtn = container.querySelector('#btn-pomo-toggle');
-  if (pomoToggleBtn) {
-    pomoToggleBtn.addEventListener('click', async () => {
-      if (pomoIsRunning) {
-        pomoIsRunning = false;
-        if (pomoInterval) {
-          clearInterval(pomoInterval);
-          pomoInterval = null;
+  function bindPomoBodyEvents() {
+    const pomoToggleBtn = container.querySelector('#btn-pomo-toggle');
+    if (pomoToggleBtn) {
+      pomoToggleBtn.addEventListener('click', async () => {
+        if (pomoIsRunning) {
+          pomoIsRunning = false;
+          if (pomoInterval) {
+            clearInterval(pomoInterval);
+            pomoInterval = null;
+          }
+        } else {
+          // Request notification permission on first user start interaction
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+            try {
+              await Notification.requestPermission();
+            } catch (err) {}
+          }
+          pomoIsPausedAfterSkip = false;
+          pomoIsRunning = true;
+          if (pomoInterval) clearInterval(pomoInterval);
+          pomoInterval = setInterval(tickPomodoro, 1000);
         }
-      } else {
-        // Request notification permission on first user start interaction
-        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-          try {
-            await Notification.requestPermission();
-          } catch (err) {}
+        renderTrackerView(container);
+      });
+    }
+
+    const pomoSettingsBtn = container.querySelector('#btn-pomo-settings');
+    if (pomoSettingsBtn) {
+      pomoSettingsBtn.addEventListener('click', openSettingsPopover);
+    }
+
+    const pomoResetBtn = container.querySelector('#btn-pomo-reset');
+    if (pomoResetBtn) {
+      pomoResetBtn.addEventListener('click', () => {
+        if (pomoMode === 'stopwatch') {
+          pomoIsRunning = false;
+          if (pomoInterval) {
+            clearInterval(pomoInterval);
+            pomoInterval = null;
+          }
+          if (stopwatchElapsed >= 30) {
+            const mins = Math.max(1, Math.round(stopwatchElapsed / 60));
+            const todayStr = new Date().toISOString().split('T')[0];
+            store.saveSession({
+              subject_id: pomoSubjectId || null,
+              duration: mins,
+              date: todayStr,
+              notes: 'Stopwatch Session'
+            });
+            const sub = pomoSubjectId ? store.getSubjectById(pomoSubjectId) : null;
+            window.avenApp?.showToast(`Logged ${mins} min stopwatch session${sub ? ` for ${sub.name}` : ''}!`, 'success');
+          } else if (stopwatchElapsed > 0) {
+            window.avenApp?.showToast('Stopwatch reset (under 30s session not logged)', 'info');
+          }
+          stopwatchElapsed = 0;
         }
-        pomoIsPausedAfterSkip = false;
-        pomoIsRunning = true;
-        if (pomoInterval) clearInterval(pomoInterval);
-        pomoInterval = setInterval(tickPomodoro, 1000);
-      }
-      renderTrackerView(container);
+        renderTrackerView(container);
+      });
+    }
+
+    const pomoStopLogBtn = container.querySelector('#btn-pomo-stop-log');
+    if (pomoStopLogBtn) {
+      pomoStopLogBtn.addEventListener('click', executePomoStopAndLog);
+    }
+
+    const pomoResetCycleBtns = container.querySelectorAll('.pomo-btn-reset-cycle, #btn-pomo-reset-cycle');
+    pomoResetCycleBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        resetCycleModal?.classList.add('open');
+      });
     });
+
+    const pomoSwitchPhaseBtn = container.querySelector('#btn-pomo-switch-phase');
+    if (pomoSwitchPhaseBtn) {
+      pomoSwitchPhaseBtn.addEventListener('click', () => {
+        if (pomoPhase === 'focus') {
+          const isLongBreakDue = (pomoCurrentCycle % pomoLongBreakInterval === 0);
+          if (skipTitle) skipTitle.textContent = isLongBreakDue ? 'Skip to Long Break?' : 'Skip to Break?';
+          if (skipMessage) skipMessage.textContent = "Skip to break? Your current focus time won't be counted.";
+          if (confirmSkipBtn) confirmSkipBtn.textContent = isLongBreakDue ? 'Skip to Long Break' : 'Skip to Break';
+        } else {
+          if (skipTitle) skipTitle.textContent = 'Skip to Focus?';
+          if (skipMessage) skipMessage.textContent = 'Skip to focus? This break will end early.';
+          if (confirmSkipBtn) confirmSkipBtn.textContent = 'Skip to Focus';
+        }
+        skipModal?.classList.add('open');
+      });
+    }
+
+    const pomoDd = container.querySelector('#pomo-subject-select-wrap');
+    if (pomoDd) {
+      initCustomDropdown(pomoDd, (val) => {
+        pomoSubjectId = val;
+      });
+    }
   }
 
   // Pomodoro Settings Popover Handlers
-  const pomoSettingsBtn = container.querySelector('#btn-pomo-settings');
   const pomoSettingsPopover = container.querySelector('#pomo-settings-popover');
   const closePomoSettingsBtn = container.querySelector('#btn-close-pomo-settings');
   const cancelPomoSettingsBtn = container.querySelector('#btn-cancel-pomo-settings');
@@ -1704,9 +1800,6 @@ function attachTrackerEvents(container) {
     }
   };
 
-  if (pomoSettingsBtn) {
-    pomoSettingsBtn.addEventListener('click', openSettingsPopover);
-  }
   if (closePomoSettingsBtn) {
     closePomoSettingsBtn.addEventListener('click', closeSettingsPopover);
   }
@@ -1751,35 +1844,6 @@ function attachTrackerEvents(container) {
 
       closeSettingsPopover();
       window.avenApp?.showToast('Timer settings saved', 'success');
-      renderTrackerView(container);
-    });
-  }
-
-  const pomoResetBtn = container.querySelector('#btn-pomo-reset');
-  if (pomoResetBtn) {
-    pomoResetBtn.addEventListener('click', () => {
-      if (pomoMode === 'stopwatch') {
-        pomoIsRunning = false;
-        if (pomoInterval) {
-          clearInterval(pomoInterval);
-          pomoInterval = null;
-        }
-        if (stopwatchElapsed >= 30) {
-          const mins = Math.max(1, Math.round(stopwatchElapsed / 60));
-          const todayStr = new Date().toISOString().split('T')[0];
-          store.saveSession({
-            subject_id: pomoSubjectId || null,
-            duration: mins,
-            date: todayStr,
-            notes: 'Stopwatch Session'
-          });
-          const sub = pomoSubjectId ? store.getSubjectById(pomoSubjectId) : null;
-          window.avenApp?.showToast(`Logged ${mins} min stopwatch session${sub ? ` for ${sub.name}` : ''}!`, 'success');
-        } else if (stopwatchElapsed > 0) {
-          window.avenApp?.showToast('Stopwatch reset (under 30s session not logged)', 'info');
-        }
-        stopwatchElapsed = 0;
-      }
       renderTrackerView(container);
     });
   }
@@ -1840,23 +1904,10 @@ function attachTrackerEvents(container) {
     renderTrackerView(container);
   };
 
-  // Pomodoro "Stop & Log" Button Handler
-  const pomoStopLogBtn = container.querySelector('#btn-pomo-stop-log');
-  if (pomoStopLogBtn) {
-    pomoStopLogBtn.addEventListener('click', executePomoStopAndLog);
-  }
-
   // Pomodoro "Reset Cycle" Modal Handlers (Prompts 54 & follow-up)
   const resetCycleModal = container.querySelector('#pomo-reset-cycle-modal');
-  const pomoResetCycleBtns = container.querySelectorAll('.pomo-btn-reset-cycle, #btn-pomo-reset-cycle');
   const discardCycleBtn = container.querySelector('#btn-discard-cycle-progress');
   const logCycleBtn = container.querySelector('#btn-log-cycle-progress');
-
-  pomoResetCycleBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      resetCycleModal?.classList.add('open');
-    });
-  });
 
   container.querySelectorAll('.close-reset-cycle-modal-btn').forEach(b => {
     b.addEventListener('click', () => {
@@ -1897,28 +1948,13 @@ function attachTrackerEvents(container) {
   const skipMessage = container.querySelector('#pomo-skip-message');
   const confirmSkipBtn = container.querySelector('#btn-confirm-skip-phase');
 
-  const pomoSwitchPhaseBtn = container.querySelector('#btn-pomo-switch-phase');
-  if (pomoSwitchPhaseBtn) {
-    pomoSwitchPhaseBtn.addEventListener('click', () => {
-      if (pomoPhase === 'focus') {
-        const isLongBreakDue = (pomoCurrentCycle % pomoLongBreakInterval === 0);
-        if (skipTitle) skipTitle.textContent = isLongBreakDue ? 'Skip to Long Break?' : 'Skip to Break?';
-        if (skipMessage) skipMessage.textContent = "Skip to break? Your current focus time won't be counted.";
-        if (confirmSkipBtn) confirmSkipBtn.textContent = isLongBreakDue ? 'Skip to Long Break' : 'Skip to Break';
-      } else {
-        if (skipTitle) skipTitle.textContent = 'Skip to Focus?';
-        if (skipMessage) skipMessage.textContent = 'Skip to focus? This break will end early.';
-        if (confirmSkipBtn) confirmSkipBtn.textContent = 'Skip to Focus';
-      }
-      skipModal?.classList.add('open');
-    });
-  }
-
   container.querySelectorAll('.close-skip-modal-btn').forEach(b => {
     b.addEventListener('click', () => {
       skipModal?.classList.remove('open');
     });
   });
+
+  bindPomoBodyEvents();
 
   if (confirmSkipBtn) {
     confirmSkipBtn.addEventListener('click', () => {
@@ -1989,48 +2025,65 @@ function attachTrackerEvents(container) {
     });
   });
 
-  // Distribution Scope Switcher (All Time vs This Week)
+  // Distribution Scope Switcher (All Time vs This Week) (Prompt 64: In-place animated sliding)
   const distSwitcher = container.querySelector('#dist-scope-switcher');
   if (distSwitcher) {
     distSwitcher.querySelectorAll('.seg-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        distributionScope = btn.dataset.scope || 'all';
-        renderTrackerView(container);
+        const scope = btn.dataset.scope || 'all';
+        if (scope === distributionScope) return;
+        distributionScope = scope;
+
+        // 1. Update in-place so sliding indicator animates smoothly
+        distSwitcher.dataset.active = scope;
+        distSwitcher.querySelectorAll('.seg-btn').forEach(b => {
+          b.classList.toggle('active', (b.dataset.scope || 'all') === scope);
+        });
+
+        // 2. Update distribution body
+        const distBody = container.querySelector('#dist-body-wrap');
+        if (distBody) {
+          distBody.innerHTML = renderDistributionBodyHtml(store.getStudySessions());
+          bindDonutTooltipEvents();
+        }
       });
     });
   }
 
-  // Interactive Donut Slices Tooltip
-  container.querySelectorAll('.donut-slice').forEach(slice => {
-    slice.addEventListener('mouseenter', (e) => {
-      const name = slice.dataset.name;
-      const code = slice.dataset.code;
-      const hours = slice.dataset.hours;
-      const pct = slice.dataset.pct;
-      const color = slice.dataset.color;
+  function bindDonutTooltipEvents() {
+    container.querySelectorAll('.donut-slice').forEach(slice => {
+      slice.addEventListener('mouseenter', (e) => {
+        const name = slice.dataset.name;
+        const code = slice.dataset.code;
+        const hours = slice.dataset.hours;
+        const pct = slice.dataset.pct;
+        const color = slice.dataset.color;
 
-      tooltip.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text-primary);">
-          <span style="width: 7px; height: 7px; border-radius: 50%; background: ${color};"></span>
-          <span>${code ? `[${code}] ` : ''}${name}</span>
-        </div>
-        <div style="color: var(--text-secondary); margin-top: 2px;">
-          <strong>${hours}h</strong> studied (${pct}% of total)
-        </div>
-      `;
+        tooltip.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text-primary);">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: ${color};"></span>
+            <span>${code ? `[${code}] ` : ''}${name}</span>
+          </div>
+          <div style="color: var(--text-secondary); margin-top: 2px;">
+            <strong>${hours}h</strong> studied (${pct}% of total)
+          </div>
+        `;
 
-      tooltip.style.display = 'flex';
-      updateTooltipPosition(e);
+        tooltip.style.display = 'flex';
+        updateTooltipPosition(e);
+      });
+
+      slice.addEventListener('mousemove', (e) => {
+        updateTooltipPosition(e);
+      });
+
+      slice.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
+      });
     });
+  }
 
-    slice.addEventListener('mousemove', (e) => {
-      updateTooltipPosition(e);
-    });
-
-    slice.addEventListener('mouseleave', () => {
-      tooltip.style.display = 'none';
-    });
-  });
+  bindDonutTooltipEvents();
 
   // Monthly Calendar Navigation Handlers (Prompt 56)
   const prevMonthBtn = container.querySelector('#btn-month-prev');
@@ -2048,65 +2101,100 @@ function attachTrackerEvents(container) {
     });
   }
 
-  // Todo / Deadlines Mode Switch & Form Actions (Prompt 56 & 57)
-  container.querySelectorAll('.todo-mode-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const mode = e.currentTarget.dataset.mode;
-      if (mode === todoFilterMode) return;
-      todoFilterMode = mode;
-      renderTrackerView(container);
-    });
-  });
+  // Todo / Deadlines Mode Switch & Form Actions (Prompt 56, 57, 64: In-place animated sliding)
+  const todoSwitch = container.querySelector('#todo-mode-switch');
+  if (todoSwitch) {
+    todoSwitch.querySelectorAll('.todo-mode-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mode = e.currentTarget.dataset.mode;
+        if (mode === todoFilterMode) return;
+        todoFilterMode = mode;
 
-  const todoForm = container.querySelector('#todo-add-form');
-  if (todoForm) {
-    todoForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const text = container.querySelector('#todo-input-text')?.value?.trim();
-      const subject_id = container.querySelector('#todo-subject-select')?.value || null;
-      const dueDateInput = container.querySelector('#todo-due-date');
-      const due_date = (dueDateInput && dueDateInput.value) ? dueDateInput.value : null;
+        // 1. Update in-place so sliding indicator animates smoothly
+        todoSwitch.dataset.active = mode;
+        todoSwitch.querySelectorAll('.todo-mode-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.mode === mode);
+        });
 
-      if (!text) return;
-      if (todoFilterMode === 'deadline' && !due_date) {
-        window.avenApp?.showToast('Please select a due date for the deadline', 'danger');
-        return;
-      }
+        // 2. Update form placeholder and date input in-place
+        const todoInput = container.querySelector('#todo-input-text');
+        if (todoInput) {
+          todoInput.placeholder = mode === 'deadline' ? 'Add a new deadline...' : (mode === 'todo' ? 'Add a new todo...' : 'Add a task or deadline...');
+        }
+        const dateInput = container.querySelector('#todo-due-date');
+        const subRow = container.querySelector('.todo-sub-row');
+        if (subRow) {
+          if (mode === 'todo') {
+            if (dateInput) dateInput.remove();
+          } else {
+            if (!dateInput) {
+              const inputHtml = `<input type="date" id="todo-due-date" class="form-input" style="flex: 1;" ${mode === 'deadline' ? 'required' : ''} title="${mode === 'deadline' ? 'Due date (required for deadlines)' : 'Due date (optional)'}">`;
+              subRow.insertAdjacentHTML('beforeend', inputHtml);
+            } else {
+              dateInput.required = mode === 'deadline';
+              dateInput.title = mode === 'deadline' ? 'Due date (required for deadlines)' : 'Due date (optional)';
+            }
+          }
+        }
 
-      store.saveTodo({
-        text,
-        subject_id,
-        due_date: todoFilterMode === 'todo' ? null : due_date
+        // 3. Update list items and rebind
+        const todoListWrap = container.querySelector('#todo-list-scroll-wrap');
+        if (todoListWrap) {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const todos = store.getTodos();
+          let filteredTodos = todos;
+          if (todoFilterMode === 'todo') {
+            filteredTodos = todos.filter(t => !t.due_date);
+          } else if (todoFilterMode === 'deadline') {
+            filteredTodos = todos.filter(t => Boolean(t.due_date));
+          }
+          const activeItems = filteredTodos.filter(t => !t.completed);
+          const completedItems = filteredTodos.filter(t => t.completed);
+          todoListWrap.innerHTML = renderTodoItemsHtml(activeItems, completedItems, todayStr);
+          bindTodoListEvents();
+        }
       });
-      window.avenApp?.showToast(due_date ? 'Deadline added!' : 'Task added!', 'success');
-      renderTrackerView(container);
     });
   }
 
-  container.querySelectorAll('.btn-toggle-todo').forEach(cb => {
-    cb.addEventListener('change', () => {
-      store.toggleTodo(cb.dataset.id);
-      renderTrackerView(container);
+  function bindTodoListEvents() {
+    container.querySelectorAll('.btn-toggle-todo').forEach(cb => {
+      cb.addEventListener('change', () => {
+        store.toggleTodo(cb.dataset.id);
+        renderTrackerView(container);
+      });
     });
-  });
 
-  container.querySelectorAll('.btn-del-todo').forEach(btn => {
-    btn.addEventListener('click', () => {
-      store.deleteTodo(btn.dataset.id);
-      window.avenApp?.showToast('Task deleted', 'info');
-      renderTrackerView(container);
+    container.querySelectorAll('.btn-del-todo').forEach(btn => {
+      btn.addEventListener('click', () => {
+        store.deleteTodo(btn.dataset.id);
+        window.avenApp?.showToast('Task deleted', 'info');
+        renderTrackerView(container);
+      });
     });
-  });
 
-  // Toggle Completed Section Handler (Prompt 60)
-  const toggleCompletedBtn = container.querySelector('#btn-toggle-completed-tasks');
-  if (toggleCompletedBtn) {
-    toggleCompletedBtn.addEventListener('click', (e) => {
-      if (e.target.closest('#btn-clear-completed-todos')) return;
-      isCompletedSectionOpen = !isCompletedSectionOpen;
-      renderTrackerView(container);
-    });
+    const toggleCompletedBtn = container.querySelector('#btn-toggle-completed-tasks');
+    if (toggleCompletedBtn) {
+      toggleCompletedBtn.addEventListener('click', (e) => {
+        if (e.target.closest('#btn-clear-completed-todos')) return;
+        isCompletedSectionOpen = !isCompletedSectionOpen;
+        renderTrackerView(container);
+      });
+    }
+
+    const clearCompletedBtn = container.querySelector('#btn-clear-completed-todos');
+    if (clearCompletedBtn) {
+      clearCompletedBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const completed = store.getTodos().filter(t => t.completed);
+        completed.forEach(t => store.deleteTodo(t.id));
+        window.avenApp?.showToast(`Cleared ${completed.length} completed ${completed.length === 1 ? 'task' : 'tasks'}`, 'info');
+        renderTrackerView(container);
+      });
+    }
   }
+
+  bindTodoListEvents();
 
   // Initialize Custom Dropdowns (Prompt 61)
   const pomoDd = container.querySelector('#pomo-subject-select-wrap');

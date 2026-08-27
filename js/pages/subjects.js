@@ -80,6 +80,20 @@ export function sortSubjectsList(subjects, sortKey) {
   }
 }
 
+function getDisplayedSubjects() {
+  const allSubjects = store.getSubjects(true);
+  let displayed = allSubjects;
+  if (currentFilter === 'active') {
+    displayed = allSubjects.filter(s => !s.archived);
+  } else if (currentFilter === 'archived') {
+    displayed = allSubjects.filter(s => s.archived);
+  }
+  if (currentYearFilter !== 'all') {
+    displayed = displayed.filter(s => s.year_level === currentYearFilter);
+  }
+  return sortSubjectsList(displayed, store.getSubjectsSort());
+}
+
 export function renderSubjectsView(container) {
 
   const activeSubjects = store.getSubjects(false);
@@ -90,20 +104,8 @@ export function renderSubjectsView(container) {
   const viewMode = store.getSubjectsViewMode(); // 'grid' | 'list'
   const currentSort = store.getSubjectsSort();
 
-  // Filter subjects
-  let displayedSubjects = allSubjects;
-  if (currentFilter === 'active') {
-    displayedSubjects = allSubjects.filter(s => !s.archived);
-  } else if (currentFilter === 'archived') {
-    displayedSubjects = allSubjects.filter(s => s.archived);
-  }
-
-  if (currentYearFilter !== 'all') {
-    displayedSubjects = displayedSubjects.filter(s => s.year_level === currentYearFilter);
-  }
-
-  // Sort subjects
-  displayedSubjects = sortSubjectsList(displayedSubjects, currentSort);
+  // Filter & Sort subjects
+  const displayedSubjects = getDisplayedSubjects();
 
   container.innerHTML = `
     <!-- Top Summary Banner (Scoped to Active Subjects, Uniform 3-Row Layout) -->
@@ -255,7 +257,7 @@ export function renderSubjectsView(container) {
 
       <div class="controls-actions-group" style="display: flex; align-items: center; gap: 8px;">
         <!-- Grid / List View Switcher Buttons -->
-        <div class="segmented-control" id="view-mode-toggle">
+        <div class="segmented-control" id="view-mode-toggle" data-active="${viewMode}">
           <button class="seg-btn ${viewMode === 'grid' ? 'active' : ''}" data-view="grid" title="Grid View" aria-label="Grid View">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="7" height="7"></rect>
@@ -296,12 +298,14 @@ export function renderSubjectsView(container) {
     </div>
 
     <!-- Subjects Container (Grouped by Term if Archived Filter, else Regular View) -->
-    ${displayedSubjects.length === 0 ? `
-      <div style="padding: 48px 24px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border: none; border-radius: var(--radius-lg); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.08);">
-        <p style="font-size: 15px; font-weight: 500; margin-bottom: 8px;">No subjects found</p>
-        <p style="font-size: 13px;">${currentFilter === 'archived' ? 'No archived subjects in your repository.' : 'Create your first academic subject or adjust filters above to get started.'}</p>
-      </div>
-    ` : (currentFilter === 'archived' ? renderArchivedGroupedView(displayedSubjects, viewMode) : (viewMode === 'list' ? renderSubjectsListView(displayedSubjects) : renderSubjectsGridView(displayedSubjects)))}
+    <div id="subjects-cards-wrapper">
+      ${displayedSubjects.length === 0 ? `
+        <div style="padding: 48px 24px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border: none; border-radius: var(--radius-lg); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.08);">
+          <p style="font-size: 15px; font-weight: 500; margin-bottom: 8px;">No subjects found</p>
+          <p style="font-size: 13px;">${currentFilter === 'archived' ? 'No archived subjects in your repository.' : 'Create your first academic subject or adjust filters above to get started.'}</p>
+        </div>
+      ` : (currentFilter === 'archived' ? renderArchivedGroupedView(displayedSubjects, viewMode) : (viewMode === 'list' ? renderSubjectsListView(displayedSubjects) : renderSubjectsGridView(displayedSubjects)))}
+    </div>
 
     <!-- Create/Edit Subject Modal -->
     <div class="modal-overlay" id="subject-modal">
@@ -317,56 +321,85 @@ export function renderSubjectsView(container) {
         </div>
 
         <form id="subject-form">
-          <input type="hidden" id="sub-form-id" value="">
-          <div class="modal-body">
-            <!-- Row 1: Name + Code -->
-            <div class="form-row-paired">
-              <div class="form-group">
-                <label class="form-label" for="sub-form-name">Subject Name *</label>
-                <input type="text" id="sub-form-name" class="form-input" placeholder="e.g. Data Structures & Algorithms" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="sub-form-code">Course Code</label>
-                <input type="text" id="sub-form-code" class="form-input" placeholder="e.g. CS 102">
-              </div>
-            </div>
+          <input type="hidden" id="sub-form-id">
+          
+          <div class="form-group">
+            <label class="form-label" for="sub-form-name">Subject Name *</label>
+            <input type="text" id="sub-form-name" class="form-input" placeholder="e.g. Data Structures & Algorithms" required>
+          </div>
 
-            <!-- Row 2: Year Level + Semester -->
-            <div class="form-row-paired">
-              <div class="form-group">
-                <label class="form-label" for="sub-form-year">Year Level *</label>
-                <select id="sub-form-year" class="form-select" required>
-                  ${YEAR_LEVELS.map(y => `<option value="${y}">${y}</option>`).join('')}
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="sub-form-semester">Semester *</label>
-                <select id="sub-form-semester" class="form-select" required>
-                  ${SEMESTERS.map(s => `<option value="${s}">${s}</option>`).join('')}
-                </select>
-              </div>
-            </div>
-
-            <!-- Row 3: Instructor -->
+          <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="sub-form-instructor">Instructor (Optional)</label>
-              <input type="text" id="sub-form-instructor" class="form-input" placeholder="e.g. Dr. Elena Santos">
+              <label class="form-label" for="sub-form-code">Course Code</label>
+              <input type="text" id="sub-form-code" class="form-input" placeholder="e.g. CS 201">
             </div>
+            <div class="form-group">
+              <label class="form-label" for="sub-form-year">Year Level *</label>
+              <select id="sub-form-year" class="form-input" required>
+                ${YEAR_LEVELS.map(y => `<option value="${y}">${y}</option>`).join('')}
+              </select>
+            </div>
+          </div>
 
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="sub-form-semester">Semester *</label>
+              <select id="sub-form-semester" class="form-input" required>
+                ${SEMESTERS.map(s => `<option value="${s}">${s}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="sub-form-instructor">Instructor</label>
+              <input type="text" id="sub-form-instructor" class="form-input" placeholder="e.g. Dr. Jane Smith">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Color Tag</label>
+            <div class="color-picker-grid">
+              ${DEFAULT_COLOR_SWATCHES.map(c => `
+                <div class="color-swatch" data-color="${c}" style="background-color: ${c};"></div>
+              `).join('')}
+            </div>
             <input type="hidden" id="sub-form-color" value="${DEFAULT_COLOR_SWATCHES[0]}">
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-ghost close-modal-btn">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="btn-save-subject">Save Subject</button>
+            <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Subject</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Archive Reason Dialog Modal -->
+    <!-- Cascade Delete Warning Modal -->
+    <div class="modal-overlay" id="cascade-delete-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title" style="color: var(--danger);">Delete Subject &amp; All Linked Data?</h3>
+          <button class="btn btn-ghost btn-icon close-delete-modal-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p style="margin-bottom: 8px;">Are you sure you want to delete this subject? <strong>This action cannot be undone.</strong></p>
+          <div id="cascade-impact-details" style="padding: 12px; background: rgba(239, 68, 68, 0.08); border-radius: var(--radius-md); font-size: 13px; color: var(--text-primary); border: 1px solid rgba(239, 68, 68, 0.2);">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary close-delete-modal-btn">Cancel</button>
+          <button type="button" class="btn btn-danger" id="btn-confirm-cascade-delete">Delete Everything</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Archive Reason Selector Modal -->
     <div class="modal-overlay" id="archive-reason-modal">
-      <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-card">
         <div class="modal-header">
           <h3 class="modal-title">Archive Subject</h3>
           <button class="btn btn-ghost btn-icon close-archive-modal-btn">
@@ -848,15 +881,6 @@ function attachSubjectsEvents(container) {
   };
   document.addEventListener('click', closeToolbarPopovers);
 
-  // Grid / List View Mode Toggle
-  container.querySelectorAll('#view-mode-toggle .seg-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const mode = btn.dataset.view;
-      store.setSubjectsViewMode(mode);
-      renderSubjectsView(container);
-    });
-  });
-
   // Modals
   const createModal = container.querySelector('#subject-modal');
   const deleteModal = container.querySelector('#cascade-delete-modal');
@@ -866,11 +890,11 @@ function attachSubjectsEvents(container) {
   const archiveForm = container.querySelector('#archive-reason-form');
 
   const openCreateModal = () => {
-    form.reset();
+    form?.reset();
     container.querySelector('#sub-form-id').value = '';
     container.querySelector('#subject-modal-title').textContent = 'New Subject';
     container.querySelector('#sub-form-color').value = DEFAULT_COLOR_SWATCHES[0];
-    createModal.classList.add('open');
+    createModal?.classList.add('open');
   };
 
   const openEditModal = (id) => {
@@ -885,7 +909,7 @@ function attachSubjectsEvents(container) {
     container.querySelector('#sub-form-semester').value = sub.semester || '1st Semester';
     container.querySelector('#sub-form-instructor').value = sub.instructor || '';
     container.querySelector('#sub-form-color').value = sub.color || DEFAULT_COLOR_SWATCHES[0];
-    createModal.classList.add('open');
+    createModal?.classList.add('open');
   };
 
   const openArchiveReasonModal = (subId) => {
@@ -904,7 +928,32 @@ function attachSubjectsEvents(container) {
     const customInput = container.querySelector('#archive-custom-note');
     if (customInput) customInput.value = '';
 
-    archiveModal.classList.add('open');
+    archiveModal?.classList.add('open');
+  };
+
+  const openDeleteModal = (subId) => {
+    const sub = store.getSubjectById(subId);
+    if (!sub) return;
+
+    deleteTargetSubjectId = subId;
+    const stats = store.getCascadeStats(subId);
+
+    const detailsDiv = container.querySelector('#cascade-impact-details');
+    if (detailsDiv) {
+      detailsDiv.innerHTML = `
+        <div style="margin-top: 4px; font-weight: normal;">
+          Subject to delete: <strong>${sub.name} (${sub.code || 'No Code'})</strong><br>
+          Cascading impact:
+          <ul style="margin: 4px 0 0 18px;">
+            <li><strong>${stats.sessionCount}</strong> logged study sessions</li>
+            <li><strong>${stats.gradeCategoriesCount}</strong> grade categories (${stats.gradeEntriesCount} grade entries)</li>
+            <li><strong>${stats.hasPlan ? '1' : '0'}</strong> study plan document</li>
+          </ul>
+        </div>
+      `;
+    }
+
+    deleteModal?.classList.add('open');
   };
 
   const closeModals = () => {
@@ -916,26 +965,74 @@ function attachSubjectsEvents(container) {
     archiveTargetSubjectId = null;
   };
 
-  container.querySelector('#btn-create-subject')?.addEventListener('click', openCreateModal);
-
-  container.querySelectorAll('.close-modal-btn, .close-delete-modal-btn, .close-archive-modal-btn, .close-bulk-modal-btn').forEach(b => {
-    b.addEventListener('click', closeModals);
-  });
-
-
-
-  // Row overflow actions popover toggles
-  container.querySelectorAll('.subject-row-actions-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const subId = btn.dataset.id;
-      const popover = container.querySelector(`#row-actions-${subId}`);
-      if (!popover) return;
-      const isOpen = popover.classList.contains('open');
-      container.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
-      if (!isOpen) popover.classList.add('open');
+  const attachCardActionEvents = (rootEl) => {
+    // Row overflow actions popover toggles
+    rootEl.querySelectorAll('.subject-row-actions-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const subId = btn.dataset.id;
+        const popover = rootEl.querySelector(`#row-actions-${subId}`);
+        if (!popover) return;
+        const isOpen = popover.classList.contains('open');
+        rootEl.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
+        if (!isOpen) popover.classList.add('open');
+      });
     });
-  });
+
+    // Edit buttons
+    rootEl.querySelectorAll('.btn-edit-sub').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        rootEl.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
+        openEditModal(btn.dataset.id);
+      });
+    });
+
+    // Archive / Unarchive buttons
+    rootEl.querySelectorAll('.btn-archive-sub').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        rootEl.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
+        const subId = btn.dataset.id;
+        const sub = store.getSubjectById(subId);
+        if (!sub) return;
+
+        if (sub.archived) {
+          store.unarchiveSubject(subId);
+          window.avenApp?.showToast('Subject unarchived and reactivated', 'info');
+          renderSubjectsView(container);
+        } else {
+          openArchiveReasonModal(subId);
+        }
+      });
+    });
+
+    // Delete buttons
+    rootEl.querySelectorAll('.btn-delete-sub').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        rootEl.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
+        openDeleteModal(btn.dataset.id);
+      });
+    });
+
+    // Click on Subject Plan Link (Navigates to Study Plans with subject pre-selected)
+    rootEl.querySelectorAll('.subject-plan-link').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const subjectId = btn.dataset.subjectId;
+        if (subjectId) {
+          events.emit('plans:select-subject', subjectId);
+          if (window.avenApp && typeof window.avenApp.navigateTo === 'function') {
+            window.avenApp.navigateTo('plans');
+          } else {
+            window.location.hash = 'plans';
+          }
+        }
+      });
+    });
+  };
 
   // Close row actions popovers on outside click
   const closeRowActionPopovers = (e) => {
@@ -947,31 +1044,41 @@ function attachSubjectsEvents(container) {
   };
   document.addEventListener('click', closeRowActionPopovers);
 
-  // Edit / Archive / Delete Buttons
-  container.querySelectorAll('.btn-edit-sub').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      container.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
-      openEditModal(btn.dataset.id);
-    });
-  });
+  // Grid / List View Mode Toggle (Prompt 64: In-place animated sliding)
+  const viewToggle = container.querySelector('#view-mode-toggle');
+  if (viewToggle) {
+    viewToggle.querySelectorAll('.seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.dataset.view;
+        if (mode === store.getSubjectsViewMode()) return;
+        store.setSubjectsViewMode(mode);
+        
+        // 1. Update in-place so sliding indicator animates smoothly
+        viewToggle.dataset.active = mode;
+        viewToggle.querySelectorAll('.seg-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.view === mode);
+        });
 
-  container.querySelectorAll('.btn-archive-sub').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      container.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
-      const subId = btn.dataset.id;
-      const sub = store.getSubjectById(subId);
-      if (!sub) return;
-
-      if (sub.archived) {
-        store.unarchiveSubject(subId);
-        window.avenApp?.showToast('Subject unarchived and reactivated', 'info');
-        renderSubjectsView(container);
-      } else {
-        openArchiveReasonModal(subId);
-      }
+        // 2. Update subjects cards content
+        const wrapper = container.querySelector('#subjects-cards-wrapper');
+        if (wrapper) {
+          const displayed = getDisplayedSubjects();
+          wrapper.innerHTML = displayed.length === 0 ? `
+            <div style="padding: 48px 24px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border: none; border-radius: var(--radius-lg); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.08);">
+              <p style="font-size: 15px; font-weight: 500; margin-bottom: 8px;">No subjects found</p>
+              <p style="font-size: 13px;">${currentFilter === 'archived' ? 'No archived subjects in your repository.' : 'Create your first academic subject or adjust filters above to get started.'}</p>
+            </div>
+          ` : (currentFilter === 'archived' ? renderArchivedGroupedView(displayed, mode) : (mode === 'list' ? renderSubjectsListView(displayed) : renderSubjectsGridView(displayed)));
+          attachCardActionEvents(wrapper);
+        }
+      });
     });
+  }
+
+  container.querySelector('#btn-create-subject')?.addEventListener('click', openCreateModal);
+
+  container.querySelectorAll('.close-modal-btn, .close-delete-modal-btn, .close-archive-modal-btn, .close-bulk-modal-btn').forEach(b => {
+    b.addEventListener('click', closeModals);
   });
 
   // Archive Reason Radio Choice change
@@ -1026,23 +1133,6 @@ function attachSubjectsEvents(container) {
     cb.addEventListener('change', updateBulkCount);
   });
 
-  // Click on Subject Plan Link (Navigates to Study Plans with subject pre-selected)
-  container.querySelectorAll('.subject-plan-link').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const subjectId = btn.dataset.subjectId;
-      if (subjectId) {
-        events.emit('plans:select-subject', subjectId);
-        if (window.avenApp && typeof window.avenApp.navigateTo === 'function') {
-          window.avenApp.navigateTo('plans');
-        } else {
-          window.location.hash = 'plans';
-        }
-      }
-    });
-  });
-
   // Confirm Bulk Archive
   container.querySelector('#btn-confirm-bulk-archive')?.addEventListener('click', () => {
     const selectedIds = Array.from(container.querySelectorAll('.bulk-sub-checkbox:checked')).map(cb => cb.value);
@@ -1057,34 +1147,8 @@ function attachSubjectsEvents(container) {
     renderSubjectsView(container);
   });
 
-  // Delete modal triggers
-  container.querySelectorAll('.btn-delete-sub').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      container.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
-      const subId = btn.dataset.id;
-      const sub = store.getSubjectById(subId);
-      if (!sub) return;
-
-      deleteTargetSubjectId = subId;
-      const stats = store.getCascadeStats(subId);
-
-      const detailsDiv = container.querySelector('#cascade-impact-details');
-      detailsDiv.innerHTML = `
-        <div style="margin-top: 4px; font-weight: normal;">
-          Subject to delete: <strong>${sub.name} (${sub.code || 'No Code'})</strong><br>
-          Cascading impact:
-          <ul style="margin: 4px 0 0 18px;">
-            <li><strong>${stats.sessionCount}</strong> logged study sessions</li>
-            <li><strong>${stats.gradeCategoriesCount}</strong> grade categories (${stats.gradeEntriesCount} grade entries)</li>
-            <li><strong>${stats.hasPlan ? '1' : '0'}</strong> study plan document</li>
-          </ul>
-        </div>
-      `;
-
-      deleteModal.classList.add('open');
-    });
-  });
+  // Initial Card/Row action event binding
+  attachCardActionEvents(container);
 
   // Confirm Cascade Delete
   container.querySelector('#btn-confirm-cascade-delete')?.addEventListener('click', () => {
@@ -1115,3 +1179,4 @@ function attachSubjectsEvents(container) {
     renderSubjectsView(container);
   });
 }
+

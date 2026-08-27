@@ -85,8 +85,15 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-numeric: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-smooth: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  
+  /* Micro-Interaction Animation Timing System (Prompt 63 & 64) */
+  --transition-fast: 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --transition-base: 450ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --transition-smooth: 550ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --transition-slide: 380ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.15);
+  --transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 /* ==========================================================================
@@ -795,7 +802,7 @@ button, input, select, textarea {
   background-color: var(--bg-surface);
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
   white-space: nowrap;
   user-select: none;
   box-shadow: var(--shadow-sm);
@@ -809,7 +816,8 @@ button, input, select, textarea {
 }
 
 .btn:active {
-  transform: translateY(1px) scale(0.98);
+  transform: scale(0.96) !important;
+  box-shadow: var(--shadow-sm);
 }
 
 /* Solid Black Primary Button */
@@ -890,19 +898,63 @@ button, input, select, textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  transition: transform var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
-/* Segmented Control */
+.btn-icon:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.btn-icon:active {
+  transform: scale(0.90) !important;
+}
+
+/* Segmented Control with Weighted Sliding Indicator (Prompt 64) */
 .segmented-control {
-  display: inline-flex;
+  position: relative;
+  display: flex;
+  align-items: stretch;
   background: var(--bg-input);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 3px;
-  gap: 2px;
+  padding: 2px;
+  gap: 0;
+  user-select: none;
+  isolation: isolate;
+  box-sizing: border-box;
+}
+
+.segmented-control::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-elevated);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-slide);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.segmented-control[data-active="week"]::before,
+.segmented-control[data-active="list"]::before,
+.segmented-control:has(.seg-btn:nth-child(2).active)::before {
+  transform: translateX(100%);
 }
 
 .seg-btn {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -911,25 +963,24 @@ button, input, select, textarea {
   font-size: 12.5px;
   font-weight: 500;
   border-radius: var(--radius-sm);
-  background: transparent;
+  background: transparent !important;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  transition: var(--transition);
+  transition: color var(--transition-fast), transform var(--transition-fast);
+  box-shadow: none !important;
 }
 
-.seg-btn:hover {
+.seg-btn:hover:not(.active) {
   color: var(--text-primary);
 }
 
 .seg-btn:active {
-  transform: scale(0.97);
+  transform: scale(0.95);
 }
 
 .seg-btn.active {
-  background: var(--bg-surface-elevated);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-sm);
+  color: var(--text-primary) !important;
   font-weight: 600;
 }
 
@@ -2354,30 +2405,70 @@ button, input, select, textarea {
   flex-shrink: 0;
 }
 
-/* Todo Mode Switch Segmented Control (Matched to Pomodoro / Stopwatch Toggle Design) */
+/* Todo Mode Switch Segmented Control with Weighted Sliding Indicator (Prompt 64) */
 .todo-mode-switch {
-  display: inline-flex;
-  align-items: center;
+  position: relative;
+  display: flex;
+  align-items: stretch;
   background: var(--bg-surface-hover);
   border: 1px solid var(--border-default);
   padding: 2px;
   border-radius: var(--radius-full);
-  gap: 2px;
+  gap: 0;
   flex-shrink: 0;
+  user-select: none;
+  isolation: isolate;
+  min-width: 170px;
+  box-sizing: border-box;
+}
+
+.todo-mode-switch::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(33.333% - 1.33px);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  transition: transform var(--transition-slide);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.todo-mode-switch[data-active="todo"]::before,
+.todo-mode-switch:has(.todo-mode-btn[data-mode="todo"].active)::before {
+  transform: translateX(0%);
+}
+
+.todo-mode-switch[data-active="deadline"]::before,
+.todo-mode-switch:has(.todo-mode-btn[data-mode="deadline"].active)::before {
+  transform: translateX(100%);
+}
+
+.todo-mode-switch[data-active="both"]::before,
+.todo-mode-switch:has(.todo-mode-btn[data-mode="both"].active)::before {
+  transform: translateX(200%);
 }
 
 .todo-mode-btn {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 0;
+  text-align: center;
   font-size: 10.5px;
   font-weight: 600;
-  padding: 2.5px 7.5px;
+  padding: 2.5px 6px;
   border-radius: var(--radius-full);
   border: none;
-  background: transparent;
+  background: transparent !important;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: color var(--transition-fast);
   line-height: 1.2;
   white-space: nowrap;
+  box-shadow: none !important;
 }
 
 .todo-mode-btn:hover:not(.active) {
@@ -2385,10 +2476,8 @@ button, input, select, textarea {
 }
 
 .todo-mode-btn.active {
-  background: var(--accent);
-  color: var(--text-inverse);
+  color: var(--text-inverse) !important;
   font-weight: 700;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
 .todo-add-form {
@@ -2472,6 +2561,15 @@ button, input, select, textarea {
   cursor: pointer;
   accent-color: var(--accent);
   flex-shrink: 0;
+  transition: transform var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.todo-checkbox:active {
+  transform: scale(0.86);
+}
+
+.todo-checkbox:checked {
+  animation: checkmarkPop var(--transition-fast) ease-out forwards;
 }
 
 .todo-text {
@@ -2722,22 +2820,11 @@ button, input, select, textarea {
   box-sizing: border-box;
   min-width: 210px;
   backdrop-filter: blur(16px);
-  animation: ddFadeIn 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: popoverScaleIn var(--transition-fast) cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .custom-dropdown.open .custom-dropdown-menu {
   display: flex;
-}
-
-@keyframes ddFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .custom-dropdown-search-box {
@@ -3260,30 +3347,60 @@ button, input, select, textarea {
   text-transform: uppercase;
 }
 
-/* Classic / Reverse Mode Switcher */
+/* Classic / Stopwatch Mode Switcher with Weighted Sliding Indicator (Prompt 64) */
 .pomo-mode-switch {
-  display: inline-flex;
-  align-items: center;
+  position: relative;
+  display: flex;
+  align-items: stretch;
   background: var(--bg-surface-hover);
   border: 1px solid var(--border-default);
   padding: 2px;
   border-radius: var(--radius-full);
-  gap: 2px;
+  gap: 0;
   flex-shrink: 0;
+  user-select: none;
+  isolation: isolate;
+  min-width: 140px;
+  box-sizing: border-box;
+}
+
+.pomo-mode-switch::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  transition: transform var(--transition-slide);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pomo-mode-switch[data-active="stopwatch"]::before,
+.pomo-mode-switch:has(.pomo-mode-btn[data-mode="stopwatch"].active)::before {
+  transform: translateX(100%);
 }
 
 .pomo-mode-btn {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 0;
+  text-align: center;
   font-size: 10.5px;
   font-weight: 600;
-  padding: 2.5px 7.5px;
+  padding: 2.5px 8px;
   border-radius: var(--radius-full);
   border: none;
-  background: transparent;
+  background: transparent !important;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: color var(--transition-fast);
   line-height: 1.2;
   white-space: nowrap;
+  box-shadow: none !important;
 }
 
 .pomo-mode-btn:hover:not(.active) {
@@ -3291,10 +3408,8 @@ button, input, select, textarea {
 }
 
 .pomo-mode-btn.active {
-  background: var(--accent);
-  color: var(--text-inverse);
+  color: var(--text-inverse) !important;
   font-weight: 700;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
 .pomo-meta-row {
@@ -6135,11 +6250,38 @@ button, input, select, textarea {
 @keyframes modalScaleIn {
   from {
     opacity: 0;
-    transform: scale(0.92) translateY(14px);
+    transform: scale(0.95) translateY(8px);
   }
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes popoverScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes checkmarkPop {
+  0% { transform: scale(0.8); }
+  60% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+/* Reduced Motion Preference Accessibility (Prompt 63) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
