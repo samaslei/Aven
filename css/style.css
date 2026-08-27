@@ -5525,30 +5525,44 @@ button, input, select, textarea {
   .pomodoro-header {
     gap: 4px;
     flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-width: 0;
   }
 
-  .pomodoro-header-actions {
+  .pomodoro-header-label {
+    gap: 4px;
+    font-size: 9.5px;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  .pomo-header-actions {
+    display: flex;
+    align-items: center;
     gap: 3px;
-    flex-shrink: 1;
+    flex-shrink: 0;
     min-width: 0;
   }
 
   .pomo-mode-switch {
     padding: 1.5px;
     gap: 1px;
-    flex-shrink: 1;
-    min-width: 0;
+    flex-shrink: 0;
   }
 
   .pomo-mode-btn {
-    font-size: 9.5px;
-    padding: 2.5px 5px;
-    flex-shrink: 1;
+    font-size: 9px;
+    padding: 2px 4px;
+    line-height: 1.15;
+    flex-shrink: 0;
   }
 
   .pomo-pip-btn {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
     flex-shrink: 0;
   }
 
