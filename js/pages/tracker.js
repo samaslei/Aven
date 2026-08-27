@@ -511,8 +511,8 @@ export function renderTrackerView(container) {
           </div>
 
           <form id="manual-session-form">
-            <!-- Paired Inputs: Subject & Date Side-by-Side -->
-            <div class="form-row-paired">
+            <!-- Paired Inputs: Subject & Date (Stacked on Phone, Paired on Desktop) -->
+            <div class="form-row-paired form-row-subject-date">
               <div class="form-group">
                 <label class="form-label" for="manual-subject-select">Subject</label>
                 <select id="manual-subject-select" class="form-select">
@@ -527,7 +527,7 @@ export function renderTrackerView(container) {
             </div>
 
             <!-- Paired Inputs: Hours & Minutes Side-by-Side -->
-            <div class="form-row-paired">
+            <div class="form-row-paired form-row-hours-mins">
               <div class="form-group">
                 <label class="form-label" for="manual-hours">Hours</label>
                 <input type="number" id="manual-hours" class="form-input" min="0" max="24" value="1" placeholder="0">

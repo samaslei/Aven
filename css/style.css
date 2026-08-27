@@ -5592,6 +5592,20 @@ button, input, select, textarea {
     padding-right: 2px;
   }
 
+  /* Manual Study Log on Phone: Stack Subject and Date row so date picker has full width */
+  #manual-session-form .form-row-paired.form-row-subject-date,
+  #manual-session-form .form-row-paired:first-of-type {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  #manual-date {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
   .heatmap-container-card {
     padding: 16px 14px 14px;
     width: 100%;
