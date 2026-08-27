@@ -11,6 +11,7 @@ import { renderSubjectSelectOptions } from '../ui/dropdown.js';
 
 let selectedSubjectId = '';
 let heatmapYear = new Date().getFullYear(); // Year-view navigation state
+let calendarDate = new Date(); // Monthly calendar state (Prompt 56)
 let distributionScope = 'all'; // 'all' | 'week'
 
 // Pomodoro Timer State (Persists across view switches)
@@ -81,7 +82,7 @@ export function renderTrackerView(container) {
 
 
 
-  // Render SVG Donut Chart and Legend Card
+  // Render SVG Donut Chart Card (Prompt 56: Legend removed, donut with hover tooltip only)
   function renderDistributionCard(sessions) {
     const dist = calculateDistributionStats(sessions, distributionScope, id => store.getSubjectById(id));
     const totalHours = dist.totalHours;
@@ -89,34 +90,29 @@ export function renderTrackerView(container) {
 
     if (dist.totalMinutes === 0 || slices.length === 0) {
       return `
-        <div class="distribution-container-card">
+        <div class="tool-card distribution-container-card">
           <div class="distribution-header">
             <div class="card-header-label distribution-header-label">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
                 <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
               </svg>
-              <span>STUDY TIME DISTRIBUTION</span>
+              <span>DISTRIBUTION</span>
             </div>
             <div class="segmented-control" id="dist-scope-switcher">
-              <button class="seg-btn ${distributionScope === 'all' ? 'active' : ''}" data-scope="all">All Time</button>
-              <button class="seg-btn ${distributionScope === 'week' ? 'active' : ''}" data-scope="week">This Week</button>
+              <button class="seg-btn ${distributionScope === 'all' ? 'active' : ''}" data-scope="all">All</button>
+              <button class="seg-btn ${distributionScope === 'week' ? 'active' : ''}" data-scope="week">Week</button>
             </div>
           </div>
-          <div class="distribution-empty-state">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="color: var(--text-muted); opacity: 0.5;">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-            <p style="font-size: 13.5px; font-weight: 500; color: var(--text-secondary); margin-top: 4px;">No study activity recorded ${distributionScope === 'week' ? 'this week' : 'yet'}</p>
-            <p style="font-size: 12px; color: var(--text-muted);">Log a study session to see your time breakdown across subjects.</p>
+          <div class="distribution-empty-state" style="padding: 16px 8px; flex: 1;">
+            <p style="font-size: 11.5px; font-weight: 500; color: var(--text-secondary); margin: 0;">No study activity</p>
           </div>
         </div>
       `;
     }
 
     // Calculate SVG donut paths
-    const radius = 70;
+    const radius = 62;
     const circumference = 2 * Math.PI * radius;
     let accumulatedOffset = 0;
 
@@ -131,7 +127,7 @@ export function renderTrackerView(container) {
                 cx="100" cy="100" r="${radius}"
                 fill="transparent"
                 stroke="${slice.color}"
-                stroke-width="22"
+                stroke-width="19"
                 stroke-dasharray="${dashLength.toFixed(2)} ${gapLength.toFixed(2)}"
                 stroke-dashoffset="${offset.toFixed(2)}"
                 data-name="${slice.name}"
@@ -143,64 +139,34 @@ export function renderTrackerView(container) {
       `;
     }).join('');
 
-    const legendHtml = slices.map(slice => {
-      const isOther = slice.id === 'other';
-      const isGeneral = slice.id === 'general';
-      const pillText = slice.code ? slice.code : (isOther ? 'Other' : (isGeneral ? 'General' : slice.name));
-      const displayName = slice.code ? slice.name : (isOther ? 'Other Subjects' : (isGeneral ? 'General Study' : ''));
-
-      return `
-        <div class="dist-legend-row" data-id="${slice.id}">
-          <div class="dist-legend-left">
-            <span class="dist-code-pill" style="background-color: ${slice.color}1a; color: ${slice.color}; border: 1.2px solid ${slice.color}45;">
-              ${pillText}
-            </span>
-            ${displayName ? `<span class="dist-subject-name" title="${slice.name}">${displayName}</span>` : ''}
-          </div>
-          <div class="dist-legend-right">
-            <strong class="dist-hours-val">${slice.hours}h</strong>
-            <span class="dist-pct-val">${slice.percentage.toFixed(1)}%</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
     return `
-      <div class="distribution-container-card">
+      <div class="tool-card distribution-container-card">
         <div class="distribution-header">
           <div class="card-header-label distribution-header-label">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
               <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
             </svg>
-            <span>STUDY TIME DISTRIBUTION</span>
+            <span>DISTRIBUTION</span>
           </div>
           <div class="segmented-control" id="dist-scope-switcher">
-            <button class="seg-btn ${distributionScope === 'all' ? 'active' : ''}" data-scope="all">All Time</button>
-            <button class="seg-btn ${distributionScope === 'week' ? 'active' : ''}" data-scope="week">This Week</button>
+            <button class="seg-btn ${distributionScope === 'all' ? 'active' : ''}" data-scope="all">All</button>
+            <button class="seg-btn ${distributionScope === 'week' ? 'active' : ''}" data-scope="week">Week</button>
           </div>
         </div>
 
-        <div class="distribution-content-grid">
-          <!-- SVG Donut Chart with Center Total -->
-          <div class="donut-chart-wrapper">
-            <div class="donut-svg-box">
-              <svg class="donut-svg" viewBox="0 0 200 200" width="190" height="190">
-                <!-- Background Track Ring -->
-                <circle cx="100" cy="100" r="${radius}" fill="transparent" stroke="var(--border-subtle)" stroke-width="22" opacity="0.35" />
-                <!-- Colored Slices -->
-                ${circlesHtml}
-              </svg>
-              <div class="donut-center-label">
-                <span class="donut-center-num">${totalHours}h</span>
-                <span class="donut-center-sub">${distributionScope === 'week' ? 'This Week' : 'Total Studied'}</span>
-              </div>
+        <div class="distribution-donut-only-wrap">
+          <div class="donut-svg-box">
+            <svg class="donut-svg" viewBox="0 0 200 200" width="124" height="124">
+              <!-- Background Track Ring -->
+              <circle cx="100" cy="100" r="${radius}" fill="transparent" stroke="var(--border-subtle)" stroke-width="19" opacity="0.35" />
+              <!-- Colored Slices -->
+              ${circlesHtml}
+            </svg>
+            <div class="donut-center-label">
+              <span class="donut-center-num">${totalHours}h</span>
+              <span class="donut-center-sub">${distributionScope === 'week' ? 'Week' : 'Total'}</span>
             </div>
-          </div>
-
-          <!-- Detailed Breakdown Legend (Single-column for <= 3 subjects; 2-column grid for 4+ subjects) -->
-          <div class="dist-legend-list ${slices.length > 3 ? 'dist-legend-two-col' : 'dist-legend-single-col'}">
-            ${legendHtml}
           </div>
         </div>
       </div>
@@ -520,150 +486,125 @@ export function renderTrackerView(container) {
     `;
   }
 
-  const settings = store.getSettings();
-  pomoWorkMins = settings.pomodoro_work_mins || 25;
-  pomoShortBreakMins = settings.pomodoro_break_mins || 5;
-  pomoLongBreakMins = settings.pomodoro_long_break_mins || 15;
-  pomoLongBreakInterval = settings.pomodoro_long_break_interval || 4;
-  pomoAutoStartBreaks = settings.pomodoro_auto_start_breaks === true;
-  pomoAutoStartPomodoros = settings.pomodoro_auto_start_pomodoros === true;
+  // Render Manual Log Entry Card
+  function renderManualLogCard(activeSubjects, selectedSubjectId, todayStr) {
+    return `
+      <div class="tool-card manual-log-card">
+        <div class="card-header-label manual-log-header-label" style="margin-bottom: 0;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <span>MANUAL STUDY LOG</span>
+        </div>
 
-  container.innerHTML = `
-    <div class="tracker-layout">
-      <!-- Tracker Action Top Row: Pomodoro Timer + Milestone Progress + Manual Study Log (3-Column Grid) -->
-      <div class="tracker-tools-grid">
-        <!-- Pomodoro Timer Card (Left) -->
-        ${renderPomodoroCard(activeSubjects)}
+        <form id="manual-session-form">
+          <div class="form-row-paired form-row-subject-date">
+            <div class="form-group">
+              <label class="form-label" for="manual-subject-select">Subject</label>
+              <select id="manual-subject-select" class="form-select">
+                ${renderSubjectSelectOptions(activeSubjects, selectedSubjectId, true)}
+              </select>
+            </div>
 
-        <!-- Journey to Next Milestone Card (Middle) -->
-        ${renderMilestoneCard(sessions)}
+            <div class="form-group">
+              <label class="form-label" for="manual-date">Date *</label>
+              <input type="date" id="manual-date" class="form-input" value="${todayStr}" max="${todayStr}" required>
+            </div>
+          </div>
 
-        <!-- Manual Log Entry (Hours + Minutes Side-by-Side) -->
-        <div class="tool-card manual-log-card">
-          <div class="card-header-label manual-log-header-label">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          <div class="form-row-paired form-row-hours-mins">
+            <div class="form-group">
+              <label class="form-label" for="manual-hours">Hours</label>
+              <input type="number" id="manual-hours" class="form-input" min="0" max="24" value="1" placeholder="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="manual-minutes">Minutes</label>
+              <input type="number" id="manual-minutes" class="form-input" min="0" max="59" value="30" placeholder="0">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btn-submit-manual-log">
+            Log Study Session
+          </button>
+        </form>
+      </div>
+    `;
+  }
+
+  // Render Yearly Heatmap Card
+  function renderHeatmapCard(heatmapYear, sessions, calendarData) {
+    return `
+      <div class="tool-card heatmap-container-card">
+        <div class="heatmap-header">
+          <div class="heatmap-header-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
-            <span>MANUAL STUDY LOG</span>
+            <span>HEATMAP</span>
           </div>
 
-          <form id="manual-session-form">
-            <!-- Paired Inputs: Subject & Date (Stacked on Phone, Paired on Desktop) -->
-            <div class="form-row-paired form-row-subject-date">
-              <div class="form-group">
-                <label class="form-label" for="manual-subject-select">Subject</label>
-                <select id="manual-subject-select" class="form-select">
-                  ${renderSubjectSelectOptions(activeSubjects, selectedSubjectId, true)}
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="manual-date">Date *</label>
-                <input type="date" id="manual-date" class="form-input" value="${todayStr}" max="${todayStr}" required>
-              </div>
-            </div>
-
-            <!-- Paired Inputs: Hours & Minutes Side-by-Side -->
-            <div class="form-row-paired form-row-hours-mins">
-              <div class="form-group">
-                <label class="form-label" for="manual-hours">Hours</label>
-                <input type="number" id="manual-hours" class="form-input" min="0" max="24" value="1" placeholder="0">
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="manual-minutes">Minutes</label>
-                <input type="number" id="manual-minutes" class="form-input" min="0" max="59" value="30" placeholder="0">
-              </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary" id="btn-submit-manual-log">
-              Log Study Session
+          <div class="heatmap-year-nav">
+            <button class="year-nav-btn" id="btn-year-prev" title="Previous Year" aria-label="Previous Year">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
-          </form>
-        </div>
-      </div>
-
-      <!-- 2-Column Analytics Bottom Row: Full-Year Activity Heatmap (Left) + Study Time Distribution (Right) -->
-      <div class="tracker-analytics-row">
-        <!-- Full-Year Activity Heatmap Card -->
-        <div class="heatmap-container-card">
-          <!-- Card Header: label left, year nav center, legend right -->
-          <div class="heatmap-header">
-            <div class="heatmap-header-label">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
-              <span>YEARLY HEATMAP</span>
-            </div>
-
-            <div class="heatmap-year-nav">
-              <button class="year-nav-btn" id="btn-year-prev" title="Previous Year">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
-              </button>
-              <span class="year-nav-label" id="heatmap-year-display">${heatmapYear}</span>
-              <button class="year-nav-btn" id="btn-year-next" title="Next Year" ${heatmapYear >= new Date().getFullYear() ? 'disabled' : ''}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
-              </button>
-            </div>
-
-            <div class="heatmap-legend">
-              <span>Less</span>
-              <div class="legend-cell" style="background-color: var(--heat-empty); border: 1px solid var(--heat-border);"></div>
-              <div class="legend-cell" style="background-color: var(--heat-level-1);"></div>
-              <div class="legend-cell" style="background-color: var(--heat-level-2);"></div>
-              <div class="legend-cell" style="background-color: var(--heat-level-3);"></div>
-              <div class="legend-cell" style="background-color: var(--heat-level-4);"></div>
-              <span>More</span>
-            </div>
+            <span class="year-nav-label" id="heatmap-year-display" style="font-size: 11px; font-weight: 700; font-family: var(--font-numeric);">${heatmapYear}</span>
+            <button class="year-nav-btn" id="btn-year-next" title="Next Year" aria-label="Next Year" ${heatmapYear >= new Date().getFullYear() ? 'disabled' : ''}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
           </div>
 
-          <!-- Stats subtitle -->
-          <p class="heatmap-stats-line">
-            ${calendarData.totalSessions} sessions &middot; ${calendarData.totalHours}h studied in ${heatmapYear}
-          </p>
-
-          <!-- Heatmap body: day labels + 12 month blocks inside scrollable container -->
-          <div class="heatmap-scroll-container">
-            <div class="heatmap-body-row">
-              <!-- Day labels (alternating: blank, M, blank, W, blank, F, blank) -->
-              <div class="day-labels-col">
-                <div class="day-label-item"></div>
-                <div class="day-label-item">M</div>
-                <div class="day-label-item"></div>
-                <div class="day-label-item">W</div>
-                <div class="day-label-item"></div>
-                <div class="day-label-item">F</div>
-                <div class="day-label-item"></div>
-              </div>
-              <!-- Month blocks -->
-              <div class="months-area">
-                ${calendarData.months.map(m => renderMonthBlock(m)).join('')}
-              </div>
-            </div>
+          <div class="heatmap-legend" style="font-size: 9px;">
+            <span>-</span>
+            <div class="legend-cell" style="background-color: var(--heat-empty); border: 1px solid var(--heat-border);"></div>
+            <div class="legend-cell" style="background-color: var(--heat-level-1);"></div>
+            <div class="legend-cell" style="background-color: var(--heat-level-2);"></div>
+            <div class="legend-cell" style="background-color: var(--heat-level-3);"></div>
+            <div class="legend-cell" style="background-color: var(--heat-level-4);"></div>
+            <span>+</span>
           </div>
-
-          <!-- Dynamic Hover Tooltip -->
-          <div class="heatmap-tooltip" id="heatmap-tooltip"></div>
         </div>
 
-        <!-- Study Time Distribution Pie/Donut Chart Card -->
-        ${renderDistributionCard(sessions)}
-      </div>
+        <p class="heatmap-stats-line" style="font-size: 10px; margin: 0;">
+          ${calendarData.totalSessions} ses &middot; ${calendarData.totalHours}h in ${heatmapYear}
+        </p>
 
-      <!-- Recent Sessions Log -->
+        <div class="heatmap-scroll-container">
+          <div class="heatmap-body-row">
+            <div class="day-labels-col">
+              <div class="day-label-item"></div>
+              <div class="day-label-item">M</div>
+              <div class="day-label-item"></div>
+              <div class="day-label-item">W</div>
+              <div class="day-label-item"></div>
+              <div class="day-label-item">F</div>
+              <div class="day-label-item"></div>
+            </div>
+            <div class="months-area">
+              ${calendarData.months.map(m => renderMonthBlock(m)).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Render Recent Study History Card
+  function renderRecentHistoryCard(sessions, displaySessions, distColorMap) {
+    return `
       <div class="sessions-history-card">
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <div class="card-header-label history-header-label">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+          <div class="card-header-label history-header-label" style="margin-bottom: 0;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="12 8 12 12 14 14"></polyline>
               <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"></path>
             </svg>
             <span>RECENT STUDY HISTORY</span>
           </div>
-          <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">${sessions.length} logged sessions</span>
+          <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">${Math.min(25, displaySessions.length)} sessions</span>
         </div>
 
         <div class="data-table-wrapper">
@@ -680,7 +621,7 @@ export function renderTrackerView(container) {
             <tbody>
               ${displaySessions.length === 0 ? `
                 <tr>
-                  <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 32px;">
+                  <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
                     No study sessions recorded yet. Use the manual study log above!
                   </td>
                 </tr>
@@ -707,14 +648,14 @@ export function renderTrackerView(container) {
                     <td style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary);">
                       ${durText}
                     </td>
-                    <td style="color: var(--text-secondary); font-size: 12.5px;">
+                    <td style="color: var(--text-secondary); font-size: 12px;">
                       ${s.date}
                     </td>
-                    <td style="color: var(--text-muted); font-size: 12.5px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <td style="color: var(--text-muted); font-size: 12px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                       ${s.notes || '—'}
                     </td>
                     <td style="text-align: right;">
-                      <button class="btn btn-ghost btn-sm btn-del-session" data-ids="${(s.ids || [s.id]).join(',')}" data-id="${s.id}" style="color: var(--danger); padding: 3px 6px;">
+                      <button class="btn btn-ghost btn-sm btn-del-session" data-ids="${(s.ids || [s.id]).join(',')}" data-id="${s.id}" style="color: var(--danger); padding: 2px 6px; font-size: 11px;">
                         Delete
                       </button>
                     </td>
@@ -724,6 +665,205 @@ export function renderTrackerView(container) {
             </tbody>
           </table>
         </div>
+      </div>
+    `;
+  }
+
+  // Render Monthly Calendar Card (Prompt 56)
+  function renderMonthlyCalendarCard(sessions) {
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+    const monthName = calendarDate.toLocaleString('default', { month: 'long' });
+
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    const activityDates = new Set(sessions.map(s => s.date));
+    const todayISO = new Date().toISOString().split('T')[0];
+
+    const dayCells = [];
+
+    // Previous month trailing days
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const d = daysInPrevMonth - i;
+      dayCells.push(`<div class="monthly-cal-day-cell other-month">${d}</div>`);
+    }
+
+    // Current month days
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateISO = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const isToday = dateISO === todayISO;
+      const hasActivity = activityDates.has(dateISO);
+
+      dayCells.push(`
+        <div class="monthly-cal-day-cell ${isToday ? 'today' : ''} ${hasActivity ? 'has-activity' : ''}" data-date="${dateISO}">
+          ${d}
+        </div>
+      `);
+    }
+
+    // Next month leading days
+    const totalCells = dayCells.length;
+    const remaining = totalCells <= 35 ? 35 - totalCells : 42 - totalCells;
+    for (let d = 1; d <= remaining; d++) {
+      dayCells.push(`<div class="monthly-cal-day-cell other-month">${d}</div>`);
+    }
+
+    return `
+      <div class="tool-card monthly-calendar-card">
+        <div class="monthly-cal-header">
+          <div class="card-header-label" style="margin-bottom: 0;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span class="monthly-cal-title">${monthName} ${year}</span>
+          </div>
+          <div class="monthly-cal-nav">
+            <button type="button" class="monthly-cal-nav-btn" id="btn-month-prev" title="Previous Month" aria-label="Previous Month">&lsaquo;</button>
+            <button type="button" class="monthly-cal-nav-btn" id="btn-month-next" title="Next Month" aria-label="Next Month">&rsaquo;</button>
+          </div>
+        </div>
+
+        <div class="monthly-cal-grid">
+          <span class="monthly-cal-day-label">S</span>
+          <span class="monthly-cal-day-label">M</span>
+          <span class="monthly-cal-day-label">T</span>
+          <span class="monthly-cal-day-label">W</span>
+          <span class="monthly-cal-day-label">T</span>
+          <span class="monthly-cal-day-label">F</span>
+          <span class="monthly-cal-day-label">S</span>
+          ${dayCells.join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Render Todo / Deadlines Card (Prompt 56)
+  function renderTodoListCard(activeSubjects, todayStr) {
+    const todos = store.getTodos();
+    const pendingCount = todos.filter(t => !t.completed).length;
+
+    return `
+      <div class="tool-card todo-deadlines-card">
+        <div class="todo-deadlines-header">
+          <div class="card-header-label" style="margin-bottom: 0;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 11 12 14 22 4"></polyline>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            <span>TODO & DEADLINES</span>
+          </div>
+          <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">${pendingCount} pending</span>
+        </div>
+
+        <form id="todo-add-form" class="todo-add-form">
+          <div class="todo-input-row">
+            <input type="text" id="todo-input-text" class="form-input" placeholder="Add task or deadline..." required style="flex: 1;">
+            <button type="submit" class="btn btn-primary btn-sm" style="padding: 4px 10px; height: 30px;" aria-label="Add Task">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="todo-sub-row">
+            <select id="todo-subject-select" class="form-select" style="flex: 1.2;">
+              <option value="">General</option>
+              ${activeSubjects.map(s => `<option value="${s.id}">${s.code || s.name}</option>`).join('')}
+            </select>
+            <input type="date" id="todo-due-date" class="form-input" style="flex: 1;" title="Due date">
+          </div>
+        </form>
+
+        <div class="todo-list-scroll-wrap">
+          ${todos.length === 0 ? `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 100px; text-align: center; color: var(--text-muted); font-size: 12px; gap: 4px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity: 0.4;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 14 14"></polyline>
+              </svg>
+              <span>No tasks yet</span>
+              <span style="font-size: 11px; opacity: 0.7;">Use form above to add deadlines</span>
+            </div>
+          ` : todos.map(t => {
+            const sub = t.subject_id ? store.getSubjectById(t.subject_id) : null;
+            const isOverdue = t.due_date && !t.completed && t.due_date < todayStr;
+            const subColor = sub ? (sub.color || '#8A9A5B') : null;
+
+            return `
+              <div class="todo-item-row ${t.completed ? 'completed' : ''}" data-id="${t.id}">
+                <div class="todo-item-left">
+                  <input type="checkbox" class="todo-checkbox btn-toggle-todo" data-id="${t.id}" ${t.completed ? 'checked' : ''} aria-label="Toggle completed">
+                  <span class="todo-text">${t.text}</span>
+                </div>
+                <div class="todo-meta-tags">
+                  ${sub ? `
+                    <span class="dist-code-pill" style="background-color: ${subColor}1a; color: ${subColor}; border: 1px solid ${subColor}45; font-size: 9.5px; padding: 1px 5px;">
+                      ${sub.code || sub.name}
+                    </span>
+                  ` : ''}
+                  ${t.due_date ? `
+                    <span class="todo-due-tag ${isOverdue ? 'overdue' : ''}">
+                      ${t.due_date.substring(5)}
+                    </span>
+                  ` : ''}
+                  <button type="button" class="todo-del-btn btn-del-todo" data-id="${t.id}" title="Delete task" aria-label="Delete">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  const settings = store.getSettings();
+  pomoWorkMins = settings.pomodoro_work_mins || 25;
+  pomoShortBreakMins = settings.pomodoro_break_mins || 5;
+  pomoLongBreakMins = settings.pomodoro_long_break_mins || 15;
+  pomoLongBreakInterval = settings.pomodoro_long_break_interval || 4;
+  pomoAutoStartBreaks = settings.pomodoro_auto_start_breaks === true;
+  pomoAutoStartPomodoros = settings.pomodoro_auto_start_pomodoros === true;
+
+  container.innerHTML = `
+    <div class="tracker-dashboard-layout">
+      <!-- Left Zone (~68% width on desktop) -->
+      <div class="tracker-left-zone">
+        <!-- Row 1: Pomodoro Timer + Manual Study Log -->
+        <div class="tracker-left-row-1">
+          ${renderPomodoroCard(activeSubjects)}
+          ${renderManualLogCard(activeSubjects, selectedSubjectId, todayStr)}
+        </div>
+
+        <!-- Row 2: Milestone Progress + Distribution Donut + Yearly Heatmap -->
+        <div class="tracker-left-row-2">
+          ${renderMilestoneCard(sessions)}
+          ${renderDistributionCard(sessions)}
+          ${renderHeatmapCard(heatmapYear, sessions, calendarData)}
+        </div>
+
+        <!-- Row 3: Recent Study History (fills remaining vertical space, scrolls internally) -->
+        <div class="tracker-left-row-3">
+          ${renderRecentHistoryCard(sessions, displaySessions, distColorMap)}
+        </div>
+      </div>
+
+      <!-- Right Zone (~32% width on desktop) -->
+      <div class="tracker-right-zone">
+        <!-- Top: Monthly Calendar Card (same height as Row 1) -->
+        ${renderMonthlyCalendarCard(sessions)}
+
+        <!-- Bottom: Todo / Deadlines Card (scrolls internally) -->
+        ${renderTodoListCard(activeSubjects, todayStr)}
       </div>
     </div>
 
@@ -1764,6 +1904,53 @@ function attachTrackerEvents(container) {
 
     slice.addEventListener('mouseleave', () => {
       tooltip.style.display = 'none';
+    });
+  });
+
+  // Monthly Calendar Navigation Handlers (Prompt 56)
+  const prevMonthBtn = container.querySelector('#btn-month-prev');
+  const nextMonthBtn = container.querySelector('#btn-month-next');
+  if (prevMonthBtn) {
+    prevMonthBtn.addEventListener('click', () => {
+      calendarDate.setMonth(calendarDate.getMonth() - 1);
+      renderTrackerView(container);
+    });
+  }
+  if (nextMonthBtn) {
+    nextMonthBtn.addEventListener('click', () => {
+      calendarDate.setMonth(calendarDate.getMonth() + 1);
+      renderTrackerView(container);
+    });
+  }
+
+  // Todo / Deadlines Form & Actions (Prompt 56)
+  const todoForm = container.querySelector('#todo-add-form');
+  if (todoForm) {
+    todoForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = container.querySelector('#todo-input-text')?.value?.trim();
+      const subject_id = container.querySelector('#todo-subject-select')?.value || null;
+      const due_date = container.querySelector('#todo-due-date')?.value || null;
+
+      if (!text) return;
+      store.saveTodo({ text, subject_id, due_date });
+      window.avenApp?.showToast('Task added!', 'success');
+      renderTrackerView(container);
+    });
+  }
+
+  container.querySelectorAll('.btn-toggle-todo').forEach(cb => {
+    cb.addEventListener('change', () => {
+      store.toggleTodo(cb.dataset.id);
+      renderTrackerView(container);
+    });
+  });
+
+  container.querySelectorAll('.btn-del-todo').forEach(btn => {
+    btn.addEventListener('click', () => {
+      store.deleteTodo(btn.dataset.id);
+      window.avenApp?.showToast('Task deleted', 'info');
+      renderTrackerView(container);
     });
   });
 }

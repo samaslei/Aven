@@ -375,3 +375,40 @@ REVOKE EXECUTE ON FUNCTION public.delete_user_account() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.delete_user_account() FROM anon;
 GRANT EXECUTE ON FUNCTION public.delete_user_account() TO authenticated;
 
+-- ==============================================================================
+-- 10. TODOS & DEADLINES TABLE (Prompt 56)
+-- Stores student todo items and task deadlines linked to subjects
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.todos (
+  id TEXT PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  subject_id TEXT REFERENCES public.subjects(id) ON DELETE SET NULL,
+  text TEXT NOT NULL,
+  due_date DATE,
+  completed BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_todos_user ON public.todos(user_id);
+CREATE INDEX IF NOT EXISTS idx_todos_due ON public.todos(user_id, due_date);
+
+-- ROW LEVEL SECURITY (RLS)
+ALTER TABLE public.todos ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own todos" ON public.todos;
+CREATE POLICY "Users can view own todos" ON public.todos
+  FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own todos" ON public.todos;
+CREATE POLICY "Users can insert own todos" ON public.todos
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own todos" ON public.todos;
+CREATE POLICY "Users can update own todos" ON public.todos
+  FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own todos" ON public.todos;
+CREATE POLICY "Users can delete own todos" ON public.todos
+  FOR DELETE USING (auth.uid() = user_id);
+
+
