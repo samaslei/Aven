@@ -14,6 +14,7 @@ let heatmapYear = new Date().getFullYear(); // Year-view navigation state
 let calendarDate = new Date(); // Monthly calendar state (Prompt 56)
 let distributionScope = 'all'; // 'all' | 'week'
 let todoFilterMode = 'both'; // 'both' | 'todo' | 'deadline' (Prompt 57)
+let isCompletedSectionOpen = false; // Collapsible completed section state (Prompt 60)
 
 // Pomodoro Timer State (Persists across view switches)
 let pomoMode = 'classic'; // 'classic' (pomodoro) | 'stopwatch' (count-up)
@@ -743,7 +744,61 @@ export function renderTrackerView(container) {
     `;
   }
 
-  // Render Todo / Deadlines Card (Prompt 56 & 57: Added 3-way Todo/Deadline/Both filter toggle)
+  // Format due date in readable "Aug 27" style (or "Aug 27, 2027" if different year) (Prompt 60)
+  function formatReadableDueDate(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length < 3) return dateStr;
+    const year = parseInt(parts[0], 10);
+    const monthIdx = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthName = months[monthIdx] || '';
+    const currentYear = new Date().getFullYear();
+
+    if (year !== currentYear) {
+      return `${monthName} ${day}, ${year}`;
+    }
+    return `${monthName} ${day}`;
+  }
+
+  // Render a single Todo / Deadline item row (Prompt 60)
+  function renderTodoRow(t, todayStr) {
+    const sub = t.subject_id ? store.getSubjectById(t.subject_id) : null;
+    const isOverdue = t.due_date && !t.completed && t.due_date < todayStr;
+    const subColor = sub ? (sub.color || '#8A9A5B') : null;
+    const formattedDate = formatReadableDueDate(t.due_date);
+
+    return `
+      <div class="todo-item-row ${t.completed ? 'completed' : ''}" data-id="${t.id}">
+        <div class="todo-item-left">
+          <input type="checkbox" class="todo-checkbox btn-toggle-todo" data-id="${t.id}" ${t.completed ? 'checked' : ''} aria-label="Toggle completed">
+          <span class="todo-text">${t.text}</span>
+        </div>
+        <div class="todo-meta-tags">
+          ${sub ? `
+            <span class="dist-code-pill" style="background-color: ${subColor}1a; color: ${subColor}; border: 1px solid ${subColor}45; font-size: 9.5px; padding: 1px 5px;">
+              ${sub.code || sub.name}
+            </span>
+          ` : ''}
+          ${t.due_date ? `
+            <span class="todo-due-tag ${isOverdue ? 'overdue' : ''}">
+              ${formattedDate}
+            </span>
+          ` : ''}
+          <button type="button" class="todo-del-btn btn-del-todo" data-id="${t.id}" title="Delete task" aria-label="Delete">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Render Todo / Deadlines Card (Prompt 56 - 60: Categorized Both view, readable dates, Google Tasks-style completed section)
   function renderTodoListCard(activeSubjects, todayStr) {
     const todos = store.getTodos();
     let filteredTodos = todos;
@@ -752,7 +807,80 @@ export function renderTrackerView(container) {
     } else if (todoFilterMode === 'deadline') {
       filteredTodos = todos.filter(t => Boolean(t.due_date));
     }
-    const pendingCount = filteredTodos.filter(t => !t.completed).length;
+
+    const activeItems = filteredTodos.filter(t => !t.completed);
+    const completedItems = filteredTodos.filter(t => t.completed);
+    const pendingCount = activeItems.length;
+
+    let itemsHtml = '';
+
+    if (activeItems.length === 0 && completedItems.length === 0) {
+      itemsHtml = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 100px; text-align: center; color: var(--text-muted); font-size: 12px; gap: 4px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity: 0.4;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 14 14"></polyline>
+          </svg>
+          <span>No ${todoFilterMode === 'todo' ? 'todos' : (todoFilterMode === 'deadline' ? 'deadlines' : 'tasks')} recorded</span>
+          <span style="font-size: 11px; opacity: 0.7;">${todoFilterMode === 'deadline' ? 'Add a deadline with due date above' : 'Use the form above to add'}</span>
+        </div>
+      `;
+    } else if (todoFilterMode === 'both') {
+      const todoGroup = activeItems.filter(t => !t.due_date);
+      const deadlinesGroup = activeItems.filter(t => Boolean(t.due_date));
+
+      itemsHtml = `
+        <div class="todo-category-section">
+          <div class="todo-category-header">
+            <span>Todo (${todoGroup.length})</span>
+          </div>
+          ${todoGroup.length === 0 ? `
+            <div class="todo-category-empty">No active todos</div>
+          ` : todoGroup.map(t => renderTodoRow(t, todayStr)).join('')}
+        </div>
+
+        <div class="todo-category-section">
+          <div class="todo-category-header">
+            <span>Deadlines (${deadlinesGroup.length})</span>
+          </div>
+          ${deadlinesGroup.length === 0 ? `
+            <div class="todo-category-empty">No active deadlines</div>
+          ` : deadlinesGroup.map(t => renderTodoRow(t, todayStr)).join('')}
+        </div>
+      `;
+    } else {
+      itemsHtml = activeItems.length === 0 ? `
+        <div class="todo-category-empty" style="text-align: center; padding: 12px 0;">No active ${todoFilterMode === 'todo' ? 'todos' : 'deadlines'}</div>
+      ` : activeItems.map(t => renderTodoRow(t, todayStr)).join('');
+    }
+
+    // Collapsible Completed Section (Prompt 60)
+    let completedHtml = '';
+    if (completedItems.length > 0) {
+      completedHtml = `
+        <div class="todo-completed-section">
+          <div class="todo-completed-header" id="btn-toggle-completed-tasks">
+            <div class="todo-completed-header-left">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="todo-completed-chevron ${isCompletedSectionOpen ? 'open' : ''}">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+              <span class="todo-completed-title">Completed (${completedItems.length})</span>
+            </div>
+            ${isCompletedSectionOpen ? `
+              <button type="button" class="btn-clear-completed-todos" id="btn-clear-completed-todos" title="Clear all completed tasks">
+                Clear completed
+              </button>
+            ` : ''}
+          </div>
+
+          ${isCompletedSectionOpen ? `
+            <div class="todo-completed-list">
+              ${completedItems.map(t => renderTodoRow(t, todayStr)).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
 
     return `
       <div class="tool-card todo-deadlines-card">
@@ -794,47 +922,8 @@ export function renderTrackerView(container) {
         </form>
 
         <div class="todo-list-scroll-wrap">
-          ${filteredTodos.length === 0 ? `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 100px; text-align: center; color: var(--text-muted); font-size: 12px; gap: 4px;">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity: 0.4;">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 14 14"></polyline>
-              </svg>
-              <span>No ${todoFilterMode === 'todo' ? 'todos' : (todoFilterMode === 'deadline' ? 'deadlines' : 'tasks')} recorded</span>
-              <span style="font-size: 11px; opacity: 0.7;">${todoFilterMode === 'deadline' ? 'Add a deadline with due date above' : 'Use the form above to add'}</span>
-            </div>
-          ` : filteredTodos.map(t => {
-            const sub = t.subject_id ? store.getSubjectById(t.subject_id) : null;
-            const isOverdue = t.due_date && !t.completed && t.due_date < todayStr;
-            const subColor = sub ? (sub.color || '#8A9A5B') : null;
-
-            return `
-              <div class="todo-item-row ${t.completed ? 'completed' : ''}" data-id="${t.id}">
-                <div class="todo-item-left">
-                  <input type="checkbox" class="todo-checkbox btn-toggle-todo" data-id="${t.id}" ${t.completed ? 'checked' : ''} aria-label="Toggle completed">
-                  <span class="todo-text">${t.text}</span>
-                </div>
-                <div class="todo-meta-tags">
-                  ${sub ? `
-                    <span class="dist-code-pill" style="background-color: ${subColor}1a; color: ${subColor}; border: 1px solid ${subColor}45; font-size: 9.5px; padding: 1px 5px;">
-                      ${sub.code || sub.name}
-                    </span>
-                  ` : ''}
-                  ${t.due_date ? `
-                    <span class="todo-due-tag ${isOverdue ? 'overdue' : ''}">
-                      ${t.due_date.substring(5)}
-                    </span>
-                  ` : ''}
-                  <button type="button" class="todo-del-btn btn-del-todo" data-id="${t.id}" title="Delete task" aria-label="Delete">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            `;
-          }).join('')}
+          ${itemsHtml}
+          ${completedHtml}
         </div>
       </div>
     `;
@@ -1986,4 +2075,27 @@ function attachTrackerEvents(container) {
       renderTrackerView(container);
     });
   });
+
+  // Toggle Completed Section Handler (Prompt 60)
+  const toggleCompletedBtn = container.querySelector('#btn-toggle-completed-tasks');
+  if (toggleCompletedBtn) {
+    toggleCompletedBtn.addEventListener('click', (e) => {
+      if (e.target.closest('#btn-clear-completed-todos')) return;
+      isCompletedSectionOpen = !isCompletedSectionOpen;
+      renderTrackerView(container);
+    });
+  }
+
+  // Clear completed tasks (Prompt 60)
+  const clearCompletedBtn = container.querySelector('#btn-clear-completed-todos');
+  if (clearCompletedBtn) {
+    clearCompletedBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.confirm('Delete all completed tasks? This cannot be undone.')) {
+        store.clearCompletedTodos();
+        window.avenApp?.showToast('Completed tasks cleared', 'info');
+        renderTrackerView(container);
+      }
+    });
+  }
 }

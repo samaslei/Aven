@@ -1046,6 +1046,19 @@ class Store {
     });
   }
 
+  clearCompletedTodos() {
+    const completed = (this.state.todos || []).filter(t => t.completed);
+    this.state.todos = (this.state.todos || []).filter(t => !t.completed);
+    events.emit('store:changed', { type: 'todo' });
+
+    getCurrentUser().then(user => {
+      if (user && completed.length > 0) {
+        const ids = completed.map(t => t.id);
+        supabase.from('todos').delete().in('id', ids).eq('user_id', user.id).then();
+      }
+    });
+  }
+
   getSubjectTotalStudyMinutes(subjectId) {
     const sessions = this.getSessions().filter(s => s.subject_id === subjectId);
     return sessions.reduce((acc, curr) => acc + (curr.duration || 0), 0);
