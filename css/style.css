@@ -2602,45 +2602,243 @@ button, input, select, textarea {
   overflow: hidden;
 }
 
-.pomo-cycles-control {
+.pomo-settings-gear-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface-hover);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background: var(--bg-surface-hover);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  padding: 2px 5px;
-  height: 28px;
+  justify-content: center;
+  cursor: pointer;
   flex-shrink: 0;
+  transition: all 0.16s ease;
 }
 
-.pomo-cycles-label {
-  font-size: 10px;
+.pomo-settings-gear-btn:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-surface);
+}
+
+.pomo-settings-gear-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Pomodoro Settings Popover Modal
+   ========================================================================== */
+.pomo-settings-popover-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.pomo-settings-popover-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
+  width: 100%;
+  max-width: 380px;
+  overflow: hidden;
+  animation: scaleUp 0.16s ease-out;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme="light"] .pomo-settings-popover-card {
+  background: var(--bg-surface) !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 4px 18px rgba(45, 50, 35, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="pure-white"] .pomo-settings-popover-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+}
+
+.pomo-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.pomo-popover-title {
+  font-size: 13.5px;
   font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin: 0;
-  user-select: none;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
-.pomo-cycles-input {
-  width: 32px;
-  height: 22px;
-  padding: 0;
-  font-size: 11.5px;
+.pomo-settings-popover-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pomo-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pomo-settings-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  display: block;
+}
+
+.pomo-time-inputs-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.pomo-time-input-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pomo-input-sublabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.pomo-time-input-col .form-input {
+  height: 34px;
+  font-size: 13px;
   font-weight: 700;
   text-align: center;
   font-family: var(--font-numeric);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--bg-input);
+}
+
+.pomo-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.pomo-toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pomo-toggle-label {
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
-.pomo-cycles-input:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.pomo-toggle-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.pomo-interval-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pomo-interval-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pomo-interval-input {
+  width: 64px;
+  height: 34px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  font-family: var(--font-numeric);
+  flex-shrink: 0;
+}
+
+/* Custom iOS/Fluent style Switch Toggle */
+.pomo-switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.pomo-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.pomo-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--bg-surface-hover);
+  border: 1px solid var(--border-default);
+  transition: all 0.2s ease;
+  border-radius: 22px;
+}
+
+.pomo-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: var(--text-muted);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 50%;
+}
+
+.pomo-switch input:checked + .pomo-slider {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.pomo-switch input:checked + .pomo-slider:before {
+  transform: translateX(16px);
+  background-color: #ffffff;
+}
+
+.pomo-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
 }
 
 .pomo-display-block {
@@ -5595,36 +5793,31 @@ button, input, select, textarea {
     flex-shrink: 0;
   }
 
-  /* Phone-only: 2-row layout for meta row (Row 1: Phase + Subject, Row 2: Cycles) */
+  /* Phone: Pomodoro meta row aligns smoothly without standalone cycles input */
   .pomo-meta-row {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .pomo-meta-row .pomo-phase-badge {
-    order: 1;
-    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
   }
 
   .pomo-meta-controls {
-    order: 2;
-    display: contents;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
   }
 
   .pomo-subject-wrap {
-    order: 2;
     flex: 1 1 auto;
-    max-width: none;
-    min-width: 110px;
+    max-width: 130px;
+    min-width: 90px;
   }
 
-  .pomo-cycles-control {
-    order: 3;
-    width: 100%;
-    justify-content: space-between;
-    box-sizing: border-box;
-    padding: 3px 10px;
-    height: 32px;
+  .pomo-settings-gear-btn {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
   }
 
   /* Phone-only: Collapse button row to icon-only */
