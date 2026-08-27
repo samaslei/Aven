@@ -7,7 +7,7 @@ import { store, events } from '../core/store.js';
 import { calculateDistributionStats, calculateMilestoneData, aggregateRecentStudyHistory } from '../domain/tracker-calculator.js';
 import { playDualToneChime } from '../utils/audio.js';
 import { formatMinutesAndSeconds, getTodayISO } from '../utils/date-utils.js';
-import { renderSubjectSelectOptions } from '../ui/dropdown.js';
+import { renderCustomSubjectDropdown, initCustomDropdown, renderSubjectSelectOptions } from '../ui/dropdown.js';
 
 let selectedSubjectId = '';
 let heatmapYear = new Date().getFullYear(); // Year-view navigation state
@@ -302,10 +302,16 @@ export function renderTrackerView(container) {
             </div>
 
             <div class="pomo-meta-controls">
-              <div class="pomo-subject-wrap" style="max-width: 170px;">
-                <select id="pomo-subject-select" class="form-select pomo-subject-select" title="Link session to subject">
-                  ${renderSubjectSelectOptions(activeSubjects, pomoSubjectId, true)}
-                </select>
+              <div class="pomo-subject-wrap">
+                ${renderCustomSubjectDropdown({
+                  id: 'pomo-subject-select',
+                  selectedId: pomoSubjectId,
+                  subjects: activeSubjects,
+                  includeGeneral: true,
+                  generalLabel: 'General Study',
+                  searchPlaceholder: 'Search subject...',
+                  customClass: 'pomo-subject-dd'
+                })}
               </div>
             </div>
           </div>
@@ -352,9 +358,15 @@ export function renderTrackerView(container) {
 
             <div class="pomo-meta-controls">
               <div class="pomo-subject-wrap">
-                <select id="pomo-subject-select" class="form-select pomo-subject-select" title="Link session to subject">
-                  ${renderSubjectSelectOptions(activeSubjects, pomoSubjectId, true)}
-                </select>
+                ${renderCustomSubjectDropdown({
+                  id: 'pomo-subject-select',
+                  selectedId: pomoSubjectId,
+                  subjects: activeSubjects,
+                  includeGeneral: true,
+                  generalLabel: 'General Study',
+                  searchPlaceholder: 'Search subject...',
+                  customClass: 'pomo-subject-dd'
+                })}
               </div>
 
               <button type="button" class="pomo-settings-gear-btn" id="btn-pomo-settings" title="${pomoIsRunning ? 'Timer settings (editable while idle)' : 'Timer settings'}" aria-label="Open Timer Settings" ${pomoIsRunning ? 'disabled' : ''}>
@@ -504,9 +516,14 @@ export function renderTrackerView(container) {
           <div class="form-row-paired form-row-subject-date">
             <div class="form-group">
               <label class="form-label" for="manual-subject-select">Subject</label>
-              <select id="manual-subject-select" class="form-select">
-                ${renderSubjectSelectOptions(activeSubjects, selectedSubjectId, true)}
-              </select>
+              ${renderCustomSubjectDropdown({
+                id: 'manual-subject-select',
+                selectedId: selectedSubjectId,
+                subjects: activeSubjects,
+                includeGeneral: true,
+                generalLabel: 'General Study',
+                searchPlaceholder: 'Search subject...'
+              })}
             </div>
 
             <div class="form-group">
@@ -911,10 +928,15 @@ export function renderTrackerView(container) {
             </button>
           </div>
           <div class="todo-sub-row">
-            <select id="todo-subject-select" class="form-select" style="flex: 1.2;">
-              <option value="">General</option>
-              ${activeSubjects.map(s => `<option value="${s.id}">${s.code || s.name}</option>`).join('')}
-            </select>
+            ${renderCustomSubjectDropdown({
+              id: 'todo-subject-select',
+              selectedId: '',
+              subjects: activeSubjects,
+              includeGeneral: true,
+              generalLabel: 'General',
+              searchPlaceholder: 'Search subject...',
+              customClass: 'todo-subject-dd'
+            })}
             ${todoFilterMode === 'todo' ? '' : `
               <input type="date" id="todo-due-date" class="form-input" style="flex: 1;" ${todoFilterMode === 'deadline' ? 'required' : ''} title="${todoFilterMode === 'deadline' ? 'Due date (required for deadlines)' : 'Due date (optional)'}">
             `}
@@ -2086,16 +2108,23 @@ function attachTrackerEvents(container) {
     });
   }
 
-  // Clear completed tasks (Prompt 60)
-  const clearCompletedBtn = container.querySelector('#btn-clear-completed-todos');
-  if (clearCompletedBtn) {
-    clearCompletedBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (window.confirm('Delete all completed tasks? This cannot be undone.')) {
-        store.clearCompletedTodos();
-        window.avenApp?.showToast('Completed tasks cleared', 'info');
-        renderTrackerView(container);
-      }
+  // Initialize Custom Dropdowns (Prompt 61)
+  const pomoDd = container.querySelector('#pomo-subject-select-wrap');
+  if (pomoDd) {
+    initCustomDropdown(pomoDd, (val) => {
+      pomoSubjectId = val;
     });
+  }
+
+  const manualDd = container.querySelector('#manual-subject-select-wrap');
+  if (manualDd) {
+    initCustomDropdown(manualDd, (val) => {
+      selectedSubjectId = val;
+    });
+  }
+
+  const todoDd = container.querySelector('#todo-subject-select-wrap');
+  if (todoDd) {
+    initCustomDropdown(todoDd);
   }
 }

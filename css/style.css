@@ -2354,28 +2354,30 @@ button, input, select, textarea {
   flex-shrink: 0;
 }
 
-/* Todo Mode Switch Segmented Control */
+/* Todo Mode Switch Segmented Control (Matched to Pomodoro / Stopwatch Toggle Design) */
 .todo-mode-switch {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  background: var(--bg-input);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border-default);
   padding: 2px;
+  border-radius: var(--radius-full);
   gap: 2px;
+  flex-shrink: 0;
 }
 
 .todo-mode-btn {
   font-size: 10.5px;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 2.5px 7.5px;
   border-radius: var(--radius-full);
   border: none;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.14s ease;
+  transition: all 0.16s ease;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .todo-mode-btn:hover:not(.active) {
@@ -2383,10 +2385,10 @@ button, input, select, textarea {
 }
 
 .todo-mode-btn.active {
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--accent);
+  color: var(--text-inverse);
   font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
 .todo-add-form {
@@ -2418,9 +2420,9 @@ button, input, select, textarea {
 
 .todo-sub-row .form-select,
 .todo-sub-row .form-input {
-  height: 26px;
-  font-size: 11px;
-  padding: 2px 6px;
+  height: 30px;
+  font-size: 12px;
+  padding: 4px 8px;
 }
 
 .todo-list-scroll-wrap {
@@ -2631,6 +2633,255 @@ button, input, select, textarea {
   width: 100%;
   flex: 1;
   min-height: 135px;
+}
+
+/* ==========================================================================
+   Custom Searchable Dropdown Component (Prompts 61 & 62)
+   ========================================================================== */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.custom-dropdown-trigger {
+  width: 100%;
+  height: 38px;
+  min-height: 38px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  text-align: left;
+}
+
+.custom-dropdown-trigger:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-surface-hover);
+}
+
+.custom-dropdown.open .custom-dropdown-trigger {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-surface);
+  background: var(--bg-surface);
+}
+
+.custom-dropdown-trigger-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.custom-dropdown-trigger-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.custom-dropdown-chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.custom-dropdown.open .custom-dropdown-chevron {
+  transform: rotate(180deg);
+  color: var(--text-primary);
+}
+
+/* Floating Menu Panel */
+.custom-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.32), 0 4px 14px rgba(0, 0, 0, 0.14);
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  padding: 8px;
+  box-sizing: border-box;
+  min-width: 210px;
+  backdrop-filter: blur(16px);
+  animation: ddFadeIn 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.custom-dropdown.open .custom-dropdown-menu {
+  display: flex;
+}
+
+@keyframes ddFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.custom-dropdown-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 6px;
+}
+
+.custom-dropdown-search-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.custom-dropdown-search-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-family: inherit;
+  outline: none;
+  padding: 2px 0;
+}
+
+.custom-dropdown-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.custom-dropdown-options-list {
+  max-height: 210px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-right: 2px;
+  scrollbar-width: thin;
+}
+
+.custom-dropdown-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+
+.custom-dropdown-option:hover,
+.custom-dropdown-option.focused {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.custom-dropdown-option.selected {
+  background: var(--accent-surface);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.custom-dd-option-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.custom-dd-option-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+
+.custom-dd-pill {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-numeric);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.custom-dd-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.custom-dd-check {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.custom-dropdown-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 12px 8px;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Compact style for Pomodoro sub-header & Todo form */
+.pomo-meta-controls .custom-dropdown,
+.pomo-subject-wrap .custom-dropdown {
+  max-width: 200px;
+}
+
+.pomo-meta-controls .custom-dropdown-trigger {
+  height: 30px;
+  min-height: 30px;
+  font-size: 12px;
+  padding: 0 10px;
+}
+
+.pomo-meta-controls .custom-dropdown-trigger .custom-dropdown-trigger-text {
+  font-size: 12px;
+}
+
+.todo-sub-row .custom-dropdown {
+  flex: 1.2;
+}
+
+.todo-sub-row .custom-dropdown-trigger {
+  height: 30px;
+  min-height: 30px;
+  font-size: 12px;
+  padding: 0 10px;
+}
+
+.todo-sub-row .custom-dropdown-trigger .custom-dropdown-trigger-text {
+  font-size: 12px;
 }
 
 @media (max-width: 1180px) {
