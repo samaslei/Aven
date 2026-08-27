@@ -5466,6 +5466,35 @@ button, input, select, textarea {
   .editable-cell {
     padding: 6px 8px;
   }
+
+  /* Study Plan Toolbar: Collapse buttons to icon-only on mobile & tablet */
+  .plans-viewer-actions {
+    gap: 4px !important;
+    flex-shrink: 0;
+  }
+
+  .btn-plan-action .btn-text {
+    display: none !important;
+  }
+
+  .btn-plan-action {
+    padding: 0 !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: var(--radius-md) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .btn-plan-action svg {
+    margin: 0 !important;
+    width: 14px !important;
+    height: 14px !important;
+  }
 }
 
 /* Small Phone Viewports (max-width: 540px) */

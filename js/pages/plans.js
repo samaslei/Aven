@@ -187,38 +187,50 @@ export function renderPlansView(container) {
                 <strong style="font-size: 14px; color: var(--text-primary); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                   ${currentSubject ? `${currentSubject.name} — ${currentPlan.title}` : `General — ${currentPlan.title}`}
                 </strong>
-                <div style="font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                  Updated ${new Date(currentPlan.updated_at).toLocaleString()} · Interactive Sandbox (JS & CSS Enabled)
+                <div style="font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px;">
+                  <span id="plan-updated-time-display">Updated ${new Date(currentPlan.updated_at).toLocaleString()}</span>
+                  <span class="plan-autosave-indicator" id="plan-autosave-status" style="display: inline-flex; align-items: center; gap: 3.5px; font-size: 10.5px; color: var(--text-muted); opacity: 0.85;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span id="plan-autosave-text">Synced</span>
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-              <button class="btn btn-ghost btn-sm" id="btn-fullscreen-plan" title="Toggle Fullscreen View (Esc to exit)">
+            <div class="plans-viewer-actions" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+              <button class="btn btn-ghost btn-sm btn-plan-action" id="btn-fullscreen-plan" title="Toggle Fullscreen View (Esc to exit)" aria-label="Toggle Fullscreen">
                 <svg class="fs-icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
                 </svg>
                 <svg class="fs-icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
                   <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
                 </svg>
-                <span class="fs-label-text">Fullscreen</span>
+                <span class="btn-text fs-label-text">Fullscreen</span>
               </button>
 
-              <button class="btn btn-ghost btn-sm" id="btn-download-plan" title="Export/Download HTML File">
+              <button class="btn btn-ghost btn-sm btn-plan-action" id="btn-download-plan" title="Export/Download HTML File" aria-label="Export HTML">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                Export HTML
+                <span class="btn-text">Export HTML</span>
               </button>
 
-              <button class="btn btn-ghost btn-sm" id="btn-replace-plan">
-                Replace Plan
+              <button class="btn btn-ghost btn-sm btn-plan-action" id="btn-replace-plan" title="Replace / Update Study Plan" aria-label="Replace Plan">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span class="btn-text">Replace</span>
               </button>
 
-              <button class="btn btn-ghost btn-sm" id="btn-delete-plan" style="color: var(--danger);">
-                Delete
+              <button class="btn btn-ghost btn-sm btn-plan-action" id="btn-delete-plan" style="color: var(--danger);" title="Delete Study Plan" aria-label="Delete Plan">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span class="btn-text">Delete</span>
               </button>
             </div>
           </div>
@@ -228,7 +240,7 @@ export function renderPlansView(container) {
             <iframe id="sandboxed-plan-iframe"
                     class="sandboxed-plan-frame"
                     sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads"
-                    srcdoc="${escapeHtmlDoc(currentPlan.html_content)}">
+                    srcdoc="${escapeHtmlDoc(currentPlan.html_content, currentPlan.id)}">
             </iframe>
           </div>
         `}
@@ -240,93 +252,68 @@ export function renderPlansView(container) {
       <div class="modal-card" style="max-width: 580px;">
         <div class="modal-header">
           <h3 class="modal-title" id="plan-modal-title">Upload Interactive HTML Study Plan</h3>
-          <button class="btn btn-ghost btn-icon close-plan-modal-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <button class="modal-close close-plan-modal-btn">&times;</button>
         </div>
 
         <form id="plan-upload-form">
-          <input type="hidden" id="plan-edit-id" value="">
           <div class="modal-body">
-            <div class="alert-box" style="background: var(--bg-surface); border: none; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08); margin-bottom: 14px;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent); flex-shrink: 0;">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="16" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-              </svg>
-              <span>Subject-tied plans replace any existing plan for that subject. Standalone (General) plans can have multiple entries.</span>
-            </div>
+            <input type="hidden" id="plan-edit-id" value="">
 
-            <!-- Subject Dropdown -->
             <div class="form-group">
-              <label class="form-label" for="plan-target-subject">Target Scope</label>
+              <label class="form-label" for="plan-target-subject">Link to Subject (Optional)</label>
               <select id="plan-target-subject" class="form-select">
-                <option value="">🌐 No Subject (General / Standalone Plan)</option>
-                ${activeSubjects.length > 0 ? `
-                  <optgroup label="Course Subjects">
-                    ${activeSubjects.map(s => `
-                      <option value="${s.id}">
-                        ${s.code ? `[${s.code}] ` : ''}${s.name}
-                      </option>
-                    `).join('')}
-                  </optgroup>
-                ` : ''}
+                <option value="">General (Not tied to a subject)</option>
+                ${activeSubjects.map(s => `
+                  <option value="${s.id}">${s.code ? `${s.code} — ` : ''}${s.name}</option>
+                `).join('')}
               </select>
+              <span class="form-help">Subject-linked study plans replace any existing plan for that subject (one active plan per course).</span>
             </div>
 
             <div class="form-group">
               <label class="form-label" for="plan-title-input">Plan Title *</label>
-              <input type="text" id="plan-title-input" class="form-input" placeholder="e.g. Master Exam Roadmap or Interactive Syllabus" required>
+              <input type="text" id="plan-title-input" class="form-input" placeholder="e.g. CS101 Comprehensive 14-Week Roadmap" required>
             </div>
 
-            <!-- File Upload or HTML Text Area -->
             <div class="form-group">
-              <label class="form-label">Upload .html / .htm File</label>
+              <label class="form-label">Upload .html File</label>
               <input type="file" id="plan-file-input" class="form-input" accept=".html,.htm" style="padding: 6px;">
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="plan-html-textarea">Or Paste HTML Content Directly (with embedded &lt;script&gt; &amp; &lt;style&gt;)</label>
-              <textarea id="plan-html-textarea" class="form-textarea" rows="7" placeholder="<!DOCTYPE html><html><head><script>...</script></head><body>...</body></html>"></textarea>
+              <label class="form-label" for="plan-html-textarea">Or Paste Raw HTML Content *</label>
+              <textarea id="plan-html-textarea" class="form-textarea" rows="6" placeholder="<!DOCTYPE html><html>...</html>" style="font-family: var(--font-mono); font-size: 11px;" required></textarea>
             </div>
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-ghost close-plan-modal-btn">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="btn-submit-plan">
-              Save & Render Plan
-            </button>
+            <button type="button" class="btn btn-secondary close-plan-modal-btn">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-plan">Save & Render Plan</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Confirm Delete Study Plan Modal -->
+    <!-- Delete Confirmation Modal -->
     <div class="modal-overlay" id="plan-delete-modal">
       <div class="modal-card" style="max-width: 440px;">
         <div class="modal-header">
           <h3 class="modal-title" style="color: var(--danger);">Delete Study Plan</h3>
-          <button class="btn btn-ghost btn-icon close-delete-plan-modal-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <button class="modal-close close-delete-plan-modal-btn">&times;</button>
         </div>
         <div class="modal-body">
-          <p style="margin: 0 0 10px 0; color: var(--text-primary); font-size: 13.5px; line-height: 1.5;">
+          <p style="color: var(--text-secondary); margin-bottom: 12px;">
             Are you sure you want to delete <strong id="delete-plan-name-display">this study plan</strong>?
           </p>
-          <p style="margin: 0; color: var(--text-muted); font-size: 12.5px; line-height: 1.4;">
-            This action permanently removes the interactive document and cannot be undone.
+          <p style="font-size: 12px; color: var(--text-muted);">
+            This will permanently remove the interactive study plan and its schedule. This action cannot be undone.
           </p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-ghost close-delete-plan-modal-btn">Cancel</button>
-          <button type="button" class="btn btn-danger" id="btn-confirm-delete-plan">Delete Plan</button>
+          <button type="button" class="btn btn-secondary close-delete-plan-modal-btn">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btn-confirm-delete-plan" style="background: var(--danger); border-color: var(--danger);">
+            Delete Plan
+          </button>
         </div>
       </div>
     </div>
@@ -338,11 +325,10 @@ export function renderPlansView(container) {
 /**
  * Prepares the sandboxed HTML document:
  * 1. Resets default browser margins on html/body.
- * 2. Adds consistent outer padding (28px 32px) so content (title, week cards, progress, detail sections)
- *    never sits flush against viewport edges in either standard or fullscreen views.
- * 3. Preserves natural scrolling for long plans while preventing false scrollbars on short plans.
+ * 2. Adds consistent outer padding (28px 32px) so content never sits flush against viewport edges.
+ * 3. Injects a lightweight postMessage bridge to auto-save interactive state changes (checkboxes, inputs).
  */
-function prepareSandboxedHtml(rawHtml) {
+function prepareSandboxedHtml(rawHtml, planId = '') {
   if (!rawHtml) return '<p style="font-family: sans-serif; padding: 28px 32px; color: #64748b;">Empty study plan content.</p>';
 
   const resetCss = `
@@ -373,19 +359,103 @@ function prepareSandboxedHtml(rawHtml) {
 </style>
 `;
 
+  const autoSaveJs = `
+<script id="aven-autosave-bridge">
+(function() {
+  var planId = "${planId || ''}";
+  var debounceTimer = null;
+
+  function syncFormAttributes() {
+    try {
+      var checks = document.querySelectorAll('input[type="checkbox"], input[type="radio"]');
+      for (var i = 0; i < checks.length; i++) {
+        if (checks[i].checked) {
+          checks[i].setAttribute('checked', '');
+        } else {
+          checks[i].removeAttribute('checked');
+        }
+      }
+
+      var inputs = document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"])');
+      for (var j = 0; j < inputs.length; j++) {
+        inputs[j].setAttribute('value', inputs[j].value || '');
+      }
+
+      var textareas = document.querySelectorAll('textarea');
+      for (var k = 0; k < textareas.length; k++) {
+        textareas[k].textContent = textareas[k].value || '';
+      }
+
+      var selects = document.querySelectorAll('select');
+      for (var s = 0; s < selects.length; s++) {
+        var options = selects[s].querySelectorAll('option');
+        for (var o = 0; o < options.length; o++) {
+          if (options[o].selected) {
+            options[o].setAttribute('selected', '');
+          } else {
+            options[o].removeAttribute('selected');
+          }
+        }
+      }
+    } catch (err) {}
+  }
+
+  function serializeCleanHtml() {
+    syncFormAttributes();
+    var clone = document.documentElement.cloneNode(true);
+
+    var injectedReset = clone.querySelector('#aven-iframe-reset');
+    if (injectedReset) injectedReset.remove();
+    var injectedScript = clone.querySelector('#aven-autosave-bridge');
+    if (injectedScript) injectedScript.remove();
+
+    var doctype = document.doctype ? '<!DOCTYPE ' + document.doctype.name + '>\n' : '<!DOCTYPE html>\n';
+    return doctype + clone.outerHTML;
+  }
+
+  function notifyParent() {
+    try {
+      if (!planId) return;
+      var html = serializeCleanHtml();
+      window.parent.postMessage({
+        type: 'aven-plan-update',
+        planId: planId,
+        html: html
+      }, '*');
+    } catch (e) {}
+  }
+
+  function scheduleAutoSave() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(notifyParent, 1800);
+  }
+
+  document.addEventListener('input', scheduleAutoSave, true);
+  document.addEventListener('change', scheduleAutoSave, true);
+  document.addEventListener('click', function(e) {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('summary') || e.target.classList.contains('interactive-item') || e.target.classList.contains('check-box'))) {
+      scheduleAutoSave();
+    }
+  }, true);
+})();
+</script>
+`;
+
+  const injectedCode = `${resetCss}${autoSaveJs}`;
+
   if (rawHtml.includes('</head>')) {
-    return rawHtml.replace('</head>', `${resetCss}</head>`);
+    return rawHtml.replace('</head>', `${injectedCode}</head>`);
   } else if (rawHtml.includes('<head>')) {
-    return rawHtml.replace('<head>', `<head>${resetCss}`);
+    return rawHtml.replace('<head>', `<head>${injectedCode}`);
   } else if (rawHtml.includes('<body>')) {
-    return rawHtml.replace('<body>', `<body>${resetCss}`);
+    return rawHtml.replace('<body>', `<body>${injectedCode}`);
   } else {
-    return `<!DOCTYPE html><html><head><meta charset="utf-8">${resetCss}</head><body>${rawHtml}</body></html>`;
+    return `<!DOCTYPE html><html><head><meta charset="utf-8">${injectedCode}</head><body>${rawHtml}</body></html>`;
   }
 }
 
-function escapeHtmlDoc(html) {
-  const prepared = prepareSandboxedHtml(html);
+function escapeHtmlDoc(html, planId = '') {
+  const prepared = prepareSandboxedHtml(html, planId);
   return prepared
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;');
@@ -551,4 +621,36 @@ function attachPlansEvents(container) {
     }
   };
   document.addEventListener('keydown', handleKeyDown);
+
+  // Listen for auto-save state snapshots from sandboxed iframe
+  let parentSaveDebounceTimer = null;
+  const handlePlanUpdateMessage = (event) => {
+    if (!event.data || event.data.type !== 'aven-plan-update') return;
+    const { planId, html } = event.data;
+    if (!planId || !html) return;
+
+    const plan = store.getStudyPlanById(planId);
+    if (!plan) return;
+
+    const statusTextEl = container.querySelector('#plan-autosave-text');
+    const updatedTimeEl = container.querySelector('#plan-updated-time-display');
+
+    if (statusTextEl) statusTextEl.textContent = 'Saving...';
+
+    clearTimeout(parentSaveDebounceTimer);
+    parentSaveDebounceTimer = setTimeout(() => {
+      // Save updated HTML to store and Supabase (preserving existing plan ID & subject)
+      const updatedPlan = store.saveStudyPlan(plan.subject_id, plan.title, html, plan.id);
+
+      if (statusTextEl) statusTextEl.textContent = 'Saved';
+      if (updatedTimeEl && updatedPlan) {
+        updatedTimeEl.textContent = `Updated ${new Date(updatedPlan.updated_at).toLocaleString()}`;
+      }
+      setTimeout(() => {
+        if (statusTextEl) statusTextEl.textContent = 'Synced';
+      }, 2500);
+    }, 400);
+  };
+
+  window.addEventListener('message', handlePlanUpdateMessage);
 }
