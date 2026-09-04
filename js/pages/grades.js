@@ -615,50 +615,61 @@ function renderTermTabContent(subject, term, gradeStats) {
           const totalScore = entries.reduce((a, e) => a + Number(e.score || 0), 0);
           const totalOutOf = entries.reduce((a, e) => a + Number(e.out_of || 0), 0);
           const catPct = totalOutOf > 0 ? ((totalScore / totalOutOf) * 100).toFixed(1) : '—';
-          const weightedPts = totalOutOf > 0 ? (((totalScore / totalOutOf) * cat.weight)).toFixed(2) : '—';
+          const weightedPts = totalOutOf > 0 ? (((totalScore / totalOutOf) * cat.weight)).toFixed(2) : '0.00';
 
           return `
             <div class="category-breakdown-section ${isExpanded ? 'is-expanded' : 'is-collapsed'} ${entries.length === 0 ? 'is-empty-category' : 'has-entries'}" data-cat-id="${cat.id}">
-              <!-- Header Row (Notion-Style: Drag Handle -> Chevron -> Name -> Weight) -->
+              <!-- Header Row -->
               <div class="category-breakdown-header" data-cat-id="${cat.id}">
-                <div class="cat-header-left">
-                  <div class="cat-drag-handle" title="Drag to reorder category" aria-label="Drag to reorder category">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                      <circle cx="8" cy="5" r="2"></circle>
-                      <circle cx="8" cy="12" r="2"></circle>
-                      <circle cx="8" cy="19" r="2"></circle>
-                      <circle cx="16" cy="5" r="2"></circle>
-                      <circle cx="16" cy="12" r="2"></circle>
-                      <circle cx="16" cy="19" r="2"></circle>
-                    </svg>
+                <div class="cat-header-main-left">
+                  <div class="cat-header-controls">
+                    <div class="cat-drag-handle" title="Drag to reorder category" aria-label="Drag to reorder category">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="8" cy="5" r="2"></circle>
+                        <circle cx="8" cy="12" r="2"></circle>
+                        <circle cx="8" cy="19" r="2"></circle>
+                        <circle cx="16" cy="5" r="2"></circle>
+                        <circle cx="16" cy="12" r="2"></circle>
+                        <circle cx="16" cy="19" r="2"></circle>
+                      </svg>
+                    </div>
+                    <button type="button" class="cat-chevron-btn ${isExpanded ? 'expanded' : ''}" data-cat-id="${cat.id}" aria-label="Toggle Expand Category">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="cat-chevron-icon">
+                        <path d="M8 5v14l11-7z"></path>
+                      </svg>
+                    </button>
                   </div>
-                  <button type="button" class="cat-chevron-btn ${isExpanded ? 'expanded' : ''}" data-cat-id="${cat.id}" aria-label="Toggle Expand Category">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="cat-chevron-icon">
-                      <path d="M8 5v14l11-7z"></path>
-                    </svg>
-                  </button>
-                  <h4 class="cat-breakdown-name" title="${safeCatName}">${cat.category}</h4>
+                  <div class="cat-title-stack">
+                    <h4 class="cat-breakdown-name" title="${safeCatName}">${cat.category}</h4>
+                    <div class="cat-meta-line">
+                      ${renderWeightIndicator(cat.weight, cat.id)}
+                      ${entries.length > 0 ? `
+                        <span class="cat-meta-divider">·</span>
+                        <span class="cat-meta-pts">${weightedPts} pts earned</span>
+                      ` : ''}
+                    </div>
+                  </div>
                 </div>
 
-                <div class="cat-header-right">
-                  ${renderWeightIndicator(cat.weight, cat.id)}
+                <div class="cat-header-main-right">
                   ${entries.length > 0 ? `
-                    <div class="cat-header-summary">
-                      <span>Avg: <strong style="color: ${getStandingColor(catPct)};">${catPct}%</strong></span>
-                      <span class="cat-summary-divider">·</span>
-                      <span>${weightedPts} pts</span>
+                    <div class="cat-avg-stat-block">
+                      <span class="cat-avg-stat-number" style="color: ${getStandingColor(catPct)};">${catPct}%</span>
+                      <span class="cat-avg-stat-label">Average</span>
                     </div>
                   ` : ''}
-                  <button type="button" class="btn btn-ghost btn-sm btn-add-entry" data-cat-id="${cat.id}" title="Add assessment entry" aria-label="Add Entry">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="btn-add-entry-icon">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    <span class="btn-text">Entry</span>
-                  </button>
-                  <button type="button" class="btn btn-ghost btn-sm btn-del-cat" data-cat-id="${cat.id}" style="color: var(--danger); padding: 4px 7px;" title="Delete Category">
-                    ✕
-                  </button>
+                  <div class="cat-header-actions">
+                    <button type="button" class="btn btn-ghost btn-sm btn-add-entry" data-cat-id="${cat.id}" title="Add assessment entry" aria-label="Add Entry">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="btn-add-entry-icon">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                      <span class="btn-text">Entry</span>
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-sm btn-del-cat" data-cat-id="${cat.id}" style="color: var(--danger); padding: 4px 7px;" title="Delete Category">
+                      ✕
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -669,99 +680,66 @@ function renderTermTabContent(subject, term, gradeStats) {
                     <p class="cat-empty-msg">No entries in this category yet. Click <strong>+ Entry</strong> to add one.</p>
                   </div>
                 ` : `
-                  <div class="cat-table-wrap">
-                    <table class="cat-table grade-entries-table">
-                      <thead>
-                        <tr>
-                          <th style="text-align: left;">
-                            <span class="th-label-full">Entry Name</span>
-                            <span class="th-label-short">Entry</span>
-                          </th>
-                          <th style="text-align: center; width: 85px;">
-                            <span>Score</span>
-                          </th>
-                          <th style="text-align: center; width: 85px;">
-                            <span class="th-label-full">Out Of</span>
-                            <span class="th-label-short">Out of</span>
-                          </th>
-                          <th style="text-align: center; width: 85px;">
-                            <span class="th-label-full">Percentage</span>
-                            <span class="th-label-short">%</span>
-                          </th>
-                          <th style="text-align: right; width: 45px;"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${entries.map(ent => {
-                          const entPct = ((ent.score / ent.out_of) * 100).toFixed(1);
-                          const safeName = (ent.name || '').replace(/"/g, '&quot;');
-                          const standingColor = getStandingColor(entPct);
-                          return `
-                            <tr class="grade-entry-row" data-cat-id="${cat.id}" data-ent-id="${ent.id}">
-                              <td style="text-align: left;">
-                                <div class="editable-cell editable-name" data-field="name" data-cat-id="${cat.id}" data-ent-id="${ent.id}" data-value="${safeName}" title="Click to edit assessment name">
-                                  <span class="cell-value-text"><strong>${ent.name}</strong></span>
-                                  <svg class="edit-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                  </svg>
-                                </div>
-                              </td>
-                              <td style="text-align: center;">
-                                <div class="editable-cell editable-score" data-field="score" data-cat-id="${cat.id}" data-ent-id="${ent.id}" data-value="${ent.score}" title="Click to edit score">
-                                  <span class="cell-value-text mono-num" style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600;">${ent.score}</span>
-                                  <svg class="edit-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                  </svg>
-                                </div>
-                              </td>
-                              <td style="text-align: center;">
-                                <div class="editable-cell editable-outof" data-field="out_of" data-cat-id="${cat.id}" data-ent-id="${ent.id}" data-value="${ent.out_of}" title="Click to edit total points">
-                                  <span class="cell-value-text mono-num" style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600;">${ent.out_of}</span>
-                                  <svg class="edit-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                  </svg>
-                                </div>
-                              </td>
-                              <td style="text-align: center;">
-                                <span class="entry-pct-text" style="color: ${standingColor}; font-weight: 700; font-family: var(--font-numeric); font-variant-numeric: tabular-nums;">
-                                  ${entPct}%
-                                </span>
-                              </td>
-                              <td style="text-align: right;">
-                                <button type="button" class="btn btn-ghost btn-sm btn-del-entry" data-cat-id="${cat.id}" data-ent-id="${ent.id}" title="Delete Entry" style="color: var(--text-muted); padding: 4px;">
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                  </svg>
-                                </button>
-                              </td>
-                            </tr>
-                          `;
-                        }).join('')}
-                      </tbody>
-                      <tfoot>
-                        <tr class="cat-totals-row grade-entry-row" style="cursor: default;">
-                          <td style="text-align: left;">
-                            <span class="cell-value-text">TOTAL</span>
-                          </td>
-                          <td style="text-align: center;">
-                            <span class="cell-value-text mono-num" style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums;">${totalScore.toFixed(1)}</span>
-                          </td>
-                          <td style="text-align: center;">
-                            <span class="cell-value-text mono-num" style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums;">${totalOutOf.toFixed(1)}</span>
-                          </td>
-                          <td style="text-align: center;">
-                            <span class="entry-pct-text" style="color: ${getStandingColor(catPct)}; font-weight: 700; font-family: var(--font-numeric); font-variant-numeric: tabular-nums;">
-                              ${catPct !== '—' ? `${catPct}%` : '—'}
-                            </span>
-                          </td>
-                          <td style="text-align: right;"></td>
-                        </tr>
-                      </tfoot>
-                    </table>
+                  <div class="cat-entries-stack">
+                    ${entries.map(ent => {
+                      const entPct = ent.out_of > 0 ? ((ent.score / ent.out_of) * 100).toFixed(1) : '0.0';
+                      const safeName = (ent.name || '').replace(/"/g, '&quot;');
+                      const standingClass = getStandingClass(entPct);
+                      return `
+                        <div class="grade-entry-card-row" data-cat-id="${cat.id}" data-ent-id="${ent.id}">
+                          <div class="entry-card-left">
+                            <div class="editable-cell editable-name" data-field="name" data-cat-id="${cat.id}" data-ent-id="${ent.id}" data-value="${safeName}" title="Click to edit assessment name">
+                              <span class="cell-value-text entry-name-text">${ent.name}</span>
+                              <svg class="edit-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                              </svg>
+                            </div>
+                          </div>
+
+                          <div class="entry-card-right">
+                            <div class="entry-score-fraction">
+                              <div class="editable-cell editable-score" data-field="score" data-cat-id="${cat.id}" data-ent-id="${ent.id}" data-value="${ent.score}" title="Click to edit score">
+                                <span class="cell-value-text mono-num score-num">${ent.score}</span>
+                                <svg class="edit-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                              </div>
+                              <span class="score-slash">/</span>
+                              <div class="editable-cell editable-outof" data-field="out_of" data-cat-id="${cat.id}" data-ent-id="${ent.id}" data-value="${ent.out_of}" title="Click to edit total points">
+                                <span class="cell-value-text mono-num outof-num">${ent.out_of}</span>
+                                <svg class="edit-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                              </div>
+                            </div>
+
+                            <div class="subject-standing-pill ${standingClass} entry-standing-badge">
+                              <span class="standing-dot" style="background: currentColor; width: 4px; height: 4px;"></span>
+                              <span class="entry-pct-text">${entPct}%</span>
+                            </div>
+
+                            <button type="button" class="btn btn-ghost btn-sm btn-del-entry" data-cat-id="${cat.id}" data-ent-id="${ent.id}" title="Delete Entry" aria-label="Delete Entry">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+
+                    <!-- Inline "+ Add entry" affordance button with dashed border -->
+                    <button type="button" class="btn-add-entry-inline btn-add-entry" data-cat-id="${cat.id}">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                      <span>Add assessment entry</span>
+                    </button>
                   </div>
                 `}
               </div>
@@ -1434,8 +1412,9 @@ function attachGradesEvents(container) {
       }
 
       // Live recalculation on row while user types
-      const row = cell.closest('.grade-entry-row');
-      const pctTag = row ? row.querySelector('.entry-pct-tag') : null;
+      const row = cell.closest('.grade-entry-card-row') || cell.closest('.grade-entry-row');
+      const pctTag = row ? row.querySelector('.entry-pct-text') : null;
+      const standingBadge = row ? row.querySelector('.entry-standing-badge') : null;
 
       const updateRowLive = () => {
         if (!row || !pctTag) return;
@@ -1444,7 +1423,9 @@ function attachGradesEvents(container) {
         if (currentOutOf > 0 && !isNaN(currentScore) && !isNaN(currentOutOf)) {
           const livePct = ((currentScore / currentOutOf) * 100).toFixed(1);
           pctTag.textContent = `${livePct}%`;
-          pctTag.style.color = getStandingColor(livePct);
+          if (standingBadge) {
+            standingBadge.className = `subject-standing-pill ${getStandingClass(livePct)} entry-standing-badge`;
+          }
         }
       };
 
