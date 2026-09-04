@@ -6,8 +6,8 @@
  */
 
 import { store, events, GRADE_CATEGORIES, PHILIPPINE_GRADE_SCALE, getPhilippineGrade, getStandingColor, getStandingClass } from '../core/store.js';
-import { sortSubjectsList } from './subjects.js';
 import { exportSubjectGradesToExcel, exportAllSubjectsGradesToExcel } from '../utils/export-excel.js';
+import { formatRelativeTime } from '../utils/date-utils.js';
 
 export const GRADE_CATEGORY_TEMPLATES = [
   {
@@ -91,7 +91,6 @@ export function setSelectedGradesSubjectId(subjectId) {
 
 export function renderGradesView(container) {
   const activeSubjects = store.getSubjects(false);
-  const sidebarSort = store.getGradesSidebarSort();
 
   // Check URL query parameters for pre-selected subject
   if (window.location.hash.includes('subjectId=')) {
@@ -122,106 +121,120 @@ export function renderGradesView(container) {
   const selectedSubject = selectedSubjectId ? store.getSubjectById(selectedSubjectId) : null;
   const gradeStats = selectedSubjectId ? store.calculateSubjectGrade(selectedSubjectId) : null;
 
-  // Helper to render individual subject item in sidebar
-  const renderSubjectItem = (sub) => {
-    const subGrade = store.calculateSubjectGrade(sub.id);
-    const isSelected = sub.id === selectedSubjectId;
-    const standingClass = getStandingClass(subGrade.overallPercentage);
+  // Helper to determine standing badge for overall GWA
+  const getOverallStandingBadge = (rawAvgPct) => {
+    if (rawAvgPct === null || rawAvgPct === undefined || isNaN(rawAvgPct)) {
+      return { label: 'No Graded Subjects', standingClass: 'grade-none', color: 'var(--text-muted)' };
+    }
+    const pct = Number(rawAvgPct);
+    if (pct >= 91.0) {
+      return { label: "Dean's Lister", standingClass: 'grade-pass', color: 'var(--success)' };
+    }
+    if (pct >= 75.0) {
+      return { label: 'Good Standing', standingClass: 'grade-pass', color: 'var(--accent)' };
+    }
+    if (pct >= 60.0) {
+      return { label: 'At Risk', standingClass: 'grade-warn', color: 'var(--warning)' };
+    }
+    return { label: 'Failing', standingClass: 'grade-danger', color: 'var(--danger)' };
+  };
+
+  // Helper to render right-side Grades Summary Panel (Subjects Overview acts as the primary switcher)
+  const renderGradesSummaryPanel = () => {
+    const overall = store.calculateOverallAcademicStanding();
+    const standingInfo = getOverallStandingBadge(overall.rawAvgPct);
+    const recentEntries = store.getRecentGradeEntries(8);
+
     return `
-      <div class="grades-subject-item ${isSelected ? 'active' : ''}" data-id="${sub.id}" style="--item-color: ${sub.color || '#505537'};">
-        <div class="grades-item-top">
-          <span class="grades-item-dot" style="background: ${sub.color || '#6366f1'};"></span>
-          <span class="grades-item-name">${sub.name}</span>
+      <div class="grades-summary-panel">
+        <!-- 1. Overall GWA + Standing Badge -->
+        <div class="grades-summary-card gwa-card">
+          <div class="grades-summary-card-header">
+            <span class="grades-summary-card-title">Overall GWA</span>
+          </div>
+          <div class="gwa-content">
+            <div class="gwa-large-number" style="color: ${standingInfo.color};">
+              ${overall.avgPct}
+            </div>
+            <div class="subject-standing-pill ${standingInfo.standingClass} gwa-standing-badge">
+              <span class="standing-dot" style="background: currentColor; width: 5px; height: 5px;"></span>
+              <span>${standingInfo.label}</span>
+            </div>
+            <div class="gwa-subtext">
+              ${overall.gradedSubjects > 0 ? `${overall.gradedSubjects} of ${overall.totalSubjects} active subjects graded` : 'No subject grades calculated yet'}
+            </div>
+          </div>
         </div>
-        <div class="grades-item-bottom">
-          ${sub.code ? `<span class="subject-list-code" style="font-size: 10px; padding: 1px 5px;">${sub.code}</span>` : `<span></span>`}
-          <div class="subject-standing-pill ${standingClass}" style="font-size: 11px;">
-            <span class="standing-dot" style="background: currentColor; width: 4.5px; height: 4.5px;"></span>
-            <span>${subGrade.summaryLine}</span>
+
+        <!-- 2. Subjects Overview (Primary Subject Switcher) -->
+        <div class="grades-summary-card subjects-overview-card">
+          <div class="grades-summary-card-header">
+            <span class="grades-summary-card-title">Subjects Overview</span>
+            <span class="overview-count-badge">${activeSubjects.length}</span>
+          </div>
+          <div class="subjects-overview-list">
+            ${activeSubjects.length === 0 ? `
+              <div class="summary-empty-state">No active subjects found</div>
+            ` : activeSubjects.map(sub => {
+              const subStats = store.calculateSubjectGrade(sub.id);
+              const pct = subStats.overallPercentage;
+              const standingColor = getStandingColor(pct);
+              const isSelected = sub.id === selectedSubjectId;
+              return `
+                <div class="subjects-overview-row ${isSelected ? 'active' : ''}" data-subject-id="${sub.id}" title="Select ${sub.name}">
+                  <div class="overview-left">
+                    <span class="overview-dot" style="background: ${pct !== null ? standingColor : 'var(--text-muted)'};"></span>
+                    <span class="overview-code">${sub.code || sub.name}</span>
+                  </div>
+                  <div class="overview-right">
+                    <span class="overview-pct" style="color: ${pct !== null ? standingColor : 'var(--text-muted)'};">
+                      ${pct !== null ? `${pct.toFixed(1)}%` : '—'}
+                    </span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- 3. Recently Added (Activity Feed) -->
+        <div class="grades-summary-card recent-entries-card">
+          <div class="grades-summary-card-header">
+            <span class="grades-summary-card-title">Recently Added</span>
+          </div>
+          <div class="recent-entries-list">
+            ${recentEntries.length === 0 ? `
+              <div class="summary-empty-state">No recent grade entries</div>
+            ` : recentEntries.map(e => {
+              const relTime = formatRelativeTime(e.created_at) || 'Recent';
+              return `
+                <div class="recent-entry-row" data-subject-id="${e.subjectId}" title="Select ${e.subjectCode}">
+                  <div class="recent-entry-top">
+                    <span class="recent-entry-code">${e.subjectCode}</span>
+                    <span class="recent-entry-name" title="${e.name}">${e.name}</span>
+                    <span class="recent-entry-score">${e.score}/${e.out_of}</span>
+                  </div>
+                  <div class="recent-entry-bottom">
+                    <span class="recent-entry-cat">${e.term} · ${e.categoryName}</span>
+                    <span class="recent-entry-time">${relTime}</span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
       </div>
     `;
   };
 
-  // Group subjects by Year & Semester if grouped sort is active
-  const isGrouped = sidebarSort === 'year-sem-grouped';
-  const groups = {};
-  if (isGrouped) {
-    activeSubjects.forEach(s => {
-      const key = `${s.year_level} — ${s.semester}`;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(s);
-    });
-  }
-
-  const sortedFlatSubjects = !isGrouped ? sortSubjectsList(activeSubjects, sidebarSort) : [];
-
   container.innerHTML = `
     <div class="grades-layout">
-      <!-- Left Subject Sidebar with Grade Summaries & Sort Menu -->
-      <div class="grades-subject-list">
-        <div class="grades-sidebar-header">
-          <span class="grades-sidebar-title">Subjects & Standings</span>
-          <div style="position: relative;">
-            <button class="btn btn-ghost btn-icon btn-sm" id="btn-grades-sidebar-sort" title="Sort subjects" style="padding: 2px 6px; height: 22px; width: 22px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m3 16 4 4 4-4"></path>
-                <path d="M7 20V4"></path>
-                <path d="m21 8-4-4-4 4"></path>
-                <path d="M17 4v16"></path>
-              </svg>
-            </button>
-            <div class="user-popover grades-sort-popover" id="grades-sort-menu">
-              <div style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 4px 8px 6px 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 4px; letter-spacing: 0.04em;">
-                Sort Sidebar List
-              </div>
-              <button class="popover-item ${sidebarSort === 'year-sem-grouped' ? 'active' : ''}" data-sort="year-sem-grouped">
-                ${sidebarSort === 'year-sem-grouped' ? '✓ ' : ''}Year & Semester (Grouped)
-              </button>
-              <button class="popover-item ${sidebarSort === 'name-asc' ? 'active' : ''}" data-sort="name-asc">
-                ${sidebarSort === 'name-asc' ? '✓ ' : ''}Name (A–Z)
-              </button>
-              <button class="popover-item ${sidebarSort === 'name-desc' ? 'active' : ''}" data-sort="name-desc">
-                ${sidebarSort === 'name-desc' ? '✓ ' : ''}Name (Z–A)
-              </button>
-              <button class="popover-item ${sidebarSort === 'standing-desc' ? 'active' : ''}" data-sort="standing-desc">
-                ${sidebarSort === 'standing-desc' ? '✓ ' : ''}Standing (Highest first)
-              </button>
-              <button class="popover-item ${sidebarSort === 'standing-asc' ? 'active' : ''}" data-sort="standing-asc">
-                ${sidebarSort === 'standing-asc' ? '✓ ' : ''}Standing (Lowest first)
-              </button>
-              <button class="popover-item ${sidebarSort === 'recent-desc' ? 'active' : ''}" data-sort="recent-desc">
-                ${sidebarSort === 'recent-desc' ? '✓ ' : ''}Recently added
-              </button>
-            </div>
-          </div>
-        </div>
-
-        ${activeSubjects.length === 0 ? `
-          <div style="padding: 20px 8px; text-align: center; color: var(--text-muted); font-size: 13px;">
-            No active subjects found.
-          </div>
-        ` : isGrouped ? (
-          Object.keys(groups).map(grpKey => `
-            <div style="margin-top: 6px;">
-              <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 4px 8px;">${grpKey}</div>
-              ${groups[grpKey].map(sub => renderSubjectItem(sub)).join('')}
-            </div>
-          `).join('')
-        ) : (
-          `<div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
-            ${sortedFlatSubjects.map(sub => renderSubjectItem(sub)).join('')}
-          </div>`
-        )}
-      </div>
-
-      <!-- Right Grade Content Panel -->
+      <!-- Main Grade Content Panel -->
       <div class="grade-panel-container">
         ${!selectedSubject ? `
           <div style="background: var(--bg-surface); border: none; border-radius: var(--radius-lg); padding: 60px; text-align: center; color: var(--text-muted); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.08);">
             <h3>No Subject Selected</h3>
-            <p style="margin-top: 8px;">Select a subject from the left list to calculate weighted grades.</p>
+            <p style="margin-top: 8px;">Select a subject from the Subjects Overview panel to calculate weighted grades.</p>
           </div>
         ` : `
           <!-- Browser-Style Tab Strip (Arc / Chrome Tabs) -->
@@ -259,6 +272,9 @@ export function renderGradesView(container) {
           </div>
         `}
       </div>
+
+      <!-- Right Summary Panel -->
+      ${renderGradesSummaryPanel()}
     </div>
 
     <!-- Add Category Modal with Single & Template Mode Tabs -->
@@ -956,42 +972,17 @@ function calculateTargetScore(midtermPct, midtermWeight, finalWeight, targetOver
 }
 
 function attachGradesEvents(container) {
-  // Sidebar Sort Menu Popover
-  const sortBtn = container.querySelector('#btn-grades-sidebar-sort');
-  const sortMenu = container.querySelector('#grades-sort-menu');
-
-  if (sortBtn && sortMenu) {
-    sortBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      sortMenu.classList.toggle('open');
-    });
-
-    sortMenu.querySelectorAll('.popover-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const sortKey = item.dataset.sort;
-        store.setGradesSidebarSort(sortKey);
-        sortMenu.classList.remove('open');
+  // Primary Subject Switcher (Subjects Overview & Recent Activity Feed in Summary Panel)
+  container.querySelectorAll('.subjects-overview-row, .recent-entry-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const subId = row.dataset.subjectId;
+      if (subId && store.getSubjectById(subId)) {
+        selectedSubjectId = subId;
+        try {
+          localStorage.setItem('aven_last_viewed_subject_id', selectedSubjectId);
+        } catch (e) {}
         renderGradesView(container);
-      });
-    });
-
-    const closeSortMenu = (e) => {
-      if (sortMenu && !sortMenu.contains(e.target) && !sortBtn.contains(e.target)) {
-        sortMenu.classList.remove('open');
       }
-    };
-    document.addEventListener('click', closeSortMenu);
-  }
-
-  // Switch Subject
-  container.querySelectorAll('.grades-subject-item').forEach(item => {
-    item.addEventListener('click', () => {
-      selectedSubjectId = item.dataset.id;
-      try {
-        localStorage.setItem('aven_last_viewed_subject_id', selectedSubjectId);
-      } catch (e) {}
-      renderGradesView(container);
     });
   });
 

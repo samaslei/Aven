@@ -51,3 +51,28 @@ export function formatDateHuman(isoString) {
   if (isNaN(date.getTime())) return isoString;
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
+
+/**
+ * Formats an ISO date string into a relative time description (e.g. 'Just now', '2h ago', 'Yesterday', '3d ago').
+ * @param {string} isoString
+ * @returns {string}
+ */
+export function formatRelativeTime(isoString) {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return '';
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  if (diffMs < 0) return 'Just now';
+
+  const diffSecs = Math.floor(diffMs / 1000);
+  if (diffSecs < 60) return 'Just now';
+  const diffMins = Math.floor(diffSecs / 60);
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}

@@ -309,7 +309,9 @@ class Store {
             id: e.id,
             name: e.name,
             score: Number(e.score),
-            out_of: Number(e.out_of)
+            out_of: Number(e.out_of),
+            created_at: e.created_at || null,
+            updated_at: e.updated_at || null
           });
         });
 
@@ -1509,7 +1511,8 @@ class Store {
       id: generateId('ent'),
       name: entryData.name ? entryData.name.trim() : 'New Assessment',
       score: Number(entryData.score) || 0,
-      out_of: Number(entryData.out_of) || 100
+      out_of: Number(entryData.out_of) || 100,
+      created_at: entryData.created_at || new Date().toISOString()
     };
 
     cat.entries.push(entry);
@@ -1563,6 +1566,7 @@ class Store {
       const num = Number(updates.out_of);
       if (!isNaN(num) && num > 0) entry.out_of = num;
     }
+    entry.updated_at = new Date().toISOString();
 
     events.emit('grade_entry:saved', { categoryId, entry });
     events.emit('store:changed', { type: 'grade' });
@@ -1722,6 +1726,43 @@ class Store {
       totalSubjects: activeSubjects.length,
       gradedSubjects: gradedCount
     };
+  }
+
+  getRecentGradeEntries(limit = 8) {
+    const activeSubjects = this.getSubjects(false);
+    const activeSubMap = new Map(activeSubjects.map(s => [s.id, s]));
+    const categories = this.state.grades || [];
+
+    const allEntries = [];
+    categories.forEach(cat => {
+      const sub = activeSubMap.get(cat.subject_id);
+      if (!sub) return;
+
+      (cat.entries || []).forEach(e => {
+        allEntries.push({
+          id: e.id,
+          name: e.name,
+          score: e.score,
+          out_of: e.out_of,
+          percentage: e.out_of > 0 ? (e.score / e.out_of) * 100 : 0,
+          created_at: e.updated_at || e.created_at || null,
+          categoryName: cat.category,
+          term: cat.term,
+          subjectId: sub.id,
+          subjectName: sub.name,
+          subjectCode: sub.code || sub.name,
+          subjectColor: sub.color || '#505537'
+        });
+      });
+    });
+
+    allEntries.sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return timeB - timeA;
+    });
+
+    return allEntries.slice(0, limit);
   }
 
   // --- STUDY PLANS ---
