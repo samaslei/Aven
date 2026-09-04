@@ -197,7 +197,7 @@ export function renderGradesView(container) {
           </div>
         </div>
 
-        <!-- 3. Recently Added (Activity Feed) -->
+        <!-- 3. Recently Added (Flat Rows with Accent Bar) -->
         <div class="grades-summary-card recent-entries-card">
           <div class="grades-summary-card-header">
             <span class="grades-summary-card-title">Recently Added</span>
@@ -207,16 +207,21 @@ export function renderGradesView(container) {
               <div class="summary-empty-state">No recent grade entries</div>
             ` : recentEntries.map(e => {
               const relTime = formatRelativeTime(e.created_at) || 'Recent';
+              const entPct = e.out_of > 0 ? (e.score / e.out_of) * 100 : 0;
+              const standingColor = getStandingColor(entPct);
               return `
                 <div class="recent-entry-row" data-subject-id="${e.subjectId}" title="Select ${e.subjectCode}">
-                  <div class="recent-entry-top">
-                    <span class="recent-entry-code">${e.subjectCode}</span>
-                    <span class="recent-entry-name" title="${e.name}">${e.name}</span>
-                    <span class="recent-entry-score">${e.score}/${e.out_of}</span>
+                  <span class="recent-entry-accent-bar" style="background: ${standingColor};"></span>
+                  <div class="recent-entry-info">
+                    <div class="recent-entry-title-line">
+                      <span class="recent-entry-name">${e.name}</span>
+                      <span class="recent-entry-divider">·</span>
+                      <span class="recent-entry-code">${e.subjectCode}</span>
+                    </div>
+                    <div class="recent-entry-time">${relTime}</div>
                   </div>
-                  <div class="recent-entry-bottom">
-                    <span class="recent-entry-cat">${e.term} · ${e.categoryName}</span>
-                    <span class="recent-entry-time">${relTime}</span>
+                  <div class="recent-entry-stat" style="color: ${standingColor};">
+                    ${entPct.toFixed(1)}%
                   </div>
                 </div>
               `;
@@ -610,7 +615,7 @@ function renderTermTabContent(subject, term, gradeStats) {
         ` : categories.map(cat => {
           const entries = cat.entries || [];
           const safeCatName = (cat.category || '').replace(/"/g, '&quot;');
-          const isExpanded = categoryExpandedState[cat.id] !== undefined ? categoryExpandedState[cat.id] : (entries.length > 0);
+          const isExpanded = categoryExpandedState[cat.id] !== undefined ? categoryExpandedState[cat.id] : true;
 
           const totalScore = entries.reduce((a, e) => a + Number(e.score || 0), 0);
           const totalOutOf = entries.reduce((a, e) => a + Number(e.out_of || 0), 0);
@@ -640,14 +645,15 @@ function renderTermTabContent(subject, term, gradeStats) {
                     </button>
                   </div>
                   <div class="cat-title-stack">
-                    <h4 class="cat-breakdown-name" title="${safeCatName}">${cat.category}</h4>
-                    <div class="cat-meta-line">
+                    <div class="cat-title-row">
+                      <h4 class="cat-breakdown-name" title="${safeCatName}">${cat.category}</h4>
                       ${renderWeightIndicator(cat.weight, cat.id)}
-                      ${entries.length > 0 ? `
-                        <span class="cat-meta-divider">·</span>
-                        <span class="cat-meta-pts">${weightedPts} pts earned</span>
-                      ` : ''}
                     </div>
+                    ${entries.length > 0 ? `
+                      <div class="cat-meta-line">
+                        <span class="cat-meta-pts">${weightedPts} points total</span>
+                      </div>
+                    ` : ''}
                   </div>
                 </div>
 
@@ -659,14 +665,7 @@ function renderTermTabContent(subject, term, gradeStats) {
                     </div>
                   ` : ''}
                   <div class="cat-header-actions">
-                    <button type="button" class="btn btn-ghost btn-sm btn-add-entry" data-cat-id="${cat.id}" title="Add assessment entry" aria-label="Add Entry">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="btn-add-entry-icon">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                      </svg>
-                      <span class="btn-text">Entry</span>
-                    </button>
-                    <button type="button" class="btn btn-ghost btn-sm btn-del-cat" data-cat-id="${cat.id}" style="color: var(--danger); padding: 4px 7px;" title="Delete Category">
+                    <button type="button" class="btn btn-ghost btn-sm btn-del-cat" data-cat-id="${cat.id}" style="color: var(--danger); padding: 4px 7px;" title="Delete Category" aria-label="Delete Category">
                       ✕
                     </button>
                   </div>
@@ -677,7 +676,13 @@ function renderTermTabContent(subject, term, gradeStats) {
               <div class="category-breakdown-body" style="${!isExpanded ? 'display: none;' : ''}">
                 ${entries.length === 0 ? `
                   <div class="cat-empty-body">
-                    <p class="cat-empty-msg">No entries in this category yet. Click <strong>+ Entry</strong> to add one.</p>
+                    <button type="button" class="btn-add-entry-inline btn-add-entry" data-cat-id="${cat.id}">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                      <span>Add assessment entry</span>
+                    </button>
                   </div>
                 ` : `
                   <div class="cat-entries-stack">
