@@ -2373,14 +2373,58 @@ button, input, select, textarea {
   border-radius: 50%;
   background: var(--accent);
 }
+/* Study Time Distribution Vertical Bar Chart (Prompt 72) */
+.dist-total-badge {
+  font-size: 10.5px;
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-surface-hover);
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  margin-left: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+}
 
-.distribution-donut-only-wrap {
+.distribution-bar-chart-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   flex: 1;
   min-height: 135px;
+  box-sizing: border-box;
+  padding: 4px 2px 2px;
+}
+
+.dist-bar-svg {
+  width: 100%;
+  height: 100%;
+  max-height: 145px;
+  overflow: visible;
+}
+
+.dist-bar {
+  cursor: pointer;
+  transition: opacity 0.18s ease, filter 0.18s ease;
+}
+
+.dist-bar:hover {
+  opacity: 0.92;
+  filter: brightness(1.2) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+}
+
+.dist-bar-xlabel {
+  font-size: 9.5px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  fill: var(--text-secondary);
+  user-select: none;
 }
 
 /* ==========================================================================

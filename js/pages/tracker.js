@@ -82,76 +82,137 @@ export function renderTrackerView(container) {
 
 
 
-  // Render SVG Donut Chart Body Content (Prompt 56 & 57 & 64)
+  // Render SVG Vertical Bar Chart Body Content (Prompt 72)
   function renderDistributionBodyHtml(sessions) {
     const dist = calculateDistributionStats(sessions, distributionScope, id => store.getSubjectById(id));
-    const totalHours = dist.totalHours;
     const slices = dist.slices;
 
     if (dist.totalMinutes === 0 || slices.length === 0) {
       return `
-        <div class="distribution-empty-state" style="padding: 16px 8px; flex: 1;">
+        <div class="distribution-empty-state" style="padding: 20px 8px; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity: 0.35;">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
           <p style="font-size: 11.5px; font-weight: 500; color: var(--text-secondary); margin: 0;">No study activity</p>
         </div>
       `;
     }
 
-    const radius = 70;
-    const circumference = 2 * Math.PI * radius;
-    let accumulatedOffset = 0;
+    const svgWidth = 320;
+    const svgHeight = 140;
+    const padLeft = 30;
+    const padRight = 10;
+    const padTop = 14;
+    const padBottom = 26;
 
-    const circlesHtml = slices.map((slice) => {
-      const dashLength = (slice.percentage / 100) * circumference;
-      const gapLength = circumference - dashLength;
-      const offset = -accumulatedOffset;
-      accumulatedOffset += dashLength;
+    const plotWidth = svgWidth - padLeft - padRight; // 280
+    const plotHeight = svgHeight - padTop - padBottom; // 100
+
+    const maxHoursVal = Math.max(...slices.map(s => Number(s.hours) || 0), 0.5);
+    let yMax;
+    if (maxHoursVal <= 1) yMax = 1;
+    else if (maxHoursVal <= 2) yMax = 2;
+    else if (maxHoursVal <= 5) yMax = 5;
+    else if (maxHoursVal <= 10) yMax = 10;
+    else if (maxHoursVal <= 20) yMax = 20;
+    else if (maxHoursVal <= 50) yMax = 50;
+    else yMax = Math.ceil(maxHoursVal / 10) * 10;
+
+    const yTicks = [0, yMax / 2, yMax];
+    const gridLinesHtml = yTicks.map(tick => {
+      const yPos = padTop + plotHeight - (tick / yMax) * plotHeight;
+      const formattedTick = Number.isInteger(tick) ? tick : tick.toFixed(1);
+      return `
+        <g class="dist-grid-group">
+          <line x1="${padLeft}" y1="${yPos.toFixed(1)}" x2="${(svgWidth - padRight)}" y2="${yPos.toFixed(1)}" stroke="var(--border-subtle)" stroke-dasharray="3 3" opacity="0.45" stroke-width="1" />
+          <text x="${padLeft - 5}" y="${(yPos + 3).toFixed(1)}" text-anchor="end" font-size="8.5" font-family="var(--font-numeric)" font-weight="600" fill="var(--text-muted)">${formattedTick}h</text>
+        </g>
+      `;
+    }).join('');
+
+    const n = slices.length;
+    const colWidth = plotWidth / n;
+    const barWidth = Math.min(32, Math.max(14, colWidth * 0.55));
+
+    const barsHtml = slices.map((slice, i) => {
+      const hoursNum = Number(slice.hours) || 0;
+      const barH = (hoursNum / yMax) * plotHeight;
+      const displayBarH = Math.max(3, barH);
+      const centerX = padLeft + (i + 0.5) * colWidth;
+      const barX = centerX - barWidth / 2;
+      const barY = padTop + plotHeight - displayBarH;
+
+      // X-axis label: short code or shortened name
+      const rawLabel = slice.code || slice.name;
+      const displayLabel = rawLabel.length > 9 ? rawLabel.substring(0, 8) + '…' : rawLabel;
 
       return `
-        <circle class="donut-slice"
-                cx="100" cy="100" r="${radius}"
-                fill="transparent"
-                stroke="${slice.color}"
-                stroke-width="23"
-                stroke-dasharray="${dashLength.toFixed(2)} ${gapLength.toFixed(2)}"
-                stroke-dashoffset="${offset.toFixed(2)}"
+        <g class="dist-bar-group">
+          <!-- Background hover track -->
+          <rect class="dist-bar-track"
+                x="${(centerX - colWidth / 2).toFixed(1)}"
+                y="${padTop}"
+                width="${colWidth.toFixed(1)}"
+                height="${plotHeight}"
+                fill="transparent" />
+
+          <!-- Colored Vertical Bar -->
+          <rect class="dist-bar"
+                x="${barX.toFixed(1)}"
+                y="${barY.toFixed(1)}"
+                width="${barWidth.toFixed(1)}"
+                height="${displayBarH.toFixed(1)}"
+                rx="3" ry="3"
+                fill="${slice.color}"
                 data-name="${slice.name}"
-                data-code="${slice.code}"
+                data-code="${slice.code || ''}"
                 data-hours="${slice.hours}"
                 data-pct="${slice.percentage.toFixed(1)}"
-                data-color="${slice.color}"
-                transform="rotate(-90 100 100)" />
+                data-color="${slice.color}" />
+
+          <!-- Subject Code X-axis Label -->
+          <text class="dist-bar-xlabel"
+                x="${centerX.toFixed(1)}"
+                y="${(svgHeight - 8)}"
+                text-anchor="middle"
+                font-size="9.5"
+                font-family="var(--font-sans)"
+                font-weight="600"
+                fill="var(--text-secondary)">${displayLabel}</text>
+        </g>
       `;
     }).join('');
 
     return `
-      <div class="distribution-donut-only-wrap">
-        <div class="donut-svg-box">
-          <svg class="donut-svg" viewBox="0 0 200 200" width="144" height="144">
-            <!-- Background Track Ring -->
-            <circle cx="100" cy="100" r="${radius}" fill="transparent" stroke="var(--border-subtle)" stroke-width="23" opacity="0.35" />
-            <!-- Colored Slices -->
-            ${circlesHtml}
-          </svg>
-          <div class="donut-center-label">
-            <span class="donut-center-num">${totalHours}h</span>
-            <span class="donut-center-sub">${distributionScope === 'week' ? 'Week' : 'Total'}</span>
-          </div>
-        </div>
+      <div class="distribution-bar-chart-wrap">
+        <svg class="dist-bar-svg" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet">
+          <!-- Horizontal Grid Lines & Ticks -->
+          ${gridLinesHtml}
+          <!-- Bars & X Labels -->
+          ${barsHtml}
+        </svg>
       </div>
     `;
   }
 
-  // Render SVG Donut Chart Card (Prompt 56 & 57: Enlarge donut, legend removed, hover tooltip only)
+  // Render Bar Chart Card (Prompt 72: Vertical bar chart replacing donut)
   function renderDistributionCard(sessions) {
+    const dist = calculateDistributionStats(sessions, distributionScope, id => store.getSubjectById(id));
+    const totalHours = dist.totalHours;
+
     return `
       <div class="tool-card distribution-container-card">
         <div class="distribution-header">
-          <div class="card-header-label distribution-header-label">
+          <div class="card-header-label distribution-header-label" style="margin-bottom: 0;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
-              <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
             </svg>
             <span>DISTRIBUTION</span>
+            <span class="dist-total-badge" id="dist-total-badge">${totalHours}h total</span>
           </div>
           <div class="segmented-control" id="dist-scope-switcher" data-active="${distributionScope}">
             <button class="seg-btn ${distributionScope === 'all' ? 'active' : ''}" data-scope="all">All</button>
@@ -1831,24 +1892,34 @@ function attachTrackerEvents(container) {
           b.classList.toggle('active', (b.dataset.scope || 'all') === scope);
         });
 
-        // 2. Update distribution body
+        // 2. Update distribution body & total badge
+        const sessions = store.getStudySessions();
         const distBody = container.querySelector('#dist-body-wrap');
         if (distBody) {
-          distBody.innerHTML = renderDistributionBodyHtml(store.getStudySessions());
-          bindDonutTooltipEvents();
+          distBody.innerHTML = renderDistributionBodyHtml(sessions);
+          bindDistributionTooltipEvents();
+        }
+
+        const totalBadge = container.querySelector('#dist-total-badge');
+        if (totalBadge) {
+          const currentDist = calculateDistributionStats(sessions, distributionScope, id => store.getSubjectById(id));
+          totalBadge.textContent = `${currentDist.totalHours}h total`;
         }
       });
     });
   }
 
-  function bindDonutTooltipEvents() {
-    container.querySelectorAll('.donut-slice').forEach(slice => {
-      slice.addEventListener('mouseenter', (e) => {
-        const name = slice.dataset.name;
-        const code = slice.dataset.code;
-        const hours = slice.dataset.hours;
-        const pct = slice.dataset.pct;
-        const color = slice.dataset.color;
+  function bindDistributionTooltipEvents() {
+    container.querySelectorAll('.dist-bar, .dist-bar-track').forEach(el => {
+      const bar = el.classList.contains('dist-bar') ? el : el.parentElement.querySelector('.dist-bar');
+      if (!bar) return;
+
+      el.addEventListener('mouseenter', (e) => {
+        const name = bar.dataset.name;
+        const code = bar.dataset.code;
+        const hours = bar.dataset.hours;
+        const pct = bar.dataset.pct;
+        const color = bar.dataset.color;
 
         tooltip.innerHTML = `
           <div style="display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text-primary);">
@@ -1864,17 +1935,17 @@ function attachTrackerEvents(container) {
         updateTooltipPosition(e);
       });
 
-      slice.addEventListener('mousemove', (e) => {
+      el.addEventListener('mousemove', (e) => {
         updateTooltipPosition(e);
       });
 
-      slice.addEventListener('mouseleave', () => {
+      el.addEventListener('mouseleave', () => {
         tooltip.style.display = 'none';
       });
     });
   }
 
-  bindDonutTooltipEvents();
+  bindDistributionTooltipEvents();
 
   // Monthly Calendar Navigation Handlers (Prompt 56)
   const prevMonthBtn = container.querySelector('#btn-month-prev');
