@@ -323,45 +323,37 @@ export function renderSubjectsView(container) {
         <form id="subject-form">
           <input type="hidden" id="sub-form-id">
           
-          <div class="form-group">
-            <label class="form-label" for="sub-form-name">Subject Name *</label>
-            <input type="text" id="sub-form-name" class="form-input" placeholder="e.g. Data Structures & Algorithms" required>
-          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label" for="sub-form-name">Subject Name *</label>
+              <input type="text" id="sub-form-name" class="form-input" placeholder="e.g. Data Structures & Algorithms" required>
+            </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="sub-form-code">Course Code</label>
-              <input type="text" id="sub-form-code" class="form-input" placeholder="e.g. CS 201">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="sub-form-code">Course Code</label>
+                <input type="text" id="sub-form-code" class="form-input" placeholder="e.g. CS 201">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="sub-form-year">Year Level *</label>
+                <select id="sub-form-year" class="form-input" required>
+                  ${YEAR_LEVELS.map(y => `<option value="${y}">${y}</option>`).join('')}
+                </select>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="sub-form-year">Year Level *</label>
-              <select id="sub-form-year" class="form-input" required>
-                ${YEAR_LEVELS.map(y => `<option value="${y}">${y}</option>`).join('')}
-              </select>
-            </div>
-          </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="sub-form-semester">Semester *</label>
-              <select id="sub-form-semester" class="form-input" required>
-                ${SEMESTERS.map(s => `<option value="${s}">${s}</option>`).join('')}
-              </select>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="sub-form-semester">Semester *</label>
+                <select id="sub-form-semester" class="form-input" required>
+                  ${SEMESTERS.map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="sub-form-instructor">Instructor</label>
+                <input type="text" id="sub-form-instructor" class="form-input" placeholder="e.g. Dr. Jane Smith">
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="sub-form-instructor">Instructor</label>
-              <input type="text" id="sub-form-instructor" class="form-input" placeholder="e.g. Dr. Jane Smith">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Color Tag</label>
-            <div class="color-picker-grid">
-              ${DEFAULT_COLOR_SWATCHES.map(c => `
-                <div class="color-swatch" data-color="${c}" style="background-color: ${c};"></div>
-              `).join('')}
-            </div>
-            <input type="hidden" id="sub-form-color" value="${DEFAULT_COLOR_SWATCHES[0]}">
           </div>
 
           <div class="modal-footer">
@@ -893,7 +885,6 @@ function attachSubjectsEvents(container) {
     form?.reset();
     container.querySelector('#sub-form-id').value = '';
     container.querySelector('#subject-modal-title').textContent = 'New Subject';
-    container.querySelector('#sub-form-color').value = DEFAULT_COLOR_SWATCHES[0];
     createModal?.classList.add('open');
   };
 
@@ -908,7 +899,6 @@ function attachSubjectsEvents(container) {
     container.querySelector('#sub-form-year').value = sub.year_level || '1st Year';
     container.querySelector('#sub-form-semester').value = sub.semester || '1st Semester';
     container.querySelector('#sub-form-instructor').value = sub.instructor || '';
-    container.querySelector('#sub-form-color').value = sub.color || DEFAULT_COLOR_SWATCHES[0];
     createModal?.classList.add('open');
   };
 
@@ -1186,9 +1176,8 @@ function attachSubjectsEvents(container) {
     const year_level = container.querySelector('#sub-form-year').value;
     const semester = container.querySelector('#sub-form-semester').value;
     const instructor = container.querySelector('#sub-form-instructor').value;
-    const color = container.querySelector('#sub-form-color').value;
 
-    const payload = { id: id || undefined, name, code, year_level, semester, instructor, color };
+    const payload = { id: id || undefined, name, code, year_level, semester, instructor };
     store.saveSubject(payload);
 
     closeModals();
