@@ -1542,6 +1542,23 @@ button, input, select, textarea {
   min-height: 2.6em; /* Reserves identical 2-line vertical space across all cards */
 }
 
+.subject-grades-link {
+  cursor: pointer;
+  transition: color 0.18s cubic-bezier(0.16, 1, 0.3, 1), text-decoration-color 0.18s ease;
+}
+
+.subject-grades-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+[data-theme="light"] .subject-grades-link:hover {
+  color: #21231d;
+  text-decoration-color: #505537;
+}
+
 .subject-card-instructor {
   font-size: 12px;
   color: var(--text-muted);

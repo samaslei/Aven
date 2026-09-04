@@ -70,15 +70,49 @@ let selectedTemplateId = GRADE_CATEGORY_TEMPLATES[0].id;
 let editableTemplateCategories = JSON.parse(JSON.stringify(GRADE_CATEGORY_TEMPLATES[0].categories));
 const categoryExpandedState = {}; // Tracks expanded state by category ID
 
+// Listen for cross-page subject grades selection (Prompt 68)
+events.on('grades:select-subject', (subjectId) => {
+  if (subjectId && store.getSubjectById(subjectId)) {
+    selectedSubjectId = subjectId;
+    try {
+      localStorage.setItem('aven_last_viewed_subject_id', subjectId);
+    } catch (e) {}
+  }
+});
+
+export function setSelectedGradesSubjectId(subjectId) {
+  if (subjectId && store.getSubjectById(subjectId)) {
+    selectedSubjectId = subjectId;
+    try {
+      localStorage.setItem('aven_last_viewed_subject_id', subjectId);
+    } catch (e) {}
+  }
+}
+
 export function renderGradesView(container) {
   const activeSubjects = store.getSubjects(false);
   const sidebarSort = store.getGradesSidebarSort();
 
-  // Auto-select last-viewed subject, or first available active subject
+  // Check URL query parameters for pre-selected subject
+  if (window.location.hash.includes('subjectId=')) {
+    const hashQuery = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '';
+    const params = new URLSearchParams(hashQuery);
+    const subId = params.get('subjectId');
+    if (subId && store.getSubjectById(subId)) {
+      selectedSubjectId = subId;
+    }
+  }
+
+  // Auto-select explicitly chosen subject, last-viewed subject, or first available active subject
   const savedSubjectId = localStorage.getItem('aven_last_viewed_subject_id');
-  if (savedSubjectId && store.getSubjectById(savedSubjectId) && !store.getSubjectById(savedSubjectId).is_archived) {
+  if (selectedSubjectId && store.getSubjectById(selectedSubjectId) && !store.getSubjectById(selectedSubjectId).archived) {
+    // Keep chosen subject
+    try {
+      localStorage.setItem('aven_last_viewed_subject_id', selectedSubjectId);
+    } catch (e) {}
+  } else if (savedSubjectId && store.getSubjectById(savedSubjectId) && !store.getSubjectById(savedSubjectId).archived) {
     selectedSubjectId = savedSubjectId;
-  } else if ((!selectedSubjectId || !store.getSubjectById(selectedSubjectId) || store.getSubjectById(selectedSubjectId).is_archived) && activeSubjects.length > 0) {
+  } else if (activeSubjects.length > 0) {
     selectedSubjectId = activeSubjects[0].id;
     try {
       localStorage.setItem('aven_last_viewed_subject_id', selectedSubjectId);

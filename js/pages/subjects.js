@@ -672,7 +672,7 @@ function renderSubjectCard(sub) {
 
         <div class="subject-title-area">
           <span class="subject-code-tag" style="${!sub.code ? 'visibility: hidden;' : ''}">${sub.code || '&nbsp;'}</span>
-          <h4 class="subject-card-name" title="${sub.name}">${sub.name}</h4>
+          <h4 class="subject-card-name subject-grades-link" data-subject-id="${sub.id}" title="View ${sub.name} Grades">${sub.name}</h4>
           ${sub.instructor ? `
             <span class="subject-card-instructor">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -743,7 +743,7 @@ function renderSubjectListRow(sub) {
           <div class="subject-list-title-block">
             <div class="subject-list-header-line">
               ${sub.code ? `<span class="subject-list-code">${sub.code}</span>` : ''}
-              <span class="subject-list-name">${sub.name}</span>
+              <span class="subject-list-name subject-grades-link" data-subject-id="${sub.id}" title="View ${sub.name} Grades">${sub.name}</span>
             </div>
             ${sub.instructor ? `
               <span class="subject-list-instructor">
@@ -1013,6 +1013,23 @@ function attachSubjectsEvents(container) {
         e.stopPropagation();
         rootEl.querySelectorAll('.row-actions-popover').forEach(p => p.classList.remove('open'));
         openDeleteModal(btn.dataset.id);
+      });
+    });
+
+    // Click on Subject Name (Navigates to Grades with subject pre-selected - Prompt 68)
+    rootEl.querySelectorAll('.subject-grades-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const subjectId = link.dataset.subjectId;
+        if (subjectId) {
+          events.emit('grades:select-subject', subjectId);
+          if (window.avenApp && typeof window.avenApp.navigateTo === 'function') {
+            window.avenApp.navigateTo('grades');
+          } else {
+            window.location.hash = 'grades';
+          }
+        }
       });
     });
 
