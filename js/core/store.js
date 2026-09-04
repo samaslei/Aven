@@ -100,7 +100,6 @@ class Store {
     this.state = {
       subjects: [],
       sessions: [],
-      todos: [],
       grades: [],
       grade_configs: [],
       plans: [],
@@ -278,23 +277,20 @@ class Store {
         sessionsRes,
         categoriesRes,
         entriesRes,
-        plansRes,
-        todosRes
+        plansRes
       ] = await Promise.all([
         supabase.from('subjects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('subject_grade_configs').select('*').eq('user_id', userId),
         supabase.from('study_sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('grade_categories').select('*').eq('user_id', userId).order('sort_index', { ascending: true }).order('created_at', { ascending: true }),
         supabase.from('grade_entries').select('*').eq('user_id', userId),
-        supabase.from('study_plans').select('*').eq('user_id', userId),
-        supabase.from('todos').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+        supabase.from('study_plans').select('*').eq('user_id', userId)
       ]);
 
       this.state.subjects = subjectsRes.data || [];
       this.state.grade_configs = configsRes.data || [];
       this.state.sessions = sessionsRes.data || [];
       this.state.plans = plansRes.data || [];
-      this.state.todos = todosRes.data || [];
 
       let categories = categoriesRes.data;
       if (categoriesRes.error) {
@@ -973,97 +969,6 @@ class Store {
     getCurrentUser().then(user => {
       if (user) {
         supabase.from('study_sessions').delete().eq('id', id).eq('user_id', user.id).then();
-      }
-    });
-  }
-
-  // --- TODOS & DEADLINES API (Prompt 56) ---
-  getTodos() {
-    return this.state.todos || [];
-  }
-
-  saveTodo(todoData) {
-    const todos = this.state.todos || [];
-    let todo;
-    const cleanSubjectId = todoData.subject_id && todoData.subject_id.trim() ? todoData.subject_id.trim() : null;
-
-    if (todoData.id) {
-      const idx = todos.findIndex(t => t.id === todoData.id);
-      if (idx !== -1) {
-        todos[idx] = { ...todos[idx], ...todoData, subject_id: cleanSubjectId };
-        todo = todos[idx];
-      }
-    } else {
-      todo = {
-        id: generateId('todo'),
-        text: (todoData.text || '').trim(),
-        subject_id: cleanSubjectId,
-        due_date: todoData.due_date || null,
-        completed: false,
-        created_at: new Date().toISOString()
-      };
-      todos.unshift(todo);
-    }
-
-    this.state.todos = todos;
-    events.emit('todo:saved', todo);
-    events.emit('store:changed', { type: 'todo' });
-
-    getCurrentUser().then(user => {
-      if (user && todo) {
-        supabase.from('todos').upsert({
-          id: todo.id,
-          user_id: user.id,
-          subject_id: todo.subject_id,
-          text: todo.text,
-          due_date: todo.due_date,
-          completed: todo.completed,
-          created_at: todo.created_at
-        }, { onConflict: 'id' }).then(({ error }) => {
-          if (error) console.warn('Supabase todo sync error:', error);
-        });
-      }
-    });
-
-    return todo;
-  }
-
-  toggleTodo(id) {
-    const todos = this.state.todos || [];
-    const todo = todos.find(t => t.id === id);
-    if (!todo) return;
-    todo.completed = !todo.completed;
-    events.emit('todo:saved', todo);
-    events.emit('store:changed', { type: 'todo' });
-
-    getCurrentUser().then(user => {
-      if (user) {
-        supabase.from('todos').update({ completed: todo.completed }).eq('id', id).eq('user_id', user.id).then();
-      }
-    });
-  }
-
-  deleteTodo(id) {
-    this.state.todos = (this.state.todos || []).filter(t => t.id !== id);
-    events.emit('todo:deleted', id);
-    events.emit('store:changed', { type: 'todo' });
-
-    getCurrentUser().then(user => {
-      if (user) {
-        supabase.from('todos').delete().eq('id', id).eq('user_id', user.id).then();
-      }
-    });
-  }
-
-  clearCompletedTodos() {
-    const completed = (this.state.todos || []).filter(t => t.completed);
-    this.state.todos = (this.state.todos || []).filter(t => !t.completed);
-    events.emit('store:changed', { type: 'todo' });
-
-    getCurrentUser().then(user => {
-      if (user && completed.length > 0) {
-        const ids = completed.map(t => t.id);
-        supabase.from('todos').delete().in('id', ids).eq('user_id', user.id).then();
       }
     });
   }

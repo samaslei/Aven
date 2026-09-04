@@ -480,8 +480,8 @@ export function renderSubjectsView(container) {
 
           <div class="bulk-subjects-list">
             ${activeSubjects.map(sub => `
-              <label class="bulk-subject-item">
-                <input type="checkbox" class="bulk-sub-checkbox" value="${sub.id}" checked>
+              <label class="bulk-subject-item" for="bulk-sub-${sub.id}">
+                <input type="checkbox" id="bulk-sub-${sub.id}" name="bulk-sub-checkbox" class="bulk-sub-checkbox" value="${sub.id}" checked aria-label="${sub.name}">
                 
                 <div style="flex: 1; min-width: 0;">
                   <div style="display: flex; align-items: center; gap: 6px;">

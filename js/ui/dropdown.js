@@ -77,7 +77,7 @@ export function renderCustomSubjectDropdown({
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="text" class="custom-dropdown-search-input" placeholder="${searchPlaceholder}" autocomplete="off">
+          <input type="text" id="${id}-search-input" name="${id}-search" class="custom-dropdown-search-input" placeholder="${searchPlaceholder}" aria-label="${searchPlaceholder}" autocomplete="off">
         </div>
 
         <div class="custom-dropdown-options-list" tabindex="-1">

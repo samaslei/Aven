@@ -143,7 +143,8 @@ export function renderSettingsView(container) {
                   <div class="scale-edit-grade">${item.grade}</div>
                   <div class="scale-edit-input-wrap">
                     <span class="scale-gte">&ge;</span>
-                    <input type="number" class="form-input scale-min-input"
+                    <input type="number" id="scale-min-${item.grade.replace('.', '_')}" name="scale-min-${item.grade.replace('.', '_')}" class="form-input scale-min-input"
+                           aria-label="Minimum percentage for grade ${item.grade}"
                            data-grade="${item.grade}"
                            value="${item.min}"
                            min="0" max="100" step="0.5"

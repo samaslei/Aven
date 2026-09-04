@@ -276,7 +276,7 @@ export function renderPlansView(container) {
             </div>
 
             <div class="form-group">
-              <label class="form-label">Upload .html File</label>
+              <label class="form-label" for="plan-file-input">Upload .html File</label>
               <input type="file" id="plan-file-input" class="form-input" accept=".html,.htm" style="padding: 6px;">
             </div>
 

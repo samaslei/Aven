@@ -826,13 +826,13 @@ function renderOverallTabContent(subject, gradeStats) {
 
         <div style="display: flex; align-items: center; gap: 12px;">
           <div style="display: flex; align-items: center; gap: 6px;">
-            <label class="form-label" style="margin: 0;">Midterm %</label>
-            <input type="number" id="split-midterm-weight" class="form-input" min="0" max="100" value="${config.midterm_weight}" style="width: 70px; padding: 4px 8px;">
+            <label class="form-label" for="split-midterm-weight" style="margin: 0;">Midterm %</label>
+            <input type="number" id="split-midterm-weight" name="split-midterm-weight" class="form-input" min="0" max="100" value="${config.midterm_weight}" style="width: 70px; padding: 4px 8px;">
           </div>
           <span style="color: var(--text-muted);">+</span>
           <div style="display: flex; align-items: center; gap: 6px;">
-            <label class="form-label" style="margin: 0;">Final %</label>
-            <input type="number" id="split-final-weight" class="form-input" min="0" max="100" value="${config.final_weight}" style="width: 70px; padding: 4px 8px;">
+            <label class="form-label" for="split-final-weight" style="margin: 0;">Final %</label>
+            <input type="number" id="split-final-weight" name="split-final-weight" class="form-input" min="0" max="100" value="${config.final_weight}" style="width: 70px; padding: 4px 8px;">
           </div>
           <button class="btn btn-primary btn-sm" id="btn-save-weight-split">Update Split</button>
         </div>
@@ -891,7 +891,7 @@ function renderOverallTabContent(subject, gradeStats) {
           </p>
 
           <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
-            <input type="number" id="target-grade-input" class="form-input" step="0.1" min="0" max="100" value="91.0" placeholder="e.g. 91.0%">
+            <input type="number" id="target-grade-input" name="target-grade-input" class="form-input" step="0.1" min="0" max="100" value="91.0" placeholder="e.g. 91.0%" aria-label="Target Grade Percentage">
             <button class="btn btn-primary btn-sm" id="btn-solve-target">Solve Target</button>
           </div>
 
@@ -1016,9 +1016,9 @@ function attachGradesEvents(container) {
     if (!rowsContainer) return;
     rowsContainer.innerHTML = editableTemplateCategories.map((c, idx) => `
       <div class="template-category-row" data-idx="${idx}">
-        <input type="text" class="form-input template-row-name-input" value="${c.name}" placeholder="Category Name" data-idx="${idx}">
+        <input type="text" id="tpl-cat-name-${idx}" name="tpl-cat-name-${idx}" class="form-input template-row-name-input" value="${c.name}" placeholder="Category Name" data-idx="${idx}" aria-label="Category Name">
         <div class="template-row-weight-wrap">
-          <input type="number" class="form-input template-row-weight-input" min="1" max="100" value="${c.weight}" data-idx="${idx}">
+          <input type="number" id="tpl-cat-weight-${idx}" name="tpl-cat-weight-${idx}" class="form-input template-row-weight-input" min="1" max="100" value="${c.weight}" data-idx="${idx}" aria-label="Category Weight Percentage">
           <span style="font-size: 12px; color: var(--text-muted);">%</span>
         </div>
         <button type="button" class="template-row-remove-btn" data-idx="${idx}" title="Remove Category">
