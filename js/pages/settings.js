@@ -494,8 +494,9 @@ function attachSettingsEvents(container) {
     card.addEventListener('click', (e) => {
       const themeId = card.dataset.themeId;
       if (themeId) {
-        store.setTheme(themeId);
-        renderSettingsView(container);
+        store.setTheme(themeId, card, () => {
+          renderSettingsView(container);
+        });
       }
     });
   });

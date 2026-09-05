@@ -25,27 +25,31 @@
   <div id="startup-loader" class="startup-loader" aria-label="Loading Aven">
     <!-- App-Shell Skeleton Backdrop -->
     <div class="startup-skeleton" id="startup-skeleton" aria-hidden="true">
-      <!-- Skeleton Sidebar -->
-      <div class="sk-sidebar">
-        <div>
-          <div class="sk-brand">
-            <div class="sk-block sk-brand-icon"></div>
-            <div class="sk-block sk-brand-text"></div>
+      <!-- Skeleton Floating Top Pill Nav Bar -->
+      <div class="sk-top-nav-bar">
+        <div class="sk-top-nav-left">
+          <div class="sk-top-nav-brand">
+            <div class="sk-block" style="width: 26px; height: 26px; border-radius: 6px;"></div>
+            <div class="sk-block" style="width: 52px; height: 18px; border-radius: 4px;"></div>
           </div>
-          <div class="sk-profile-card">
-            <div class="sk-block sk-avatar"></div>
-            <div class="sk-profile-info">
-              <div class="sk-block sk-profile-name"></div>
-              <div class="sk-block sk-profile-role"></div>
+          <div class="sk-top-nav-pills" id="sk-nav-list">
+            <div class="sk-block sk-nav-pill active" data-route="subjects" style="width: 74px; height: 28px; border-radius: 999px;"></div>
+            <div class="sk-block sk-nav-pill" data-route="tracker" style="width: 68px; height: 28px; border-radius: 999px;"></div>
+            <div class="sk-block sk-nav-pill" data-route="grades" style="width: 66px; height: 28px; border-radius: 999px;"></div>
+            <div class="sk-block sk-nav-pill" data-route="schedule" style="width: 76px; height: 28px; border-radius: 999px;"></div>
+          </div>
+        </div>
+        <div class="sk-top-nav-right">
+          <div class="sk-block" style="width: 32px; height: 32px; border-radius: 50%;"></div>
+          <div class="sk-block" style="width: 32px; height: 32px; border-radius: 50%;"></div>
+          <div class="sk-profile-cluster">
+            <div class="sk-block" style="width: 30px; height: 30px; border-radius: 50%;"></div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div class="sk-block" style="width: 68px; height: 11px; border-radius: 3px;"></div>
+              <div class="sk-block" style="width: 95px; height: 9px; border-radius: 3px; opacity: 0.6;"></div>
             </div>
           </div>
-          <div class="sk-nav" id="sk-nav-list">
-            <div class="sk-block sk-nav-item active" data-route="subjects"></div>
-            <div class="sk-block sk-nav-item" data-route="tracker"></div>
-            <div class="sk-block sk-nav-item" data-route="grades"></div>
-            <div class="sk-block sk-nav-item" data-route="plans"></div>
-            <div class="sk-block sk-nav-item" data-route="settings"></div>
-          </div>
+          <div class="sk-block" style="width: 30px; height: 30px; border-radius: 50%;"></div>
         </div>
       </div>
 

@@ -2065,24 +2065,138 @@ class Store {
     return this.state.theme || 'dark';
   }
 
-  setTheme(theme) {
-    this.state.theme = theme;
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('aven_theme', theme);
+  setTheme(theme, origin = null, onUpdate = null) {
+    if (this.state.theme === theme) {
+      if (typeof onUpdate === 'function') {
+        try { onUpdate(); } catch (err) { console.error(err); }
       }
-    } catch (e) {}
-    document.documentElement.setAttribute('data-theme', theme);
-    events.emit('theme:changed', theme);
+      return;
+    }
 
-    getCurrentUser().then(user => {
-      if (user) {
-        supabase.from('settings').upsert({
-          user_id: user.id,
-          theme: theme
-        }, { onConflict: 'user_id' }).then();
+    if (this._isThemeTransitioning) return;
+
+    const applyTheme = () => {
+      this.state.theme = theme;
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('aven_theme', theme);
+        }
+      } catch (e) {}
+      document.documentElement.setAttribute('data-theme', theme);
+      events.emit('theme:changed', theme);
+
+      getCurrentUser().then(user => {
+        if (user) {
+          supabase.from('settings').upsert({
+            user_id: user.id,
+            theme: theme
+          }, { onConflict: 'user_id' }).then();
+        }
+      });
+    };
+
+    const prefersReducedMotion = typeof window !== 'undefined' && 
+      window.matchMedia && 
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Respect prefers-reduced-motion: skip the animation entirely (instant swap)
+    if (prefersReducedMotion) {
+      applyTheme();
+      if (typeof onUpdate === 'function') {
+        try { onUpdate(); } catch (err) { console.error(err); }
       }
-    });
+      return;
+    }
+
+    // Fallback for browsers without View Transitions API: whole-page cross-fade at --dur-base (350ms)
+    if (typeof document === 'undefined' || typeof document.startViewTransition !== 'function') {
+      this._isThemeTransitioning = true;
+      document.documentElement.classList.add('theme-crossfade-active');
+      applyTheme();
+      if (typeof onUpdate === 'function') {
+        try { onUpdate(); } catch (err) { console.error(err); }
+      }
+      setTimeout(() => {
+        document.documentElement.classList.remove('theme-crossfade-active');
+        this._isThemeTransitioning = false;
+      }, 350);
+      return;
+    }
+
+    // Modern View Transitions API: Circular reveal transition expanding from button
+    this._isThemeTransitioning = true;
+
+    // Calculate origin center coordinates (x, y)
+    let x = window.innerWidth / 2;
+    let y = window.innerHeight / 2;
+
+    if (origin instanceof HTMLElement) {
+      const rect = origin.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        x = rect.left + rect.width / 2;
+        y = rect.top + rect.height / 2;
+      }
+    } else if (origin && typeof origin.clientX === 'number' && typeof origin.clientY === 'number') {
+      x = origin.clientX;
+      y = origin.clientY;
+    } else {
+      const defaultBtn = document.getElementById('top-theme-btn') || document.getElementById('landing-theme-btn');
+      if (defaultBtn) {
+        const rect = defaultBtn.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          x = rect.left + rect.width / 2;
+          y = rect.top + rect.height / 2;
+        }
+      }
+    }
+
+    const endRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+
+    document.documentElement.style.setProperty('--theme-wipe-x', `${x}px`);
+    document.documentElement.style.setProperty('--theme-wipe-y', `${y}px`);
+    document.documentElement.style.setProperty('--theme-wipe-radius', `${endRadius}px`);
+
+    try {
+      const transition = document.startViewTransition(() => {
+        applyTheme();
+        if (typeof onUpdate === 'function') {
+          try { onUpdate(); } catch (err) { console.error(err); }
+        }
+      });
+
+      transition.ready.then(() => {
+        try {
+          document.documentElement.animate(
+            {
+              clipPath: [
+                `circle(0px at ${x}px ${y}px)`,
+                `circle(${endRadius}px at ${x}px ${y}px)`
+              ]
+            },
+            {
+              duration: 500, // --dur-slow: 500ms
+              easing: 'cubic-bezier(0.16, 1, 0.3, 1)', // --ease-out
+              pseudoElement: '::view-transition-new(root)'
+            }
+          );
+        } catch (animErr) {
+          console.warn('Theme view transition animation error:', animErr);
+        }
+      }).catch(() => {});
+
+      transition.finished.finally(() => {
+        this._isThemeTransitioning = false;
+      });
+    } catch (e) {
+      this._isThemeTransitioning = false;
+      applyTheme();
+      if (typeof onUpdate === 'function') {
+        try { onUpdate(); } catch (err) { console.error(err); }
+      }
+    }
   }
 }
 

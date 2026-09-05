@@ -265,10 +265,10 @@ class AvenApp {
             window.location.hash = isSignUp ? 'signup' : 'signin';
             this.showAuthView(isSignUp);
           },
-          () => {
+          (e) => {
             const current = store.getTheme();
             const next = current === 'dark' ? 'light' : 'dark';
-            store.setTheme(next);
+            store.setTheme(next, e?.currentTarget || document.getElementById('landing-theme-btn'));
           }
         );
       }
@@ -370,16 +370,31 @@ class AvenApp {
     // Update Top Nav pill active state & sliding background indicator
     this.updateNavPillActive(pageKey, true);
 
-    // Render current view with fluid entrance animation
+    // Render current view with fluid entrance and cross-fade animation
     if (this.mainContainer && pageConfig.load) {
-      const renderer = await pageConfig.load();
-      renderer(this.mainContainer);
-      this.mainContainer.classList.remove('view-enter');
-      void this.mainContainer.offsetWidth; // Trigger reflow for clean re-animation
-      this.mainContainer.classList.add('view-enter');
-      this.mainContainer.addEventListener('animationend', () => {
+      const isInitialRender = !this.mainContainer.hasChildNodes() || this.mainContainer.innerHTML.trim() === '';
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const doRender = async () => {
+        const renderer = await pageConfig.load();
+        this.mainContainer.classList.remove('view-exit');
+        renderer(this.mainContainer);
         this.mainContainer.classList.remove('view-enter');
-      }, { once: true });
+        void this.mainContainer.offsetWidth; // Trigger reflow for clean re-animation
+        this.mainContainer.classList.add('view-enter');
+        this.mainContainer.addEventListener('animationend', () => {
+          this.mainContainer.classList.remove('view-enter');
+        }, { once: true });
+      };
+
+      if (isInitialRender || prefersReducedMotion) {
+        await doRender();
+      } else {
+        this.mainContainer.classList.add('view-exit');
+        setTimeout(async () => {
+          await doRender();
+        }, 120);
+      }
     }
 
     // Handle scroll to target section if in settings
@@ -402,14 +417,14 @@ class AvenApp {
     });
 
     // 2. Top theme toggle button
-    document.getElementById('top-theme-btn')?.addEventListener('click', () => {
+    document.getElementById('top-theme-btn')?.addEventListener('click', (e) => {
       const current = store.getTheme();
       let next = 'light';
       if (current === 'pure-black') next = 'pure-white';
       else if (current === 'pure-white') next = 'pure-black';
       else if (current === 'light') next = 'dark';
       else next = 'light';
-      store.setTheme(next);
+      store.setTheme(next, e.currentTarget);
       this.showToast(`Theme switched to ${next} mode`, 'info');
     });
 

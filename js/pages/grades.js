@@ -298,7 +298,7 @@ export function renderGradesView(container) {
         </div>
 
         <!-- Mode Switcher Tabs -->
-        <div class="modal-tab-strip">
+        <div class="modal-tab-strip" data-active="${activeCatModalTab}">
           <button type="button" class="modal-tab-btn ${activeCatModalTab === 'manual' ? 'active' : ''}" id="cat-tab-manual-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 5v14M5 12h14"></path>
@@ -1018,6 +1018,8 @@ function attachGradesEvents(container) {
     activeCatModalTab = tab;
     tabManualBtn?.classList.toggle('active', tab === 'manual');
     tabTemplateBtn?.classList.toggle('active', tab === 'template');
+    const strip = container.querySelector('.modal-tab-strip');
+    if (strip) strip.dataset.active = tab;
     if (catForm) catForm.style.display = tab === 'manual' ? 'block' : 'none';
     if (templateForm) templateForm.style.display = tab === 'template' ? 'block' : 'none';
     if (tab === 'template') {

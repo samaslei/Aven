@@ -615,8 +615,8 @@ export class LandingPage {
     }
 
     if (themeToggleBtn && this.onToggleTheme) {
-      themeToggleBtn.addEventListener('click', () => {
-        this.onToggleTheme();
+      themeToggleBtn.addEventListener('click', (e) => {
+        this.onToggleTheme(e);
       });
     }
 

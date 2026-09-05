@@ -57,7 +57,7 @@ export class AuthController {
             </div>
           ` : ''}
 
-          <div class="auth-tabs">
+          <div class="auth-tabs" data-active="${this.isSignUp ? 'signup' : 'signin'}">
             <button type="button" class="auth-tab-btn ${!this.isSignUp ? 'active' : ''}" id="tab-signin-btn">Sign In</button>
             <button type="button" class="auth-tab-btn ${this.isSignUp ? 'active' : ''}" id="tab-signup-btn">Create Account</button>
           </div>
@@ -178,6 +178,8 @@ export class AuthController {
     if (tabSignIn && tabSignUp) {
       tabSignIn.classList.toggle('active', !isSignUp);
       tabSignUp.classList.toggle('active', isSignUp);
+      const authTabs = document.querySelector('.auth-tabs');
+      if (authTabs) authTabs.dataset.active = isSignUp ? 'signup' : 'signin';
     }
 
     if (groupName) {
