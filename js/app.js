@@ -45,7 +45,7 @@ class AvenApp {
         load: () => import('./pages/subjects.js').then(m => m.renderSubjectsView)
       },
       tracker: {
-        title: 'Study Tracker',
+        title: 'Tracker',
         subtitle: 'Log study sessions, track your activity heatmap, and keep your streak going.',
         load: () => import('./pages/tracker.js').then(m => m.renderTrackerView)
       },
@@ -54,8 +54,13 @@ class AvenApp {
         subtitle: 'Calculate weighted grades by category, and see exactly what you need on the final.',
         load: () => import('./pages/grades.js').then(m => m.renderGradesView)
       },
+      schedule: {
+        title: 'Schedule',
+        subtitle: 'Upload and view your syllabi, schedules, and study guides in one place.',
+        load: () => import('./pages/plans.js').then(m => m.renderPlansView)
+      },
       plans: {
-        title: 'Study Plans',
+        title: 'Schedule',
         subtitle: 'Upload and view your syllabi, schedules, and study guides in one place.',
         load: () => import('./pages/plans.js').then(m => m.renderPlansView)
       },
@@ -317,7 +322,42 @@ class AvenApp {
     if (emailEl) emailEl.textContent = email;
   }
 
+  updateNavPillActive(pageKey, animate = true) {
+    const navLinksGroup = document.getElementById('top-nav-links-group');
+    const indicator = document.getElementById('nav-pill-indicator');
+    const links = document.querySelectorAll('.top-nav-bar .nav-pill');
+
+    let activeLink = null;
+    links.forEach(link => {
+      const isMatch = link.dataset.page === pageKey || 
+                     (pageKey === 'plans' && link.dataset.page === 'schedule') ||
+                     (pageKey === 'schedule' && link.dataset.page === 'schedule');
+      link.classList.toggle('active', isMatch);
+      if (isMatch) activeLink = link;
+    });
+
+    if (activeLink && navLinksGroup && indicator) {
+      const groupRect = navLinksGroup.getBoundingClientRect();
+      const linkRect = activeLink.getBoundingClientRect();
+      const leftOffset = linkRect.left - groupRect.left;
+      const width = linkRect.width;
+
+      if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        indicator.style.transition = 'none';
+      } else {
+        indicator.style.transition = '';
+      }
+
+      indicator.style.transform = `translateX(${leftOffset}px)`;
+      indicator.style.width = `${width}px`;
+      indicator.style.opacity = '1';
+    } else if (indicator) {
+      indicator.style.opacity = '0';
+    }
+  }
+
   async navigateTo(pageKey, targetSection = null) {
+    if (pageKey === 'plans') pageKey = 'schedule';
     if (!this.pages[pageKey]) pageKey = 'subjects';
     this.currentPage = pageKey;
     window.location.hash = pageKey;
@@ -327,18 +367,8 @@ class AvenApp {
     if (this.pageTitleEl) this.pageTitleEl.textContent = pageConfig.title;
     if (this.pageSubtitleEl) this.pageSubtitleEl.textContent = pageConfig.subtitle || '';
 
-    // Update Nav Sidebar links
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.classList.toggle('active', link.dataset.page === pageKey);
-    });
-
-    const settingsNavItem = document.getElementById('nav-item-settings');
-    if (pageKey === 'settings') {
-      settingsNavItem?.classList.add('expanded');
-    } else {
-      settingsNavItem?.classList.remove('expanded');
-      document.querySelectorAll('.nav-sublink').forEach(sl => sl.classList.remove('active'));
-    }
+    // Update Top Nav pill active state & sliding background indicator
+    this.updateNavPillActive(pageKey, true);
 
     // Render current view with fluid entrance animation
     if (this.mainContainer && pageConfig.load) {
@@ -353,161 +383,26 @@ class AvenApp {
     }
 
     // Handle scroll to target section if in settings
-    if (pageKey === 'settings') {
-      const sectionToActivate = targetSection || 'settings-academic';
-      this.setActiveSettingsSublink(sectionToActivate);
-      if (targetSection) {
-        setTimeout(() => {
-          const el = document.getElementById(targetSection);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 60);
-      }
-      this.initSettingsScrollSpy();
+    if (pageKey === 'settings' && targetSection) {
+      setTimeout(() => {
+        const el = document.getElementById(targetSection);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
     }
-  }
-
-  setActiveSettingsSublink(sectionId) {
-    document.querySelectorAll('.nav-sublink').forEach(sublink => {
-      sublink.classList.toggle('active', sublink.dataset.section === sectionId);
-    });
-  }
-
-  initSettingsScrollSpy() {
-    if (this._settingsScrollCleanup) {
-      this._settingsScrollCleanup();
-    }
-
-    const sections = Array.from(document.querySelectorAll('.settings-section[id]'));
-    if (!sections.length) return;
-
-    const viewport = document.querySelector('.main-viewport');
-
-    const checkActive = () => {
-      if (this.currentPage !== 'settings') return;
-      const threshold = 180;
-      let activeId = sections[0].id;
-
-      for (const sec of sections) {
-        const rect = sec.getBoundingClientRect();
-        if (rect.top <= threshold) {
-          activeId = sec.id;
-        }
-      }
-      this.setActiveSettingsSublink(activeId);
-    };
-
-    const onScroll = () => requestAnimationFrame(checkActive);
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    viewport?.addEventListener('scroll', onScroll, { passive: true });
-
-    this._settingsScrollCleanup = () => {
-      window.removeEventListener('scroll', onScroll);
-      viewport?.removeEventListener('scroll', onScroll);
-    };
-
-    // Initial check
-    setTimeout(checkActive, 100);
   }
 
   setupNavigation() {
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const mobileBackdrop = document.getElementById('mobile-drawer-backdrop');
-    const sidebar = document.getElementById('sidebar');
-
-    const closeMobileDrawer = () => {
-      sidebar?.classList.remove('mobile-open');
-      mobileBackdrop?.classList.remove('active');
-      document.body.classList.remove('mobile-drawer-locked');
-    };
-
-    const openMobileDrawer = () => {
-      sidebar?.classList.add('mobile-open');
-      mobileBackdrop?.classList.add('active');
-      document.body.classList.add('mobile-drawer-locked');
-    };
-
-    if (mobileMenuBtn) {
-      mobileMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (sidebar?.classList.contains('mobile-open')) {
-          closeMobileDrawer();
-        } else {
-          openMobileDrawer();
-        }
-      });
-    }
-
-    if (mobileBackdrop) {
-      mobileBackdrop.addEventListener('click', closeMobileDrawer);
-    }
-
-    // Quick mobile theme toggle button
-    document.getElementById('mobile-theme-btn')?.addEventListener('click', () => {
-      const current = store.getTheme();
-      const next = current === 'dark' ? 'light' : 'dark';
-      store.setTheme(next);
-      this.showToast(`Theme switched to ${next} mode`, 'info');
-    });
-
-    document.querySelectorAll('.nav-link').forEach(link => {
+    // 1. Navigation link pills
+    document.querySelectorAll('.top-nav-bar .nav-pill').forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
         const targetPage = link.dataset.page;
-        const settingsNavItem = document.getElementById('nav-item-settings');
-
-        if (window.innerWidth < 768) {
-          closeMobileDrawer();
-        }
-
-        if (targetPage === 'settings' && this.currentPage === 'settings') {
-          settingsNavItem?.classList.toggle('expanded');
-          return;
-        }
-
         this.navigateTo(targetPage);
       });
     });
 
-    // Sub-nav links for Settings
-    document.querySelectorAll('.nav-sublink').forEach(sublink => {
-      sublink.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const sectionId = sublink.dataset.section;
-
-        if (window.innerWidth < 768) {
-          closeMobileDrawer();
-        }
-
-        if (this.currentPage !== 'settings') {
-          this.navigateTo('settings', sectionId);
-        } else {
-          this.setActiveSettingsSublink(sectionId);
-          const el = document.getElementById(sectionId);
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }
-      });
-    });
-
-    // User popover toggle
-    if (this.userProfileBtn && this.userPopover) {
-      this.userProfileBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.userPopover.classList.toggle('open');
-      });
-
-      document.addEventListener('click', (e) => {
-        if (this.userPopover && !this.userPopover.contains(e.target) && !this.userProfileBtn.contains(e.target)) {
-          this.userPopover.classList.remove('open');
-        }
-      });
-    }
-
-    // Top-bar app-wide theme toggle button
-    document.getElementById('app-theme-btn')?.addEventListener('click', () => {
+    // 2. Top theme toggle button
+    document.getElementById('top-theme-btn')?.addEventListener('click', () => {
       const current = store.getTheme();
       let next = 'light';
       if (current === 'pure-black') next = 'pure-white';
@@ -518,32 +413,36 @@ class AvenApp {
       this.showToast(`Theme switched to ${next} mode`, 'info');
     });
 
-    document.getElementById('sync-cloud-btn')?.addEventListener('click', async () => {
-      this.userPopover.classList.remove('open');
-      if (this.currentUser) {
-        this.showToast('Synchronizing with Supabase Cloud...', 'info');
-        await store.syncFromCloud(this.currentUser.id);
-        this.renderUser();
-        this.navigateTo(this.currentPage);
-        this.showToast('Cloud workspace up to date', 'success');
+    // 3. Top settings button
+    document.getElementById('top-settings-btn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.navigateTo('settings');
+    });
+
+    // 4. Profile cluster (click opens Settings account section)
+    document.getElementById('top-profile-cluster')?.addEventListener('click', () => {
+      this.navigateTo('settings', 'settings-account');
+    });
+    document.getElementById('top-profile-cluster')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.navigateTo('settings', 'settings-account');
       }
     });
 
-    // Wire the existing sidebar sign-out button
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      this.userPopover?.classList.remove('open');
-      this.showToast('Signing out...', 'info');
-      await signOut();
-      this.handleUnauthenticated();
+    // 5. Log out button
+    document.getElementById('top-logout-btn')?.addEventListener('click', async () => {
+      if (confirm('Are you sure you want to log out of Aven?')) {
+        this.showToast('Signing out...', 'info');
+        await signOut();
+        this.handleUnauthenticated();
+      }
     });
 
-    document.getElementById('sidebar-quick-logout')?.addEventListener('click', async (e) => {
-      e.preventDefault();
-      this.userPopover?.classList.remove('open');
-      this.showToast('Signing out...', 'info');
-      await signOut();
-      this.handleUnauthenticated();
-    });
+    // 6. Window resize listener to keep sliding pill indicator precisely positioned
+    window.addEventListener('resize', () => {
+      this.updateNavPillActive(this.currentPage, false);
+    }, { passive: true });
   }
 
   setupGlobalEvents() {
