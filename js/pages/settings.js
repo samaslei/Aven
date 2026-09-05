@@ -6,6 +6,7 @@
 
 import { store, events, YEAR_LEVELS, DEFAULT_COLOR_SWATCHES } from '../core/store.js';
 import { exportAllSubjectsGradesToExcel } from '../utils/export-excel.js';
+import { openCropModal } from '../ui/crop-modal.js';
 
 
 export function renderSettingsView(container) {
@@ -13,6 +14,13 @@ export function renderSettingsView(container) {
   const user = store.getUserProfile();
   const scale = store.getGradingScale();
   const storageUsage = store.getStorageUsage();
+
+  const renderAvatarInner = (u, fallback = 'AR') => {
+    if (u && u.avatar_url) {
+      return `<img src="${u.avatar_url}" alt="${u.name || 'User'}" class="user-avatar-img">`;
+    }
+    return (u && u.avatar) || fallback;
+  };
 
   container.innerHTML = `
     <div class="settings-container">
@@ -168,13 +176,35 @@ export function renderSettingsView(container) {
         <div class="settings-card" style="padding: 0; overflow: hidden;">
           <!-- Profile Gradient Hero Banner Block (Echoing Sidebar Gradient Profile Block) -->
           <div class="settings-profile-hero">
-            <div class="settings-profile-avatar" id="settings-avatar-preview" style="background-color: ${user.avatar_color || '#6366f1'};">
-              ${user.avatar || 'AR'}
+            <div class="settings-profile-avatar" id="settings-avatar-preview" style="${user.avatar_url ? '' : `background-color: ${user.avatar_color || '#6366f1'};`}">
+              ${renderAvatarInner(user, 'AR')}
             </div>
             <div class="settings-profile-info">
               <strong class="settings-profile-name" id="settings-hero-name">${user.name || 'Student'}</strong>
               <span class="settings-profile-email" id="settings-hero-email">${user.email || 'student@university.edu'}</span>
               <span class="settings-profile-badge" id="settings-hero-badge">${user.year_level || '1st Year'} · ${user.institution || 'Aven Academic OS'}</span>
+            </div>
+          </div>
+
+          <!-- Profile Picture Row -->
+          <div class="settings-row settings-avatar-row">
+            <div class="setting-info">
+              <strong class="setting-title">Profile Picture</strong>
+              <p class="setting-desc">Personalize your student identity across the app (PNG, JPG, WebP up to 5MB)</p>
+            </div>
+            <div class="setting-control settings-avatar-actions">
+              <input type="file" id="setting-avatar-input" accept="image/png, image/jpeg, image/webp, image/gif" style="display: none;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-upload-avatar">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <span id="btn-upload-avatar-text">${user.avatar_url ? 'Change Photo' : 'Upload Photo'}</span>
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm btn-remove-avatar" id="btn-remove-avatar" style="${user.avatar_url ? '' : 'display: none;'} color: var(--danger);">
+                Remove Photo
+              </button>
             </div>
           </div>
 
@@ -470,7 +500,7 @@ function attachSettingsEvents(container) {
     });
   });
 
-  // 1. Account Settings Auto-save
+  // 1. Account Settings Auto-save & Avatar Management
   const nameInput = container.querySelector('#setting-user-name');
   const emailInput = container.querySelector('#setting-user-email');
   const yearSelect = container.querySelector('#setting-user-year');
@@ -479,8 +509,32 @@ function attachSettingsEvents(container) {
   const accountBadge = container.querySelector('#account-save-indicator');
   const avatarPreview = container.querySelector('#settings-avatar-preview');
 
+  const avatarInput = container.querySelector('#setting-avatar-input');
+  const btnUploadAvatar = container.querySelector('#btn-upload-avatar');
+  const btnRemoveAvatar = container.querySelector('#btn-remove-avatar');
+  const btnUploadText = container.querySelector('#btn-upload-avatar-text');
+
   const initialProfile = store.getUserProfile();
   let currentAvatarColor = initialProfile.avatar_color || '#6366f1';
+
+  const updateAvatarDisplays = (profile) => {
+    const hasPhoto = Boolean(profile.avatar_url);
+    const content = hasPhoto 
+      ? `<img src="${profile.avatar_url}" alt="${profile.name || 'User'}" class="user-avatar-img">`
+      : (profile.avatar || 'AR');
+    const bgColor = hasPhoto ? 'transparent' : (profile.avatar_color || '#6366f1');
+
+    if (avatarPreview) {
+      avatarPreview.innerHTML = content;
+      avatarPreview.style.backgroundColor = bgColor;
+    }
+    if (btnUploadText) {
+      btnUploadText.textContent = hasPhoto ? 'Change Photo' : 'Upload Photo';
+    }
+    if (btnRemoveAvatar) {
+      btnRemoveAvatar.style.display = hasPhoto ? 'inline-flex' : 'none';
+    }
+  };
 
   const saveAccount = () => {
     const name = nameInput ? nameInput.value : initialProfile.name;
@@ -498,10 +552,8 @@ function attachSettingsEvents(container) {
       avatar_color: currentAvatarColor
     });
 
-    if (avatarPreview) {
-      avatarPreview.textContent = updated.avatar;
-      avatarPreview.style.backgroundColor = updated.avatar_color;
-    }
+    updateAvatarDisplays(updated);
+
     const heroName = container.querySelector('#settings-hero-name');
     const heroEmail = container.querySelector('#settings-hero-email');
     const heroBadge = container.querySelector('#settings-hero-badge');
@@ -511,6 +563,56 @@ function attachSettingsEvents(container) {
     
     showInlineSaved(accountBadge);
   };
+
+  // Avatar Upload & Circular Crop
+  btnUploadAvatar?.addEventListener('click', () => {
+    avatarInput?.click();
+  });
+
+  avatarInput?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (PNG, JPG, WebP, etc.).');
+      avatarInput.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size exceeds 5MB limit. Please choose a smaller photo.');
+      avatarInput.value = '';
+      return;
+    }
+
+    try {
+      const { blob, dataUrl } = await openCropModal(file);
+      
+      if (btnUploadText) btnUploadText.textContent = 'Saving...';
+      if (btnUploadAvatar) btnUploadAvatar.disabled = true;
+
+      const uploadedUrl = await store.uploadAvatarImage(blob);
+      const updated = store.saveUserProfile({ avatar_url: uploadedUrl || dataUrl });
+
+      updateAvatarDisplays(updated);
+      showInlineSaved(accountBadge);
+    } catch (err) {
+      console.log('Avatar crop cancelled or failed:', err);
+    } finally {
+      if (btnUploadAvatar) btnUploadAvatar.disabled = false;
+      const cur = store.getUserProfile();
+      if (btnUploadText) {
+        btnUploadText.textContent = cur.avatar_url ? 'Change Photo' : 'Upload Photo';
+      }
+      avatarInput.value = '';
+    }
+  });
+
+  btnRemoveAvatar?.addEventListener('click', () => {
+    const updated = store.saveUserProfile({ avatar_url: null });
+    updateAvatarDisplays(updated);
+    showInlineSaved(accountBadge);
+  });
 
   [nameInput, emailInput, institutionInput, programInput].forEach(inp => {
     inp?.addEventListener('blur', saveAccount);

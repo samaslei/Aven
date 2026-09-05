@@ -304,8 +304,13 @@ class AvenApp {
     const roleText = `${user.year_level || '1st Year'}${user.program ? ` · ${user.program}` : ' · Student'}`;
 
     if (avatarEl) {
-      avatarEl.textContent = user.avatar || 'ST';
-      avatarEl.style.backgroundColor = user.avatar_color || '#6366f1';
+      if (user.avatar_url) {
+        avatarEl.innerHTML = `<img src="${user.avatar_url}" alt="${name}" class="user-avatar-img">`;
+        avatarEl.style.backgroundColor = 'transparent';
+      } else {
+        avatarEl.textContent = user.avatar || 'ST';
+        avatarEl.style.backgroundColor = user.avatar_color || '#6366f1';
+      }
     }
     if (nameEl) nameEl.textContent = name;
     if (roleEl) roleEl.textContent = roleText;

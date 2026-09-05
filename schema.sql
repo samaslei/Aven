@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   school TEXT,
   program TEXT,
   avatar_color TEXT DEFAULT '#6366f1',
+  avatar_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );

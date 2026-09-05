@@ -5,7 +5,7 @@
  * (Zero localStorage usage)
  */
 
-import { supabase, getCurrentUser, deleteAccount as deleteSupabaseAccount } from './supabase.js';
+import { supabase, getCurrentUser, deleteAccount as deleteSupabaseAccount, isSupabaseConfigured } from './supabase.js';
 import { events } from './events.js';
 import {
   YEAR_LEVELS,
@@ -121,7 +121,8 @@ class Store {
       institution: 'University of the Philippines',
       program: 'BS Computer Science',
       avatar: 'AR',
-      avatar_color: '#6366f1'
+      avatar_color: '#6366f1',
+      avatar_url: null
     };
   }
 
@@ -174,7 +175,8 @@ class Store {
           institution: profile.school || '',
           program: profile.program || '',
           avatar: initials,
-          avatar_color: profile.avatar_color || '#6366f1'
+          avatar_color: profile.avatar_color || '#6366f1',
+          avatar_url: profile.avatar_url || null
         };
         events.emit('user:updated', this.state.user);
       }
@@ -536,6 +538,7 @@ class Store {
             school: u.institution || '',
             program: u.program || '',
             avatar_color: u.avatar_color || '#6366f1',
+            avatar_url: u.avatar_url || null,
             updated_at: new Date().toISOString()
           }, { onConflict: 'user_id' });
       }
@@ -1866,6 +1869,39 @@ class Store {
     return { ...this.getDefaultUser(), ...(this.state.user || {}) };
   }
 
+  async uploadAvatarImage(blob) {
+    if (!blob) return null;
+    try {
+      const user = await getCurrentUser();
+      if (user && isSupabaseConfigured) {
+        const fileExt = 'png';
+        const fileName = `${user.id}/avatar-${Date.now()}.${fileExt}`;
+        const { data, error } = await supabase.storage.from('avatars').upload(fileName, blob, {
+          contentType: 'image/png',
+          upsert: true
+        });
+        if (!error && data) {
+          const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+          if (publicData?.publicUrl) {
+            return publicData.publicUrl;
+          }
+        } else if (error) {
+          console.warn('Supabase storage upload error, falling back to data URL:', error);
+        }
+      }
+    } catch (err) {
+      console.warn('Avatar storage upload failed, falling back to data URL:', err);
+    }
+
+    // Fallback: convert blob to optimized Data URL
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
   saveUserProfile(profileData) {
     const current = this.getUserProfile();
     const name = profileData.name !== undefined ? profileData.name.trim() : current.name;
@@ -1875,6 +1911,7 @@ class Store {
     const institution = profileData.institution !== undefined ? profileData.institution.trim() : current.institution;
     const program = profileData.program !== undefined ? profileData.program.trim() : current.program;
     const avatar_color = profileData.avatar_color !== undefined ? profileData.avatar_color : current.avatar_color;
+    const avatar_url = profileData.avatar_url !== undefined ? profileData.avatar_url : (current.avatar_url || null);
     
     const initials = name.split(' ')
       .filter(Boolean)
@@ -1893,6 +1930,7 @@ class Store {
       institution,
       program,
       avatar_color,
+      avatar_url,
       avatar: initials
     };
 
@@ -1912,6 +1950,7 @@ class Store {
           school: updatedProfile.institution,
           program: updatedProfile.program,
           avatar_color: updatedProfile.avatar_color,
+          avatar_url: updatedProfile.avatar_url || null,
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' }).then(({ error }) => {
           if (error) console.warn('Supabase profile sync error:', error);
