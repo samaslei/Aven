@@ -65,6 +65,8 @@ export const GRADE_CATEGORY_TEMPLATES = [
 
 let selectedSubjectId = null;
 let activeTab = 'Midterm'; // 'Midterm' | 'Final' | 'Overall'
+let isTabSwitching = false;
+let categoryLayout = localStorage.getItem('aven_grades_category_layout') || '1-col';
 let activeCatModalTab = 'manual'; // 'manual' | 'template'
 let selectedTemplateId = GRADE_CATEGORY_TEMPLATES[0].id;
 let editableTemplateCategories = JSON.parse(JSON.stringify(GRADE_CATEGORY_TEMPLATES[0].categories));
@@ -969,13 +971,7 @@ function attachGradesEvents(container) {
     });
   });
 
-  // Switch Browser-Style Tab
-  container.querySelectorAll('.browser-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      activeTab = tab.dataset.tab;
-      renderGradesView(container);
-    });
-  });
+
 
   // Add Category Modal
   const catModal = container.querySelector('#add-category-modal');
@@ -1276,517 +1272,573 @@ function attachGradesEvents(container) {
     renderGradesView(container);
   };
 
-  container.querySelector('#btn-copy-to-finals')?.addEventListener('click', triggerCopyFinals);
-  container.querySelector('.btn-quick-copy-midterm')?.addEventListener('click', triggerCopyFinals);
   container.querySelector('#btn-confirm-copy-finals')?.addEventListener('click', executeCopyToFinals);
   container.querySelectorAll('.close-copy-modal-btn').forEach(b => {
     b.addEventListener('click', () => copyModal?.classList.remove('open'));
   });
 
-  // Expand / Collapse Category Breakdown Section Header Toggle
-  container.querySelectorAll('.category-breakdown-header').forEach(header => {
-    header.addEventListener('click', (e) => {
-      // Don't toggle if clicking buttons, inputs, drag handles, or editable weights
-      if (e.target.closest('.btn-add-entry, .btn-del-cat, .cat-weight-editable, .cat-drag-handle, input, select')) {
-        return;
-      }
-      const section = header.closest('.category-breakdown-section');
-      if (!section) return;
-      const catId = section.dataset.catId;
-      const isExpanded = section.classList.contains('is-expanded');
-      const nextExpanded = !isExpanded;
-      categoryExpandedState[catId] = nextExpanded;
+  // Attach all interactive event handlers inside the content panel
+  const attachGradesPanelEvents = (panelRoot) => {
+    if (!panelRoot) return;
 
-      const body = section.querySelector('.category-breakdown-body');
-      const chevronBtn = section.querySelector('.cat-chevron-btn');
+    // Add Category triggers in panel
+    panelRoot.querySelector('#btn-open-add-cat')?.addEventListener('click', () => openCategoryModal('manual'));
+    panelRoot.querySelector('.btn-open-manual-cat')?.addEventListener('click', () => openCategoryModal('manual'));
+    panelRoot.querySelector('.btn-quick-use-template')?.addEventListener('click', () => openCategoryModal('template'));
 
-      if (nextExpanded) {
-        section.classList.remove('is-collapsed');
-        section.classList.add('is-expanded');
-        if (body) body.style.display = '';
-        if (chevronBtn) chevronBtn.classList.add('expanded');
-      } else {
-        section.classList.remove('is-expanded');
-        section.classList.add('is-collapsed');
-        if (body) body.style.display = 'none';
-        if (chevronBtn) chevronBtn.classList.remove('expanded');
-      }
-    });
-  });
+    // Copy Categories to Finals in panel
+    panelRoot.querySelector('#btn-copy-to-finals')?.addEventListener('click', triggerCopyFinals);
+    panelRoot.querySelector('.btn-quick-copy-midterm')?.addEventListener('click', triggerCopyFinals);
 
-  // Explicit Chevron button click
-  container.querySelectorAll('.cat-chevron-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const section = btn.closest('.category-breakdown-section');
-      if (!section) return;
-      const catId = section.dataset.catId;
-      const isExpanded = section.classList.contains('is-expanded');
-      const nextExpanded = !isExpanded;
-      categoryExpandedState[catId] = nextExpanded;
-
-      const body = section.querySelector('.category-breakdown-body');
-
-      if (nextExpanded) {
-        section.classList.remove('is-collapsed');
-        section.classList.add('is-expanded');
-        if (body) body.style.display = '';
-        btn.classList.add('expanded');
-      } else {
-        section.classList.remove('is-expanded');
-        section.classList.add('is-collapsed');
-        if (body) body.style.display = 'none';
-        btn.classList.remove('expanded');
-      }
-    });
-  });
-
-  // Delete Category
-  container.querySelectorAll('.btn-del-cat').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      store.deleteGradeCategory(btn.dataset.catId);
-      window.avenApp?.showToast('Category deleted', 'info');
-      renderGradesView(container);
-    });
-  });
-
-  // Add Entry Modal
-  const entryModal = container.querySelector('#add-entry-modal');
-  const entryForm = container.querySelector('#add-entry-form');
-
-  container.querySelectorAll('.btn-add-entry').forEach(btn => {
-    btn.addEventListener('click', () => {
-      entryForm?.reset();
-      container.querySelector('#entry-target-category-id').value = btn.dataset.catId;
-      entryModal?.classList.add('open');
-    });
-  });
-
-  container.querySelectorAll('.close-entry-modal-btn').forEach(b => {
-    b.addEventListener('click', () => entryModal?.classList.remove('open'));
-  });
-
-  if (entryForm) {
-    entryForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const catId = container.querySelector('#entry-target-category-id').value;
-      const name = container.querySelector('#new-entry-name').value;
-      const score = container.querySelector('#new-entry-score').value;
-      const out_of = container.querySelector('#new-entry-outof').value;
-
-      store.saveGradeEntry(catId, { name, score, out_of });
-      entryModal?.classList.remove('open');
-      window.avenApp?.showToast('Assessment entry saved', 'success');
-      renderGradesView(container);
-    });
-  }
-
-  // Delete Entry
-  container.querySelectorAll('.btn-del-entry').forEach(btn => {
-    btn.addEventListener('click', () => {
-      store.deleteGradeEntry(btn.dataset.catId, btn.dataset.entId);
-      window.avenApp?.showToast('Entry deleted', 'info');
-      renderGradesView(container);
-    });
-  });
-
-  // Inline Click-to-Edit for Assessment Item, Score, and Out Of cells
-  container.querySelectorAll('.editable-cell').forEach(cell => {
-    cell.addEventListener('click', (e) => {
-      if (cell.classList.contains('editing')) return;
-
-      const field = cell.dataset.field;
-      const catId = cell.dataset.catId;
-      const entId = cell.dataset.entId;
-      const originalValue = cell.dataset.value;
-
-      cell.classList.add('editing');
-      const textSpan = cell.querySelector('.cell-value-text');
-      const hintIcon = cell.querySelector('.edit-hint-icon');
-      if (hintIcon) hintIcon.style.display = 'none';
-
-      const isNumeric = field === 'score' || field === 'out_of';
-      const input = document.createElement('input');
-      input.type = isNumeric ? 'number' : 'text';
-      input.className = `inline-edit-input ${isNumeric ? 'mono-num' : ''}`;
-      input.value = originalValue;
-      if (isNumeric) {
-        input.min = field === 'out_of' ? '1' : '0';
-        input.step = 'any';
-      }
-
-      // Live recalculation on row while user types
-      const row = cell.closest('.grade-entry-card-row') || cell.closest('.grade-entry-row');
-      const pctTag = row ? row.querySelector('.entry-pct-text') : null;
-      const standingBadge = row ? row.querySelector('.entry-standing-badge') : null;
-
-      const updateRowLive = () => {
-        if (!row || !pctTag) return;
-        const currentScore = field === 'score' ? Number(input.value) : Number(row.querySelector('.editable-score')?.dataset.value || 0);
-        const currentOutOf = field === 'out_of' ? Number(input.value) : Number(row.querySelector('.editable-outof')?.dataset.value || 100);
-        if (currentOutOf > 0 && !isNaN(currentScore) && !isNaN(currentOutOf)) {
-          const livePct = ((currentScore / currentOutOf) * 100).toFixed(1);
-          pctTag.textContent = `${livePct}%`;
-          if (standingBadge) {
-            standingBadge.className = `subject-standing-pill ${getStandingClass(livePct)} entry-standing-badge`;
-          }
+    // Expand / Collapse Category Breakdown Section Header Toggle
+    panelRoot.querySelectorAll('.category-breakdown-header').forEach(header => {
+      header.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-add-entry, .btn-del-cat, .cat-weight-editable, .cat-drag-handle, input, select')) {
+          return;
         }
-      };
+        const section = header.closest('.category-breakdown-section');
+        if (!section) return;
+        const catId = section.dataset.catId;
+        const isExpanded = section.classList.contains('is-expanded');
+        const nextExpanded = !isExpanded;
+        categoryExpandedState[catId] = nextExpanded;
 
-      if (isNumeric) {
-        input.addEventListener('input', updateRowLive);
-      }
+        const body = section.querySelector('.category-breakdown-body');
+        const chevronBtn = section.querySelector('.cat-chevron-btn');
 
-      let isCancelled = false;
+        if (nextExpanded) {
+          section.classList.remove('is-collapsed');
+          section.classList.add('is-expanded');
+          if (body) body.style.display = '';
+          if (chevronBtn) chevronBtn.classList.add('expanded');
+        } else {
+          section.classList.remove('is-expanded');
+          section.classList.add('is-collapsed');
+          if (body) body.style.display = 'none';
+          if (chevronBtn) chevronBtn.classList.remove('expanded');
+        }
+      });
+    });
 
-      const revert = () => {
-        cell.classList.remove('editing');
-        if (hintIcon) hintIcon.style.display = '';
+    // Explicit Chevron button click
+    panelRoot.querySelectorAll('.cat-chevron-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const section = btn.closest('.category-breakdown-section');
+        if (!section) return;
+        const catId = section.dataset.catId;
+        const isExpanded = section.classList.contains('is-expanded');
+        const nextExpanded = !isExpanded;
+        categoryExpandedState[catId] = nextExpanded;
+
+        const body = section.querySelector('.category-breakdown-body');
+        if (nextExpanded) {
+          section.classList.remove('is-collapsed');
+          section.classList.add('is-expanded');
+          if (body) body.style.display = '';
+          btn.classList.add('expanded');
+        } else {
+          section.classList.remove('is-expanded');
+          section.classList.add('is-collapsed');
+          if (body) body.style.display = 'none';
+          btn.classList.remove('expanded');
+        }
+      });
+    });
+
+    // Delete Category
+    panelRoot.querySelectorAll('.btn-del-cat').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        store.deleteGradeCategory(btn.dataset.catId);
+        window.avenApp?.showToast('Category deleted', 'info');
         renderGradesView(container);
-      };
-
-      const commit = () => {
-        if (isCancelled) return;
-
-        const rawVal = input.value;
-        if (field === 'name') {
-          const trimmed = rawVal.trim();
-          if (!trimmed) {
-            window.avenApp?.showToast('Assessment name cannot be empty', 'warning');
-            revert();
-            return;
-          }
-          if (trimmed !== originalValue) {
-            store.updateGradeEntry(catId, entId, { name: trimmed });
-            window.avenApp?.showToast('Updated assessment name', 'success');
-          }
-        } else if (field === 'score') {
-          const num = Number(rawVal);
-          if (isNaN(num) || num < 0) {
-            window.avenApp?.showToast('Score must be a positive number', 'warning');
-            revert();
-            return;
-          }
-          if (num !== Number(originalValue)) {
-            store.updateGradeEntry(catId, entId, { score: num });
-          }
-        } else if (field === 'out_of') {
-          const num = Number(rawVal);
-          if (isNaN(num) || num <= 0) {
-            window.avenApp?.showToast('Total points must be greater than 0', 'warning');
-            revert();
-            return;
-          }
-          if (num !== Number(originalValue)) {
-            store.updateGradeEntry(catId, entId, { out_of: num });
-          }
-        }
-
-        renderGradesView(container);
-      };
-
-      input.addEventListener('keydown', (evt) => {
-        if (evt.key === 'Enter') {
-          evt.preventDefault();
-          input.blur();
-        } else if (evt.key === 'Escape') {
-          evt.preventDefault();
-          isCancelled = true;
-          revert();
-        }
-      });
-
-      input.addEventListener('blur', () => {
-        commit();
-      });
-
-      cell.innerHTML = '';
-      cell.appendChild(input);
-      input.focus();
-      input.select();
-    });
-  });
-
-  // Click-to-Edit Category Weight %
-  container.querySelectorAll('.cat-weight-editable').forEach(el => {
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (el.querySelector('input')) return;
-
-      const catId = el.dataset.catId;
-      const currentWeight = Number(el.dataset.weight) || 0;
-
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.min = '0';
-      input.max = '100';
-      input.step = 'any';
-      input.className = 'cat-weight-input';
-      input.value = currentWeight;
-
-      el.innerHTML = '';
-      el.appendChild(input);
-      input.focus();
-      input.select();
-
-      let committed = false;
-      const commit = () => {
-        if (committed) return;
-        committed = true;
-        const newWeight = parseFloat(input.value);
-        if (!isNaN(newWeight) && newWeight >= 0 && newWeight !== currentWeight) {
-          store.saveGradeCategory({ id: catId, weight: newWeight });
-          window.avenApp?.showToast(`Updated weight to ${newWeight}%`, 'success');
-        }
-        renderGradesView(container);
-      };
-
-      input.addEventListener('blur', commit);
-      input.addEventListener('keydown', (evt) => {
-        if (evt.key === 'Enter') {
-          evt.preventDefault();
-          commit();
-        } else if (evt.key === 'Escape') {
-          evt.preventDefault();
-          committed = true;
-          renderGradesView(container);
-        }
-      });
-    });
-  });
-
-  // Save Weight Split
-  const saveSplitBtn = container.querySelector('#btn-save-weight-split');
-  if (saveSplitBtn) {
-    saveSplitBtn.addEventListener('click', () => {
-      const mWeight = container.querySelector('#split-midterm-weight').value;
-      const fWeight = container.querySelector('#split-final-weight').value;
-      store.saveSubjectGradeConfig(selectedSubjectId, mWeight, fWeight);
-      window.avenApp?.showToast('Term weight split saved', 'success');
-      renderGradesView(container);
-    });
-  }
-
-  // Solve Target Grade
-  const solveTargetBtn = container.querySelector('#btn-solve-target');
-  if (solveTargetBtn) {
-    solveTargetBtn.addEventListener('click', () => {
-      const targetVal = Number(container.querySelector('#target-grade-input').value) || 91.0;
-      const stats = store.calculateSubjectGrade(selectedSubjectId);
-      const resDiv = container.querySelector('#target-solver-result');
-      resDiv.innerHTML = calculateTargetScore(
-        stats.midterm.percentage,
-        stats.config.midterm_weight,
-        stats.config.final_weight,
-        targetVal
-      );
-    });
-  }
-
-  // Drag-and-Drop Category Reordering with smooth FLIP animation
-  const categoryList = container.querySelector('.category-breakdown-list') || container.querySelector('.category-list');
-  if (categoryList) {
-    let draggedCard = null;
-    let isHandleGrabbed = false;
-
-    // Track grab on drag handle specifically
-    categoryList.addEventListener('mousedown', (e) => {
-      const handle = e.target.closest('.cat-drag-handle');
-      if (handle) {
-        isHandleGrabbed = true;
-        const card = handle.closest('.category-breakdown-section') || handle.closest('.category-card');
-        if (card) card.setAttribute('draggable', 'true');
-      } else {
-        isHandleGrabbed = false;
-      }
-    });
-
-    document.addEventListener('mouseup', () => {
-      isHandleGrabbed = false;
-      if (categoryList) {
-        categoryList.querySelectorAll('.category-breakdown-section, .category-card').forEach(c => c.removeAttribute('draggable'));
-      }
-    }, { once: true });
-
-    categoryList.addEventListener('dragstart', (e) => {
-      const card = e.target.closest('.category-breakdown-section') || e.target.closest('.category-card');
-      if (!card || !isHandleGrabbed) {
-        e.preventDefault();
-        return;
-      }
-
-      draggedCard = card;
-      if (e.dataTransfer) {
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', card.dataset.catId || '');
-      }
-
-      // Add dragging class on next tick so drag ghost retains original appearance
-      requestAnimationFrame(() => {
-        if (draggedCard) draggedCard.classList.add('is-dragging');
       });
     });
 
-    categoryList.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-      if (!draggedCard) return;
-
-      const targetCard = e.target.closest('.category-breakdown-section') || e.target.closest('.category-card');
-      if (!targetCard || targetCard === draggedCard) {
-        return;
-      }
-
-      const cards = Array.from(categoryList.querySelectorAll('.category-breakdown-section, .category-card'));
-      const draggedIdx = cards.indexOf(draggedCard);
-      const targetIdx = cards.indexOf(targetCard);
-      if (draggedIdx === -1 || targetIdx === -1) return;
-
-      const rect = targetCard.getBoundingClientRect();
-      const centerY = rect.top + rect.height / 2;
-
-      let isInsertBefore = e.clientY < centerY;
-
-      // Check if position would actually change
-      if (isInsertBefore && draggedIdx === targetIdx - 1) return;
-      if (!isInsertBefore && draggedIdx === targetIdx + 1) return;
-
-      // 1. FLIP - First: measure all card bounding rects
-      const firstRects = new Map();
-      cards.forEach(c => firstRects.set(c, c.getBoundingClientRect()));
-
-      // 2. FLIP - Last: Move DOM node directly in categoryList
-      if (isInsertBefore) {
-        categoryList.insertBefore(draggedCard, targetCard);
-      } else {
-        categoryList.insertBefore(draggedCard, targetCard.nextSibling);
-      }
-
-      // 3. FLIP - Invert & Play
-      const updatedCards = Array.from(categoryList.querySelectorAll('.category-breakdown-section, .category-card'));
-      updatedCards.forEach(c => {
-        const first = firstRects.get(c);
-        if (!first) return;
-        const last = c.getBoundingClientRect();
-        const deltaX = first.left - last.left;
-        const deltaY = first.top - last.top;
-
-        if (deltaX !== 0 || deltaY !== 0) {
-          c.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-          c.style.transition = 'none';
-          c.offsetHeight; // Force reflow
-          c.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1)';
-          c.style.transform = '';
-        }
-      });
-    });
-
-    const finishDrag = async () => {
-      if (!draggedCard) return;
-      const currentDragged = draggedCard;
-      draggedCard = null;
-      isHandleGrabbed = false;
-
-      currentDragged.classList.remove('is-dragging');
-
-      const cards = Array.from(categoryList.querySelectorAll('.category-breakdown-section, .category-card'));
-      cards.forEach(c => {
-        c.removeAttribute('draggable');
-        c.style.transition = '';
-        c.style.transform = '';
-      });
-
-      const newOrderedIds = cards.map(c => c.dataset.catId).filter(Boolean);
-      const currentCats = store.getSubjectGradeCategories(selectedSubjectId, activeTab);
-      const currentIds = currentCats.map(c => c.id);
-
-      const hasOrderChanged = newOrderedIds.length === currentIds.length && newOrderedIds.some((id, idx) => id !== currentIds[idx]);
-
-      if (hasOrderChanged && selectedSubjectId && activeTab) {
-        await store.reorderGradeCategories(selectedSubjectId, activeTab, newOrderedIds);
-      }
-    };
-
-    categoryList.addEventListener('dragend', finishDrag);
-    categoryList.addEventListener('drop', (e) => {
-      e.preventDefault();
-      finishDrag();
-    });
-  }
-
-  // Category Layout Toggle (1-col vs 2-col)
-  const layoutToggle = container.querySelector('#cat-layout-toggle');
-  if (layoutToggle) {
-    layoutToggle.querySelectorAll('.seg-btn').forEach(btn => {
+    // Add Entry trigger buttons in panel
+    panelRoot.querySelectorAll('.btn-add-entry').forEach(btn => {
       btn.addEventListener('click', () => {
-        categoryLayout = btn.dataset.layout || '1-col';
-        localStorage.setItem('aven_grades_category_layout', categoryLayout);
+        entryForm?.reset();
+        const catTargetInput = container.querySelector('#entry-target-category-id');
+        if (catTargetInput) catTargetInput.value = btn.dataset.catId;
+        entryModal?.classList.add('open');
+      });
+    });
+
+    // Delete Entry
+    panelRoot.querySelectorAll('.btn-del-entry').forEach(btn => {
+      btn.addEventListener('click', () => {
+        store.deleteGradeEntry(btn.dataset.catId, btn.dataset.entId);
+        window.avenApp?.showToast('Entry deleted', 'info');
         renderGradesView(container);
       });
     });
-  }
+
+    // Inline Click-to-Edit for Assessment Item, Score, and Out Of cells
+    panelRoot.querySelectorAll('.editable-cell').forEach(cell => {
+      cell.addEventListener('click', (e) => {
+        if (cell.classList.contains('editing')) return;
+
+        const field = cell.dataset.field;
+        const catId = cell.dataset.catId;
+        const entId = cell.dataset.entId;
+        const originalValue = cell.dataset.value;
+
+        cell.classList.add('editing');
+        const textSpan = cell.querySelector('.cell-value-text');
+        const hintIcon = cell.querySelector('.edit-hint-icon');
+        if (hintIcon) hintIcon.style.display = 'none';
+
+        const isNumeric = field === 'score' || field === 'out_of';
+        const input = document.createElement('input');
+        input.type = isNumeric ? 'number' : 'text';
+        input.className = `inline-edit-input ${isNumeric ? 'mono-num' : ''}`;
+        input.value = originalValue;
+        if (isNumeric) {
+          input.min = field === 'out_of' ? '1' : '0';
+          input.step = 'any';
+        }
+
+        // Live recalculation on row while user types
+        const row = cell.closest('.grade-entry-card-row') || cell.closest('.grade-entry-row');
+        const pctTag = row ? row.querySelector('.entry-pct-text') : null;
+        const standingBadge = row ? row.querySelector('.entry-standing-badge') : null;
+
+        const updateRowLive = () => {
+          if (!row || !pctTag) return;
+          const currentScore = field === 'score' ? Number(input.value) : Number(row.querySelector('.editable-score')?.dataset.value || 0);
+          const currentOutOf = field === 'out_of' ? Number(input.value) : Number(row.querySelector('.editable-outof')?.dataset.value || 100);
+          if (currentOutOf > 0 && !isNaN(currentScore) && !isNaN(currentOutOf)) {
+            const livePct = ((currentScore / currentOutOf) * 100).toFixed(1);
+            pctTag.textContent = `${livePct}%`;
+            if (standingBadge) {
+              standingBadge.className = `subject-standing-pill ${getStandingClass(livePct)} entry-standing-badge`;
+            }
+          }
+        };
+
+        if (isNumeric) {
+          input.addEventListener('input', updateRowLive);
+        }
+
+        let isCancelled = false;
+
+        const revert = () => {
+          cell.classList.remove('editing');
+          if (hintIcon) hintIcon.style.display = '';
+          renderGradesView(container);
+        };
+
+        const commit = () => {
+          if (isCancelled) return;
+
+          const rawVal = input.value;
+          if (field === 'name') {
+            const trimmed = rawVal.trim();
+            if (!trimmed) {
+              window.avenApp?.showToast('Assessment name cannot be empty', 'warning');
+              revert();
+              return;
+            }
+            if (trimmed !== originalValue) {
+              store.updateGradeEntry(catId, entId, { name: trimmed });
+              window.avenApp?.showToast('Updated assessment name', 'success');
+            }
+          } else if (field === 'score') {
+            const num = Number(rawVal);
+            if (isNaN(num) || num < 0) {
+              window.avenApp?.showToast('Score must be a positive number', 'warning');
+              revert();
+              return;
+            }
+            if (num !== Number(originalValue)) {
+              store.updateGradeEntry(catId, entId, { score: num });
+            }
+          } else if (field === 'out_of') {
+            const num = Number(rawVal);
+            if (isNaN(num) || num <= 0) {
+              window.avenApp?.showToast('Total points must be greater than 0', 'warning');
+              revert();
+              return;
+            }
+            if (num !== Number(originalValue)) {
+              store.updateGradeEntry(catId, entId, { out_of: num });
+            }
+          }
+
+          renderGradesView(container);
+        };
+
+        input.addEventListener('keydown', (evt) => {
+          if (evt.key === 'Enter') {
+            evt.preventDefault();
+            input.blur();
+          } else if (evt.key === 'Escape') {
+            evt.preventDefault();
+            isCancelled = true;
+            revert();
+          }
+        });
+
+        input.addEventListener('blur', () => {
+          commit();
+        });
+
+        cell.innerHTML = '';
+        cell.appendChild(input);
+        input.focus();
+        input.select();
+      });
+    });
+
+    // Click-to-Edit Category Weight %
+    panelRoot.querySelectorAll('.cat-weight-editable').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (el.querySelector('input')) return;
+
+        const catId = el.dataset.catId;
+        const currentWeight = Number(el.dataset.weight) || 0;
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.max = '100';
+        input.step = 'any';
+        input.className = 'cat-weight-input';
+        input.value = currentWeight;
+
+        el.innerHTML = '';
+        el.appendChild(input);
+        input.focus();
+        input.select();
+
+        let committed = false;
+        const commit = () => {
+          if (committed) return;
+          committed = true;
+          const newWeight = parseFloat(input.value);
+          if (!isNaN(newWeight) && newWeight >= 0 && newWeight !== currentWeight) {
+            store.saveGradeCategory({ id: catId, weight: newWeight });
+            window.avenApp?.showToast(`Updated weight to ${newWeight}%`, 'success');
+          }
+          renderGradesView(container);
+        };
+
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', (evt) => {
+          if (evt.key === 'Enter') {
+            evt.preventDefault();
+            commit();
+          } else if (evt.key === 'Escape') {
+            evt.preventDefault();
+            committed = true;
+            renderGradesView(container);
+          }
+        });
+      });
+    });
+
+    // Save Weight Split (Overall Tab)
+    const saveSplitBtn = panelRoot.querySelector('#btn-save-weight-split');
+    if (saveSplitBtn) {
+      saveSplitBtn.addEventListener('click', () => {
+        const mWeight = panelRoot.querySelector('#split-midterm-weight')?.value;
+        const fWeight = panelRoot.querySelector('#split-final-weight')?.value;
+        store.saveSubjectGradeConfig(selectedSubjectId, mWeight, fWeight);
+        window.avenApp?.showToast('Term weight split saved', 'success');
+        renderGradesView(container);
+      });
+    }
+
+    // Solve Target Grade (Overall Tab)
+    const solveTargetBtn = panelRoot.querySelector('#btn-solve-target');
+    if (solveTargetBtn) {
+      solveTargetBtn.addEventListener('click', () => {
+        const targetVal = Number(panelRoot.querySelector('#target-grade-input')?.value) || 91.0;
+        const stats = store.calculateSubjectGrade(selectedSubjectId);
+        const resDiv = panelRoot.querySelector('#target-solver-result');
+        if (resDiv) {
+          resDiv.innerHTML = calculateTargetScore(
+            stats.midterm.percentage,
+            stats.config.midterm_weight,
+            stats.config.final_weight,
+            targetVal
+          );
+        }
+      });
+    }
+
+    // Drag-and-Drop Category Reordering
+    const categoryList = panelRoot.querySelector('.category-breakdown-list') || panelRoot.querySelector('.category-list');
+    if (categoryList) {
+      let draggedCard = null;
+      let isHandleGrabbed = false;
+
+      categoryList.addEventListener('mousedown', (e) => {
+        const handle = e.target.closest('.cat-drag-handle');
+        if (handle) {
+          isHandleGrabbed = true;
+          const card = handle.closest('.category-breakdown-section') || handle.closest('.category-card');
+          if (card) card.setAttribute('draggable', 'true');
+        } else {
+          isHandleGrabbed = false;
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        isHandleGrabbed = false;
+        if (categoryList) {
+          categoryList.querySelectorAll('.category-breakdown-section, .category-card').forEach(c => c.removeAttribute('draggable'));
+        }
+      }, { once: true });
+
+      categoryList.addEventListener('dragstart', (e) => {
+        const card = e.target.closest('.category-breakdown-section') || e.target.closest('.category-card');
+        if (!card || !isHandleGrabbed) {
+          e.preventDefault();
+          return;
+        }
+
+        draggedCard = card;
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', card.dataset.catId || '');
+        }
+
+        requestAnimationFrame(() => {
+          if (draggedCard) draggedCard.classList.add('is-dragging');
+        });
+      });
+
+      categoryList.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        if (!draggedCard) return;
+
+        const targetCard = e.target.closest('.category-breakdown-section') || e.target.closest('.category-card');
+        if (!targetCard || targetCard === draggedCard) {
+          return;
+        }
+
+        const cards = Array.from(categoryList.querySelectorAll('.category-breakdown-section, .category-card'));
+        const draggedIdx = cards.indexOf(draggedCard);
+        const targetIdx = cards.indexOf(targetCard);
+        if (draggedIdx === -1 || targetIdx === -1) return;
+
+        const rect = targetCard.getBoundingClientRect();
+        const centerY = rect.top + rect.height / 2;
+
+        let isInsertBefore = e.clientY < centerY;
+
+        if (isInsertBefore && draggedIdx === targetIdx - 1) return;
+        if (!isInsertBefore && draggedIdx === targetIdx + 1) return;
+
+        const firstRects = new Map();
+        cards.forEach(c => firstRects.set(c, c.getBoundingClientRect()));
+
+        if (isInsertBefore) {
+          categoryList.insertBefore(draggedCard, targetCard);
+        } else {
+          categoryList.insertBefore(draggedCard, targetCard.nextSibling);
+        }
+
+        const updatedCards = Array.from(categoryList.querySelectorAll('.category-breakdown-section, .category-card'));
+        updatedCards.forEach(c => {
+          const first = firstRects.get(c);
+          if (!first) return;
+          const last = c.getBoundingClientRect();
+          const deltaX = first.left - last.left;
+          const deltaY = first.top - last.top;
+
+          if (deltaX !== 0 || deltaY !== 0) {
+            c.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            c.style.transition = 'none';
+            c.offsetHeight; // Force reflow
+            c.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1)';
+            c.style.transform = '';
+          }
+        });
+      });
+
+      const finishDrag = async () => {
+        if (!draggedCard) return;
+        const currentDragged = draggedCard;
+        draggedCard = null;
+        isHandleGrabbed = false;
+
+        currentDragged.classList.remove('is-dragging');
+
+        const cards = Array.from(categoryList.querySelectorAll('.category-breakdown-section, .category-card'));
+        cards.forEach(c => {
+          c.removeAttribute('draggable');
+          c.style.transition = '';
+          c.style.transform = '';
+        });
+
+        const newOrderedIds = cards.map(c => c.dataset.catId).filter(Boolean);
+        const currentCats = store.getSubjectGradeCategories(selectedSubjectId, activeTab);
+        const currentIds = currentCats.map(c => c.id);
+
+        const hasOrderChanged = newOrderedIds.length === currentIds.length && newOrderedIds.some((id, idx) => id !== currentIds[idx]);
+
+        if (hasOrderChanged && selectedSubjectId && activeTab) {
+          await store.reorderGradeCategories(selectedSubjectId, activeTab, newOrderedIds);
+        }
+      };
+
+      categoryList.addEventListener('dragend', finishDrag);
+      categoryList.addEventListener('drop', (e) => {
+        e.preventDefault();
+        finishDrag();
+      });
+    }
+
+    // Category Layout Toggle (1-col vs 2-col)
+    const layoutToggle = panelRoot.querySelector('#cat-layout-toggle');
+    if (layoutToggle) {
+      layoutToggle.querySelectorAll('.seg-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          categoryLayout = btn.dataset.layout || '1-col';
+          localStorage.setItem('aven_grades_category_layout', categoryLayout);
+          renderGradesView(container);
+        });
+      });
+    }
+
+    // Export to Excel Popover & Action Handlers
+    panelRoot.querySelectorAll('.btn-grades-export-toggle').forEach(btn => {
+      const popover = btn.parentElement?.querySelector('.grades-export-popover');
+      if (!popover) return;
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        panelRoot.querySelectorAll('.grades-export-popover').forEach(p => {
+          if (p !== popover) p.classList.remove('open');
+        });
+        popover.classList.toggle('open');
+      });
+
+      popover.querySelectorAll('.btn-export-current-subject').forEach(item => {
+        item.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          popover.classList.remove('open');
+          const subId = item.dataset.subjectId || selectedSubjectId;
+          try {
+            window.avenApp?.showToast('Generating Excel report...', 'info');
+            const filename = await exportSubjectGradesToExcel(subId);
+            window.avenApp?.showToast(`Exported ${filename}`, 'success');
+          } catch (err) {
+            console.error(err);
+            window.avenApp?.showToast(err.message || 'Failed to export Excel report', 'error');
+          }
+        });
+      });
+
+      popover.querySelectorAll('.btn-export-all-subjects').forEach(item => {
+        item.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          popover.classList.remove('open');
+          try {
+            window.avenApp?.showToast('Generating multi-sheet Excel report...', 'info');
+            const filename = await exportAllSubjectsGradesToExcel();
+            window.avenApp?.showToast(`Exported ${filename}`, 'success');
+          } catch (err) {
+            console.error(err);
+            window.avenApp?.showToast(err.message || 'Failed to export Excel report', 'error');
+          }
+        });
+      });
+
+      document.addEventListener('click', (e) => {
+        if (popover && !popover.contains(e.target) && !btn.contains(e.target)) {
+          popover.classList.remove('open');
+        }
+      });
+    });
+  };
+
+  // Fluid Folder Tab Switching with Morph Animation & Connected Panel Transition
+  const switchGradesTab = (newTab) => {
+    if (activeTab === newTab || isTabSwitching) return;
+    activeTab = newTab;
+
+    // 1. Fluid morph on folder tabs in-place (380ms transition)
+    const tabStrip = container.querySelector('.browser-tab-strip');
+    if (tabStrip) {
+      tabStrip.querySelectorAll('.browser-tab').forEach(tabEl => {
+        const isNowActive = tabEl.dataset.tab === newTab;
+        tabEl.classList.toggle('active', isNowActive);
+      });
+    }
+
+    // Update modal template button text if present
+    const applyTplBtn = container.querySelector('#btn-apply-template');
+    if (applyTplBtn) {
+      applyTplBtn.textContent = `Apply Template to ${activeTab}`;
+    }
+
+    // 2. Animate content panel below
+    const panel = container.querySelector('.browser-panel-content');
+    if (!panel) return;
+
+    const currentPane = panel.querySelector('.tab-pane-content');
+    const selectedSubject = selectedSubjectId ? store.getSubjectById(selectedSubjectId) : null;
+    const gradeStats = selectedSubject ? store.calculateSubjectGrade(selectedSubject.id) : null;
+
+    if (!selectedSubject || !gradeStats) return;
+
+    const newContentHtml = activeTab === 'Overall'
+      ? renderOverallTabContent(selectedSubject, gradeStats)
+      : renderTermTabContent(selectedSubject, activeTab, gradeStats);
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      panel.innerHTML = `<div class="tab-pane-content" key="${activeTab}">${newContentHtml}</div>`;
+      attachGradesPanelEvents(panel);
+      return;
+    }
+
+    isTabSwitching = true;
+    if (currentPane) {
+      currentPane.classList.add('tab-pane-exiting');
+    }
+
+    setTimeout(() => {
+      panel.innerHTML = `<div class="tab-pane-content tab-pane-entering" key="${activeTab}">${newContentHtml}</div>`;
+      attachGradesPanelEvents(panel);
+
+      setTimeout(() => {
+        const enteringPane = panel.querySelector('.tab-pane-content');
+        if (enteringPane) {
+          enteringPane.classList.remove('tab-pane-entering');
+        }
+        isTabSwitching = false;
+      }, 260);
+    }, 140);
+  };
+
+  container.querySelectorAll('.browser-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      switchGradesTab(tab.dataset.tab);
+    });
+  });
+
+  // Initial wire-up of panel events
+  attachGradesPanelEvents(container);
 
   // Live Sync Status Listener
   const syncIndicator = container.querySelector('#grades-sync-indicator');
   if (syncIndicator) {
     const handleSyncStatus = (syncState) => {
-      if (!syncIndicator) return;
-      syncIndicator.className = `sync-status-indicator sync-${syncState.status}`;
-      syncIndicator.innerHTML = renderSyncIndicatorHtml(syncState);
+      const ind = container.querySelector('#grades-sync-indicator');
+      if (!ind) return;
+      ind.className = `sync-status-indicator sync-${syncState.status}`;
+      ind.innerHTML = renderSyncIndicatorHtml(syncState);
     };
 
     events.on('sync:status', handleSyncStatus);
   }
-
-  // Export to Excel Popover & Action Handlers
-  container.querySelectorAll('.btn-grades-export-toggle').forEach(btn => {
-    const popover = btn.parentElement?.querySelector('.grades-export-popover');
-    if (!popover) return;
-
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      container.querySelectorAll('.grades-export-popover').forEach(p => {
-        if (p !== popover) p.classList.remove('open');
-      });
-      popover.classList.toggle('open');
-    });
-
-    popover.querySelectorAll('.btn-export-current-subject').forEach(item => {
-      item.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        popover.classList.remove('open');
-        const subId = item.dataset.subjectId || selectedSubjectId;
-        try {
-          window.avenApp?.showToast('Generating Excel report...', 'info');
-          const filename = await exportSubjectGradesToExcel(subId);
-          window.avenApp?.showToast(`Exported ${filename}`, 'success');
-        } catch (err) {
-          console.error(err);
-          window.avenApp?.showToast(err.message || 'Failed to export Excel report', 'error');
-        }
-      });
-    });
-
-    popover.querySelectorAll('.btn-export-all-subjects').forEach(item => {
-      item.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        popover.classList.remove('open');
-        try {
-          window.avenApp?.showToast('Generating multi-sheet Excel report...', 'info');
-          const filename = await exportAllSubjectsGradesToExcel();
-          window.avenApp?.showToast(`Exported ${filename}`, 'success');
-        } catch (err) {
-          console.error(err);
-          window.avenApp?.showToast(err.message || 'Failed to export Excel report', 'error');
-        }
-      });
-    });
-
-    document.addEventListener('click', (e) => {
-      if (popover && !popover.contains(e.target) && !btn.contains(e.target)) {
-        popover.classList.remove('open');
-      }
-    });
-  });
 }
