@@ -352,11 +352,17 @@ export class CropModal {
 
       outCtx.drawImage(this.image, outDrawX, outDrawY, outDrawW, outDrawH);
 
-      const blob = await new Promise((resolve) => {
-        outCanvas.toBlob((b) => resolve(b), 'image/png');
+      let blob = await new Promise((resolve) => {
+        outCanvas.toBlob((b) => resolve(b), 'image/webp', 0.85);
       });
+      let dataUrl = outCanvas.toDataURL('image/webp', 0.85);
 
-      const dataUrl = outCanvas.toDataURL('image/png');
+      if (!blob || !dataUrl.startsWith('data:image/webp')) {
+        blob = await new Promise((resolve) => {
+          outCanvas.toBlob((b) => resolve(b), 'image/png');
+        });
+        dataUrl = outCanvas.toDataURL('image/png');
+      }
 
       if (this.onCropCallback) {
         this.onCropCallback({ blob, dataUrl });

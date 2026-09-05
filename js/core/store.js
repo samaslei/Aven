@@ -79,13 +79,47 @@ class Store {
     events.emit('sync:connection', this.getConnectionStatus());
   }
 
-  resetState() {
+  getLocalCachedUser(userId = null) {
+    try {
+      if (typeof localStorage === 'undefined') return null;
+      if (userId) {
+        const userSpecific = localStorage.getItem(`aven_user_profile_${userId}`);
+        if (userSpecific) return JSON.parse(userSpecific);
+      }
+      const generic = localStorage.getItem('aven_user_profile');
+      if (generic) return JSON.parse(generic);
+    } catch (e) {
+      console.warn('Error reading local user profile:', e);
+    }
+    return null;
+  }
+
+  saveLocalCachedUser(user, userId = null) {
+    try {
+      if (typeof localStorage === 'undefined' || !user) return;
+      const dataStr = JSON.stringify(user);
+      localStorage.setItem('aven_user_profile', dataStr);
+      if (userId) {
+        localStorage.setItem(`aven_user_profile_${userId}`, dataStr);
+      }
+    } catch (e) {
+      console.warn('Error saving local user profile:', e);
+    }
+  }
+
+  resetState(clearCachedUser = false) {
     let savedGradesSort = 'year-sem-grouped';
     let savedSubjectsSort = 'recent-desc';
     let savedTheme = 'dark';
     let savedNeutralColors = false;
+    let savedUser = null;
     try {
       if (typeof localStorage !== 'undefined') {
+        if (clearCachedUser) {
+          localStorage.removeItem('aven_user_profile');
+        } else {
+          savedUser = this.getLocalCachedUser(this.currentUserId);
+        }
         savedGradesSort = localStorage.getItem('aven_grades_sidebar_sort') || 'year-sem-grouped';
         savedSubjectsSort = localStorage.getItem('aven_subjects_sort') || 'recent-desc';
         savedTheme = localStorage.getItem('aven_theme') || 'dark';
@@ -103,7 +137,7 @@ class Store {
       grades: [],
       grade_configs: [],
       plans: [],
-      user: this.getDefaultUser(),
+      user: savedUser ? { ...this.getDefaultUser(), ...savedUser } : this.getDefaultUser(),
       settings: { ...this.getDefaultSettings(), neutral_colors: savedNeutralColors },
       grading_scale: JSON.parse(JSON.stringify(PHILIPPINE_GRADE_SCALE)),
       subjects_sort: savedSubjectsSort,
@@ -164,20 +198,37 @@ class Store {
         .eq('user_id', userId)
         .maybeSingle();
 
+      const user = await getCurrentUser();
+      const metaAvatar = user?.user_metadata?.avatar_url;
+      const cached = this.getLocalCachedUser(userId);
+
+      const resolvedAvatarUrl = (profile && profile.avatar_url)
+        ? profile.avatar_url
+        : (metaAvatar || cached?.avatar_url || this.state.user?.avatar_url || null);
+
       if (profile) {
-        const name = profile.display_name || 'Student';
+        const name = profile.display_name || user?.user_metadata?.display_name || cached?.name || 'Student';
         const initials = name.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase() || 'ST';
         this.state.user = {
           name,
-          email: profile.email || '',
+          email: profile.email || user?.email || '',
           bio: profile.bio || '',
-          year_level: profile.year_level || '1st Year',
-          institution: profile.school || '',
-          program: profile.program || '',
+          year_level: profile.year_level || cached?.year_level || '1st Year',
+          institution: profile.school || cached?.institution || '',
+          program: profile.program || cached?.program || '',
           avatar: initials,
-          avatar_color: profile.avatar_color || '#6366f1',
-          avatar_url: profile.avatar_url || null
+          avatar_color: profile.avatar_color || user?.user_metadata?.avatar_color || cached?.avatar_color || '#6366f1',
+          avatar_url: resolvedAvatarUrl
         };
+        this.saveLocalCachedUser(this.state.user, userId);
+        events.emit('user:updated', this.state.user);
+      } else if (cached || metaAvatar) {
+        this.state.user = {
+          ...this.getDefaultUser(),
+          ...(cached || {}),
+          avatar_url: resolvedAvatarUrl
+        };
+        this.saveLocalCachedUser(this.state.user, userId);
         events.emit('user:updated', this.state.user);
       }
 
@@ -527,20 +578,30 @@ class Store {
       // 1. Sync Profile & Settings
       if (data.user) {
         const u = data.user;
-        await supabase
+        const profilePayload = {
+          user_id: userId,
+          display_name: u.name || user.email?.split('@')[0],
+          email: user.email,
+          bio: u.bio || '',
+          year_level: u.year_level || '1st Year',
+          school: u.institution || '',
+          program: u.program || '',
+          avatar_color: u.avatar_color || '#6366f1',
+          updated_at: new Date().toISOString()
+        };
+
+        const { error: pErr } = await supabase
           .from('profiles')
           .upsert({
-            user_id: userId,
-            display_name: u.name || user.email?.split('@')[0],
-            email: user.email,
-            bio: u.bio || '',
-            year_level: u.year_level || '1st Year',
-            school: u.institution || '',
-            program: u.program || '',
-            avatar_color: u.avatar_color || '#6366f1',
-            avatar_url: u.avatar_url || null,
-            updated_at: new Date().toISOString()
+            ...profilePayload,
+            avatar_url: u.avatar_url || null
           }, { onConflict: 'user_id' });
+
+        if (pErr && (pErr.code === '42703' || pErr.message?.includes('avatar_url'))) {
+          await supabase
+            .from('profiles')
+            .upsert(profilePayload, { onConflict: 'user_id' });
+        }
       }
 
       if (data.settings) {
@@ -1874,10 +1935,12 @@ class Store {
     try {
       const user = await getCurrentUser();
       if (user && isSupabaseConfigured) {
-        const fileExt = 'png';
+        const isWebp = blob.type === 'image/webp';
+        const fileExt = isWebp ? 'webp' : 'png';
+        const contentType = blob.type || (isWebp ? 'image/webp' : 'image/png');
         const fileName = `${user.id}/avatar-${Date.now()}.${fileExt}`;
         const { data, error } = await supabase.storage.from('avatars').upload(fileName, blob, {
-          contentType: 'image/png',
+          contentType,
           upsert: true
         });
         if (!error && data) {
@@ -1886,11 +1949,11 @@ class Store {
             return publicData.publicUrl;
           }
         } else if (error) {
-          console.warn('Supabase storage upload error, falling back to data URL:', error);
+          console.warn('Supabase storage upload notice (using optimized image URL):', error.message || error);
         }
       }
     } catch (err) {
-      console.warn('Avatar storage upload failed, falling back to data URL:', err);
+      console.warn('Avatar storage upload notice (using optimized image URL):', err);
     }
 
     // Fallback: convert blob to optimized Data URL
@@ -1935,26 +1998,62 @@ class Store {
     };
 
     this.state.user = updatedProfile;
+    this.saveLocalCachedUser(updatedProfile, this.currentUserId);
     events.emit('user:updated', updatedProfile);
     events.emit('store:changed', { type: 'user' });
 
-    // Supabase Cloud sync
-    getCurrentUser().then(user => {
-      if (user) {
-        supabase.from('profiles').upsert({
-          user_id: user.id,
-          display_name: updatedProfile.name,
-          email: updatedProfile.email || user.email,
-          bio: updatedProfile.bio,
-          year_level: updatedProfile.year_level,
-          school: updatedProfile.institution,
-          program: updatedProfile.program,
-          avatar_color: updatedProfile.avatar_color,
-          avatar_url: updatedProfile.avatar_url || null,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' }).then(({ error }) => {
-          if (error) console.warn('Supabase profile sync error:', error);
+    // Supabase Cloud sync & Auth user_metadata persistence
+    getCurrentUser().then(async user => {
+      if (!user) return;
+      const userId = user.id;
+      this.currentUserId = userId;
+      this.saveLocalCachedUser(updatedProfile, userId);
+
+      // 1. Sync to Auth user_metadata (guaranteed cloud persistence without needing SQL migrations)
+      try {
+        await supabase.auth.updateUser({
+          data: {
+            avatar_url: updatedProfile.avatar_url || null,
+            avatar_color: updatedProfile.avatar_color,
+            display_name: updatedProfile.name
+          }
         });
+      } catch (authMetaErr) {
+        console.warn('Supabase auth metadata update notice:', authMetaErr);
+      }
+
+      // 2. Sync to public.profiles table
+      const basePayload = {
+        user_id: userId,
+        display_name: updatedProfile.name,
+        email: updatedProfile.email || user.email,
+        bio: updatedProfile.bio,
+        year_level: updatedProfile.year_level,
+        school: updatedProfile.institution,
+        program: updatedProfile.program,
+        avatar_color: updatedProfile.avatar_color,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: fullErr } = await supabase
+        .from('profiles')
+        .upsert({
+          ...basePayload,
+          avatar_url: updatedProfile.avatar_url || null
+        }, { onConflict: 'user_id' });
+
+      if (fullErr) {
+        if (fullErr.code === '42703' || fullErr.message?.includes('avatar_url')) {
+          // Column avatar_url does not exist yet on remote profiles table, upsert base profile
+          const { error: retryErr } = await supabase
+            .from('profiles')
+            .upsert(basePayload, { onConflict: 'user_id' });
+          if (retryErr) {
+            console.warn('Supabase profile sync error:', retryErr);
+          }
+        } else {
+          console.warn('Supabase profile sync error:', fullErr);
+        }
       }
     });
 
