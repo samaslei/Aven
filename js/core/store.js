@@ -171,6 +171,11 @@ class Store {
       pomodoro_long_break_interval: 4,
       pomodoro_auto_start_breaks: false,
       pomodoro_auto_start_pomodoros: false,
+      pomodoro_alarm_sound: 'bell',
+      pomodoro_alarm_volume: 50,
+      pomodoro_alarm_muted: false,
+      pomodoro_tick_volume: 30,
+      pomodoro_tick_muted: true,
       sound_notifications: true,
       subjects_view_mode: 'grid',
       neutral_colors: false
