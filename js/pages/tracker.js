@@ -11,7 +11,6 @@ import { renderCustomSubjectDropdown, initCustomDropdown, renderSubjectSelectOpt
 
 let selectedSubjectId = '';
 let heatmapYear = new Date().getFullYear(); // Year-view navigation state
-let calendarDate = new Date(); // Monthly calendar state (Prompt 56)
 let distributionScope = 'all'; // 'all' | 'week'
 
 // Pomodoro Timer State (Persists across view switches)
@@ -115,14 +114,14 @@ export function renderTrackerView(container) {
     }
 
     const svgWidth = 320;
-    const svgHeight = 140;
+    const svgHeight = 185;
     const padLeft = 30;
     const padRight = 10;
-    const padTop = 14;
+    const padTop = 16;
     const padBottom = 26;
 
     const plotWidth = svgWidth - padLeft - padRight; // 280
-    const plotHeight = svgHeight - padTop - padBottom; // 100
+    const plotHeight = svgHeight - padTop - padBottom; // 143
 
     const maxHoursVal = Math.max(...slices.map(s => Number(s.hours) || 0), 0.5);
     let yMax;
@@ -346,6 +345,17 @@ export function renderTrackerView(container) {
         </div>
       </div>
 
+      <!-- Round Tracker: Session # and Dots + Status Text -->
+      <div class="pomo-round-tracker">
+        <div class="pomo-round-header">
+          <span class="pomo-round-count">#${pomoCurrentCycle}</span>
+          <div class="pomo-round-dots" title="Round cycle progress (${completedDots}/${pomoLongBreakInterval})">
+            ${dotsHtml}
+          </div>
+        </div>
+        <span class="pomo-phase-status-text">${statusText}</span>
+      </div>
+
       <!-- Timer Controls Row -->
       <div class="pomo-controls-row">
         <button type="button" class="btn ${pomoIsRunning ? 'btn-secondary pomo-btn-pause' : 'btn-primary pomo-btn-start'}" id="btn-pomo-toggle" aria-label="${pomoIsRunning ? 'Pause' : (elapsedSecs > 0 ? 'Resume' : 'Start')}">
@@ -387,17 +397,6 @@ export function renderTrackerView(container) {
             <span class="pomo-btn-text">Stop & Log</span>
           </button>
         ` : ''}
-      </div>
-
-      <!-- Round Tracker: Session # and Dots -->
-      <div class="pomo-round-tracker">
-        <div class="pomo-round-header">
-          <span class="pomo-round-count">#${pomoCurrentCycle}</span>
-          <div class="pomo-round-dots" title="Round cycle progress (${completedDots}/${pomoLongBreakInterval})">
-            ${dotsHtml}
-          </div>
-        </div>
-        <span class="pomo-phase-status-text">${statusText}</span>
       </div>
     `;
   }
@@ -465,7 +464,7 @@ export function renderTrackerView(container) {
           </div>
         </div>
 
-        <div id="pomo-card-body" class="pomo-card-body" style="display: flex; flex-direction: column; flex: 1; justify-content: space-between; gap: 14px;">
+        <div id="pomo-card-body" class="pomo-card-body">
           ${renderPomodoroBodyHtml(activeSubjects)}
         </div>
       </div>
@@ -709,79 +708,6 @@ export function renderTrackerView(container) {
     `;
   }
 
-  // Render Monthly Calendar Card (Prompt 56)
-  function renderMonthlyCalendarCard(sessions) {
-    const year = calendarDate.getFullYear();
-    const month = calendarDate.getMonth();
-    const monthName = calendarDate.toLocaleString('default', { month: 'long' });
-
-    const firstDayIndex = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysInPrevMonth = new Date(year, month, 0).getDate();
-
-    const activityDates = new Set(sessions.map(s => s.date));
-    const todayISO = new Date().toISOString().split('T')[0];
-
-    const dayCells = [];
-
-    // Previous month trailing days
-    for (let i = firstDayIndex - 1; i >= 0; i--) {
-      const d = daysInPrevMonth - i;
-      dayCells.push(`<div class="monthly-cal-day-cell other-month">${d}</div>`);
-    }
-
-    // Current month days
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateISO = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const isToday = dateISO === todayISO;
-      const hasActivity = activityDates.has(dateISO);
-
-      dayCells.push(`
-        <div class="monthly-cal-day-cell ${isToday ? 'today' : ''} ${hasActivity ? 'has-activity' : ''}" data-date="${dateISO}">
-          ${d}
-        </div>
-      `);
-    }
-
-    // Next month leading days
-    const totalCells = dayCells.length;
-    const remaining = totalCells <= 35 ? 35 - totalCells : 42 - totalCells;
-    for (let d = 1; d <= remaining; d++) {
-      dayCells.push(`<div class="monthly-cal-day-cell other-month">${d}</div>`);
-    }
-
-    return `
-      <div class="tool-card monthly-calendar-card">
-        <div class="monthly-cal-header">
-          <div class="card-header-label" style="margin-bottom: 0;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <span class="monthly-cal-title">${monthName} ${year}</span>
-          </div>
-          <div class="monthly-cal-nav">
-            <button type="button" class="monthly-cal-nav-btn" id="btn-month-prev" title="Previous Month" aria-label="Previous Month">&lsaquo;</button>
-            <button type="button" class="monthly-cal-nav-btn" id="btn-month-next" title="Next Month" aria-label="Next Month">&rsaquo;</button>
-          </div>
-        </div>
-
-        <div class="monthly-cal-grid">
-          <span class="monthly-cal-day-label">S</span>
-          <span class="monthly-cal-day-label">M</span>
-          <span class="monthly-cal-day-label">T</span>
-          <span class="monthly-cal-day-label">W</span>
-          <span class="monthly-cal-day-label">T</span>
-          <span class="monthly-cal-day-label">F</span>
-          <span class="monthly-cal-day-label">S</span>
-          ${dayCells.join('')}
-        </div>
-      </div>
-    `;
-  }
-
   const settings = store.getSettings();
   if (!pomoIsInitialized) {
     pomoWorkMins = settings.pomodoro_work_mins || 25;
@@ -801,11 +727,10 @@ export function renderTrackerView(container) {
 
   container.innerHTML = `
     <div class="tracker-dashboard-layout">
-      <!-- Row 1: Pomodoro Timer + Manual Study Log + Monthly Calendar -->
+      <!-- Row 1: Pomodoro Timer + Manual Study Log (Expanded 50/50) -->
       <div class="tracker-dashboard-row-1">
         ${renderPomodoroCard(activeSubjects)}
         ${renderManualLogCard(activeSubjects, selectedSubjectId, todayStr)}
-        ${renderMonthlyCalendarCard(sessions)}
       </div>
 
       <!-- Row 2: Distribution Donut + Milestone Progress + Yearly Heatmap (Full Width) -->
@@ -1813,22 +1738,6 @@ function attachTrackerEvents(container) {
   }
 
   bindDistributionTooltipEvents();
-
-  // Monthly Calendar Navigation Handlers (Prompt 56)
-  const prevMonthBtn = container.querySelector('#btn-month-prev');
-  const nextMonthBtn = container.querySelector('#btn-month-next');
-  if (prevMonthBtn) {
-    prevMonthBtn.addEventListener('click', () => {
-      calendarDate.setMonth(calendarDate.getMonth() - 1);
-      renderTrackerView(container);
-    });
-  }
-  if (nextMonthBtn) {
-    nextMonthBtn.addEventListener('click', () => {
-      calendarDate.setMonth(calendarDate.getMonth() + 1);
-      renderTrackerView(container);
-    });
-  }
   // Initialize Custom Dropdowns (Prompt 61)
   const pomoDd = container.querySelector('#pomo-subject-select-wrap');
   if (pomoDd) {
