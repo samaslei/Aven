@@ -4469,10 +4469,9 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]) .nav-pill.active:h
    Grades View (Browser Tabs & Category Calculator)
    ========================================================================== */
 .grades-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 290px;
+  display: flex;
+  flex-direction: column;
   gap: 24px;
-  align-items: flex-start;
   width: 100%;
   max-width: 100%;
   margin: 0;
@@ -4480,17 +4479,84 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]) .nav-pill.active:h
   box-sizing: border-box;
 }
 
-@media (max-width: 1080px) {
+@media (min-width: 1024px) {
   .grades-layout {
-    grid-template-columns: 1fr;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 290px;
+    align-items: flex-start;
+  }
+}
+
+.grade-panel-container {
+  order: 2;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.grades-summary-panel {
+  order: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .grade-panel-container {
+    order: 1;
   }
 
   .grades-summary-panel {
-    grid-column: 1 / -1;
-    display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 16px;
+    order: 2;
+  }
+}
+
+/* Mobile & Tablet (< lg / < 1024px): Summary cards at top with compact spacing */
+@media (max-width: 1023px) {
+  .grades-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+
+  .grades-summary-panel {
+    order: 1 !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+
+  .grade-panel-container {
+    order: 2 !important;
+    width: 100% !important;
+  }
+
+  /* Compact padding for summary sidebar cards on smaller screens */
+  .grades-summary-card {
+    padding: 14px 16px !important;
+    gap: 10px !important;
+  }
+
+  .subjects-overview-list {
+    max-height: 190px !important;
+    gap: 2px !important;
+  }
+
+  .subjects-overview-row {
+    padding: 6px 8px !important;
+  }
+
+  .recent-entries-list {
+    max-height: 170px !important;
+  }
+
+  .recent-entry-row {
+    padding: 6px 4px !important;
   }
 }
 
@@ -4500,10 +4566,19 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]) .nav-pill.active:h
   }
 
   .grades-summary-panel {
-    grid-column: 1 / -1;
-    display: flex !important;
-    flex-direction: column;
-    gap: 16px;
+    gap: 14px !important;
+  }
+
+  .grades-summary-card {
+    padding: 12px 14px !important;
+  }
+
+  .subjects-overview-list {
+    max-height: 170px !important;
+  }
+
+  .recent-entries-list {
+    max-height: 155px !important;
   }
 }
 
@@ -11231,10 +11306,49 @@ body.mobile-drawer-locked {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+.flex-col {
+  flex-direction: column;
+}
+.flex-row {
+  flex-direction: row;
+}
+.flex-1 {
+  flex: 1 1 0%;
+}
+.order-1 {
+  order: 1;
+}
+.order-2 {
+  order: 2;
+}
+.gap-6 {
+  gap: 1.5rem;
+}
+.space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1rem;
+}
 
 @media (min-width: 768px) {
   .md\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:flex-row {
+    flex-direction: row !important;
+  }
+  .lg\:flex-col {
+    flex-direction: column !important;
+  }
+  .lg\:order-1 {
+    order: 1 !important;
+  }
+  .lg\:order-2 {
+    order: 2 !important;
+  }
+  .lg\:w-80 {
+    width: 20rem !important;
   }
 }
 

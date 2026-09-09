@@ -149,7 +149,7 @@ export function renderGradesView(container) {
     const isGwaEmpty = !overall.gradedSubjects || overall.gradedSubjects === 0;
 
     return `
-      <div class="grades-summary-panel">
+      <aside class="grades-summary-panel order-1 lg:order-2 w-full lg:w-80 flex-shrink-0">
         <!-- 1. Overall GWA + Standing Badge -->
         ${isGwaEmpty ? `
           <div class="grades-summary-card gwa-card gwa-card-empty">
@@ -246,14 +246,14 @@ export function renderGradesView(container) {
             }).join('')}
           </div>
         </div>
-      </div>
+      </aside>
     `;
   };
 
   container.innerHTML = `
-    <div class="grades-layout">
+    <div class="grades-layout flex flex-col lg:flex-row gap-6">
       <!-- Main Grade Content Panel -->
-      <div class="grade-panel-container">
+      <main class="grade-panel-container order-2 lg:order-1 flex-1 min-w-0">
         ${!selectedSubject ? `
           <div style="background: var(--bg-surface); border: none; border-radius: var(--radius-lg); padding: 60px; text-align: center; color: var(--text-muted); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.08);">
             <h3>No Subject Selected</h3>
@@ -336,7 +336,7 @@ export function renderGradesView(container) {
             </div>
           </div>
         `}
-      </div>
+      </main>
 
       <!-- Right Summary Panel -->
       ${renderGradesSummaryPanel()}
