@@ -65,7 +65,6 @@ export const GRADE_CATEGORY_TEMPLATES = [
 
 let selectedSubjectId = null;
 let activeTab = 'Midterm'; // 'Midterm' | 'Final' | 'Overall'
-let isTabSwitching = false;
 let categoryLayout = localStorage.getItem('aven_grades_category_layout') || '1-col';
 let activeCatModalTab = 'manual'; // 'manual' | 'template'
 let selectedTemplateId = GRADE_CATEGORY_TEMPLATES[0].id;
@@ -1746,9 +1745,9 @@ function attachGradesEvents(container) {
     });
   };
 
-  // Fluid Folder Tab Switching with Morph Animation & Connected Panel Transition
+  // Fluid Folder Tab Switching with in-place Morph and Instant, Flicker-Free Content Update
   const switchGradesTab = (newTab) => {
-    if (activeTab === newTab || isTabSwitching) return;
+    if (activeTab === newTab) return;
     activeTab = newTab;
 
     // 1. Fluid morph on folder tabs in-place (380ms transition)
@@ -1770,11 +1769,10 @@ function attachGradesEvents(container) {
       applyTplBtn.textContent = `Apply Template to ${activeTab}`;
     }
 
-    // 2. Animate content panel below
+    // 2. Instant content panel update without blank-screen flicker
     const panel = container.querySelector('.browser-panel-content');
     if (!panel) return;
 
-    const currentPane = panel.querySelector('.tab-pane-content');
     const selectedSubject = selectedSubjectId ? store.getSubjectById(selectedSubjectId) : null;
     const gradeStats = selectedSubject ? store.calculateSubjectGrade(selectedSubject.id) : null;
 
@@ -1784,31 +1782,8 @@ function attachGradesEvents(container) {
       ? renderOverallTabContent(selectedSubject, gradeStats)
       : renderTermTabContent(selectedSubject, activeTab, gradeStats);
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (prefersReducedMotion) {
-      panel.innerHTML = `<div class="tab-pane-content" key="${activeTab}">${newContentHtml}</div>`;
-      attachGradesPanelEvents(panel);
-      return;
-    }
-
-    isTabSwitching = true;
-    if (currentPane) {
-      currentPane.classList.add('tab-pane-exiting');
-    }
-
-    setTimeout(() => {
-      panel.innerHTML = `<div class="tab-pane-content tab-pane-entering" key="${activeTab}">${newContentHtml}</div>`;
-      attachGradesPanelEvents(panel);
-
-      setTimeout(() => {
-        const enteringPane = panel.querySelector('.tab-pane-content');
-        if (enteringPane) {
-          enteringPane.classList.remove('tab-pane-entering');
-        }
-        isTabSwitching = false;
-      }, 260);
-    }, 140);
+    panel.innerHTML = `<div class="tab-pane-content" key="${activeTab}">${newContentHtml}</div>`;
+    attachGradesPanelEvents(panel);
   };
 
   container.querySelectorAll('.browser-tab').forEach(tab => {
