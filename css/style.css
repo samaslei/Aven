@@ -5923,7 +5923,7 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]) .nav-pill.active:h
 .entry-card-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -6050,38 +6050,132 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]) .nav-pill.active:h
   margin: 0;
 }
 
-/* Fixed-width Standing Percentage Badge */
-.entry-standing-badge {
-  width: 76px;
-  min-width: 76px;
+/* Interactive Wrapper for Score Fraction & Floating Tooltip */
+.score-tooltip-wrapper {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: var(--font-numeric);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  box-sizing: border-box;
-  padding: 0 !important;
-  margin: 0 !important;
-  background: transparent !important;
-  border: none !important;
+  justify-content: center;
 }
 
-.entry-standing-badge .standing-dot {
+/* Percentage Tooltip: Hidden by default, floats above score fraction on hover or focus */
+.score-pct-tooltip {
+  position: absolute !important;
+  bottom: calc(100% + 7px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(4px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 60;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5.5px !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  background: #18181b !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  font-family: var(--font-numeric, sans-serif);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1.2;
+  white-space: nowrap !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.15s;
+}
+
+/* Tooltip Downward Caret Arrow */
+.score-tooltip-arrow {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4.5px solid transparent;
+  border-right: 4.5px solid transparent;
+  border-top: 4.5px solid #18181b;
+  pointer-events: none;
+}
+
+/* Theme support for Tooltip */
+[data-theme="light"] .score-pct-tooltip,
+[data-theme="pure-white"] .score-pct-tooltip {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+}
+
+[data-theme="light"] .score-tooltip-arrow,
+[data-theme="pure-white"] .score-tooltip-arrow {
+  border-top-color: #0f172a;
+}
+
+[data-theme="pure-black"] .score-pct-tooltip {
+  background: #18181b !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+[data-theme="pure-black"] .score-tooltip-arrow {
+  border-top-color: #18181b;
+}
+
+/* Tooltip Dot & Number Color by Standing */
+.score-pct-tooltip .standing-dot {
   width: 5px;
   height: 5px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.entry-standing-badge .entry-pct-text {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  text-align: right;
-  flex: 1;
+.score-pct-tooltip.grade-pass .standing-dot {
+  background-color: var(--success, #22c55e) !important;
+}
+
+.score-pct-tooltip.grade-pass .entry-pct-text {
+  color: #4ade80 !important;
+}
+
+.score-pct-tooltip.grade-warn .standing-dot {
+  background-color: var(--warning, #f59e0b) !important;
+}
+
+.score-pct-tooltip.grade-warn .entry-pct-text {
+  color: #fbbf24 !important;
+}
+
+.score-pct-tooltip.grade-danger .standing-dot {
+  background-color: var(--danger, #ef4444) !important;
+}
+
+.score-pct-tooltip.grade-danger .entry-pct-text {
+  color: #f87171 !important;
+}
+
+.score-pct-tooltip.grade-none .standing-dot {
+  background-color: var(--text-muted, #71717a) !important;
+}
+
+.score-pct-tooltip.grade-none .entry-pct-text {
+  color: #a1a1aa !important;
+}
+
+/* Reveal Tooltip on Hover or Focus Within Score */
+.score-tooltip-wrapper:hover .score-pct-tooltip,
+.score-tooltip-wrapper:focus-within .score-pct-tooltip,
+.group\/score:hover .score-pct-tooltip,
+.group\/score:focus-within .score-pct-tooltip {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: translateX(-50%) translateY(0) !important;
 }
 
 /* Delete Entry Button */
@@ -8188,9 +8282,9 @@ html.theme-crossfade-active *::after {
     margin: 0 !important;
   }
 
-  /* Grade Entries Table: Contained horizontal scroll & right-edge fade cue on phone */
+  /* Grade Entries: Allow floating tooltips unconstrained on mobile */
   .category-breakdown-body {
-    overflow: hidden;
+    overflow: visible;
     max-width: 100%;
   }
 
@@ -12144,10 +12238,25 @@ body.mobile-drawer-locked {
     padding: 0 4px !important;
   }
 
-  .entry-standing-badge {
+  .score-tooltip-wrapper {
+    position: relative !important;
+    display: inline-flex !important;
+  }
+
+  .score-pct-tooltip {
+    position: absolute !important;
+    bottom: calc(100% + 6px) !important;
+    left: 50% !important;
+    transform: translateX(-50%) translateY(4px) !important;
     width: auto !important;
-    min-width: 44px !important;
-    font-size: 11px !important;
+    min-width: 0 !important;
+    font-size: 10.5px !important;
+    padding: 2px 6px !important;
+  }
+
+  .score-tooltip-wrapper:hover .score-pct-tooltip,
+  .score-tooltip-wrapper:focus-within .score-pct-tooltip {
+    transform: translateX(-50%) translateY(0) !important;
   }
 
   .btn-del-entry {

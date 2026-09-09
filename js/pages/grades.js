@@ -724,27 +724,31 @@ function renderTermTabContent(subject, term, gradeStats) {
                           </div>
 
                           <div class="entry-card-right">
-                            <div class="entry-score-fraction">
-                              <div class="editable-cell editable-score" data-field="score" data-cat-id="${cat.id}" data-ent-id="${ent.id}" data-value="${ent.score}" title="Click to edit score">
-                                <span class="cell-value-text mono-num score-num">${ent.score}</span>
-                                <svg class="edit-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                </svg>
+                            <div class="score-tooltip-wrapper relative group/score">
+                              <div class="entry-score-fraction">
+                                <div class="editable-cell editable-score" data-field="score" data-cat-id="${cat.id}" data-ent-id="${ent.id}" data-value="${ent.score}" title="Click to edit score">
+                                  <span class="cell-value-text mono-num score-num">${ent.score}</span>
+                                  <svg class="edit-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                  </svg>
+                                </div>
+                                <span class="score-slash">/</span>
+                                <div class="editable-cell editable-outof" data-field="out_of" data-cat-id="${cat.id}" data-ent-id="${ent.id}" data-value="${ent.out_of}" title="Click to edit total points">
+                                  <span class="cell-value-text mono-num outof-num">${ent.out_of}</span>
+                                  <svg class="edit-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                  </svg>
+                                </div>
                               </div>
-                              <span class="score-slash">/</span>
-                              <div class="editable-cell editable-outof" data-field="out_of" data-cat-id="${cat.id}" data-ent-id="${ent.id}" data-value="${ent.out_of}" title="Click to edit total points">
-                                <span class="cell-value-text mono-num outof-num">${ent.out_of}</span>
-                                <svg class="edit-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                </svg>
-                              </div>
-                            </div>
 
-                            <div class="subject-standing-pill ${standingClass} entry-standing-badge">
-                              <span class="standing-dot" style="background: currentColor; width: 4px; height: 4px;"></span>
-                              <span class="entry-pct-text">${entPct}%</span>
+                              <!-- Hover/Focus Percentage Tooltip -->
+                              <div class="score-pct-tooltip subject-standing-pill ${standingClass} entry-standing-badge" role="tooltip">
+                                <span class="standing-dot"></span>
+                                <span class="entry-pct-text">${entPct}%</span>
+                                <span class="score-tooltip-arrow"></span>
+                              </div>
                             </div>
 
                             <button type="button" class="btn btn-ghost btn-sm btn-del-entry" data-cat-id="${cat.id}" data-ent-id="${ent.id}" title="Delete Entry" aria-label="Delete Entry">
@@ -1479,7 +1483,7 @@ function attachGradesEvents(container) {
             const livePct = ((currentScore / currentOutOf) * 100).toFixed(1);
             pctTag.textContent = `${livePct}%`;
             if (standingBadge) {
-              standingBadge.className = `subject-standing-pill ${getStandingClass(livePct)} entry-standing-badge`;
+              standingBadge.className = `score-pct-tooltip subject-standing-pill ${getStandingClass(livePct)} entry-standing-badge`;
             }
           }
         };
