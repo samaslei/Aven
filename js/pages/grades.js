@@ -493,10 +493,13 @@ export function renderGradesView(container) {
 
     <!-- Add Entry Modal -->
     <div class="modal-overlay" id="add-entry-modal">
-      <div class="modal-card">
+      <div class="modal-card" style="max-width: 480px;">
         <div class="modal-header">
-          <h3 class="modal-title">Add Assessment Entry</h3>
-          <button class="btn btn-ghost btn-icon close-entry-modal-btn">
+          <div>
+            <h3 class="modal-title">Add Assessment Entry</h3>
+            <p class="modal-subtitle" id="add-entry-category-subtitle" style="font-size: 12.5px; color: var(--text-secondary); margin-top: 2px;"></p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-icon close-entry-modal-btn" aria-label="Close modal">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -508,16 +511,16 @@ export function renderGradesView(container) {
           <div class="modal-body">
             <div class="form-group">
               <label class="form-label" for="new-entry-name">Assessment Name *</label>
-              <input type="text" id="new-entry-name" class="form-input" placeholder="e.g. Quiz 1: Pointers & Recursion" required>
+              <input type="text" id="new-entry-name" class="form-input" placeholder="e.g. Quiz 1: Pointers & Recursion" required autocomplete="off">
             </div>
             <div class="form-row-paired">
               <div class="form-group">
                 <label class="form-label" for="new-entry-score">Score Earned *</label>
-                <input type="number" id="new-entry-score" class="form-input" step="0.1" min="0" placeholder="e.g. 18" required>
+                <input type="number" id="new-entry-score" class="form-input" step="any" min="0" placeholder="e.g. 18" required>
               </div>
               <div class="form-group">
                 <label class="form-label" for="new-entry-outof">Total / Out Of *</label>
-                <input type="number" id="new-entry-outof" class="form-input" step="0.1" min="1" placeholder="e.g. 20" required>
+                <input type="number" id="new-entry-outof" class="form-input" step="any" min="0.01" placeholder="e.g. 20" required>
               </div>
             </div>
           </div>
@@ -1263,6 +1266,70 @@ function attachGradesEvents(container) {
     b.addEventListener('click', () => copyModal?.classList.remove('open'));
   });
 
+  // Add Entry Modal & Form Wiring
+  const entryModal = container.querySelector('#add-entry-modal');
+  const entryForm = container.querySelector('#add-entry-form');
+
+  container.querySelectorAll('.close-entry-modal-btn').forEach(b => {
+    b.addEventListener('click', () => entryModal?.classList.remove('open'));
+  });
+
+  entryModal?.addEventListener('click', (e) => {
+    if (e.target === entryModal) entryModal.classList.remove('open');
+  });
+
+  if (entryForm) {
+    entryForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const catTargetInput = container.querySelector('#entry-target-category-id');
+      const catId = catTargetInput?.value;
+      const nameInput = container.querySelector('#new-entry-name');
+      const scoreInput = container.querySelector('#new-entry-score');
+      const outOfInput = container.querySelector('#new-entry-outof');
+
+      const name = (nameInput?.value || '').trim();
+      const score = Number(scoreInput?.value);
+      const outOf = Number(outOfInput?.value);
+
+      if (!catId) {
+        window.avenApp?.showToast('Error: Target category not found', 'danger');
+        return;
+      }
+
+      if (!name) {
+        window.avenApp?.showToast('Please enter an assessment name', 'danger');
+        nameInput?.focus();
+        return;
+      }
+
+      if (isNaN(score) || score < 0) {
+        window.avenApp?.showToast('Please enter a valid score earned (0 or greater)', 'danger');
+        scoreInput?.focus();
+        return;
+      }
+
+      if (isNaN(outOf) || outOf <= 0) {
+        window.avenApp?.showToast('Total points must be greater than 0', 'danger');
+        outOfInput?.focus();
+        return;
+      }
+
+      store.saveGradeEntry(catId, {
+        name,
+        score,
+        out_of: outOf
+      });
+
+      // Keep this category expanded so the new entry is immediately visible
+      categoryExpandedState[catId] = true;
+
+      entryModal?.classList.remove('open');
+      entryForm.reset();
+      window.avenApp?.showToast(`Added assessment: ${name}`, 'success');
+      renderGradesView(container);
+    });
+  }
+
   // Attach all interactive event handlers inside the content panel
   const attachGradesPanelEvents = (panelRoot) => {
     if (!panelRoot) return;
@@ -1344,11 +1411,24 @@ function attachGradesEvents(container) {
 
     // Add Entry trigger buttons in panel
     panelRoot.querySelectorAll('.btn-add-entry').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         entryForm?.reset();
+        const catId = btn.dataset.catId;
         const catTargetInput = container.querySelector('#entry-target-category-id');
-        if (catTargetInput) catTargetInput.value = btn.dataset.catId;
+        if (catTargetInput) catTargetInput.value = catId;
+
+        const subTitle = container.querySelector('#add-entry-category-subtitle');
+        if (subTitle && selectedSubjectId) {
+          const cats = store.getSubjectGradeCategories(selectedSubjectId, activeTab);
+          const currentCat = cats.find(c => c.id === catId);
+          subTitle.textContent = currentCat ? `Adding to ${currentCat.category}` : '';
+        }
+
         entryModal?.classList.add('open');
+        setTimeout(() => {
+          container.querySelector('#new-entry-name')?.focus();
+        }, 50);
       });
     });
 
