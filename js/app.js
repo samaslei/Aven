@@ -6,6 +6,7 @@
 import { store, events } from './core/store.js';
 import { supabase, getCurrentSession, signOut, onAuthStateChange } from './core/supabase.js';
 import { renderStartupSkeleton } from './ui/skeleton.js';
+import { initGlobalTooltips } from './core/tooltip.js';
 
 function extractAuthUrlParams() {
   if (typeof window === 'undefined') return {};
@@ -101,6 +102,7 @@ class AvenApp {
 
     this.setupNavigation();
     this.setupGlobalEvents();
+    initGlobalTooltips();
     this.setupSyncIndicator();
     this.setupAuthListener();
 

@@ -3165,18 +3165,35 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]) .nav-pill.active:h
 
 .heatmap-tooltip {
   position: fixed;
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--glass-border-elevated);
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg), var(--glass-specular);
-  font-size: 12px;
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 7px 11px;
+  border-radius: var(--radius-md, 7px);
+  box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.50), 0 2px 6px -1px rgba(0, 0, 0, 0.35);
+  font-size: 11.5px;
+  font-family: var(--font-sans);
+  color: #f4f4f5;
   pointer-events: none;
   z-index: 1000;
   display: none;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   max-width: 240px;
+  transition: opacity 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .heatmap-tooltip,
+[data-theme="pure-white"] .heatmap-tooltip {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
+  box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.30);
+}
+
+[data-theme="pure-black"] .heatmap-tooltip {
+  background: #141416;
+  border-color: rgba(255, 255, 255, 0.20);
+  color: #ffffff;
 }
 
 .tracker-tools-grid {
@@ -6176,6 +6193,171 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]) .nav-pill.active:h
   visibility: visible !important;
   pointer-events: auto !important;
   transform: translateX(-50%) translateY(0) !important;
+}
+
+/* ==========================================================================
+   Global Linear / Notion-Inspired Tooltip Component
+   ========================================================================== */
+.app-global-tooltip {
+  position: fixed;
+  z-index: 999999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 3.5px 8.5px;
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-md, 6px);
+  color: #f4f4f5;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.50), 0 2px 6px -1px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: scale(0.96) translateY(2px);
+  transform-origin: center bottom;
+  transition: opacity 0.12s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-global-tooltip.is-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.app-global-tooltip[data-pos="bottom"] {
+  transform-origin: center top;
+  transform: scale(0.96) translateY(-2px);
+}
+
+.app-global-tooltip[data-pos="bottom"].is-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.app-global-tooltip[data-pos="left"] {
+  transform-origin: right center;
+  transform: scale(0.96) translateX(2px);
+}
+
+.app-global-tooltip[data-pos="left"].is-visible {
+  opacity: 1;
+  transform: scale(1) translateX(0);
+}
+
+.app-global-tooltip[data-pos="right"] {
+  transform-origin: left center;
+  transform: scale(0.96) translateX(-2px);
+}
+
+.app-global-tooltip[data-pos="right"].is-visible {
+  opacity: 1;
+  transform: scale(1) translateX(0);
+}
+
+/* Caret Arrow */
+.app-global-tooltip .tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Caret on bottom pointing down to trigger */
+.app-global-tooltip[data-pos="top"] .tooltip-arrow {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 4.5px solid transparent;
+  border-right: 4.5px solid transparent;
+  border-top: 4.5px solid #18181b;
+}
+
+/* Caret on top pointing up to trigger */
+.app-global-tooltip[data-pos="bottom"] .tooltip-arrow {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 4.5px solid transparent;
+  border-right: 4.5px solid transparent;
+  border-bottom: 4.5px solid #18181b;
+}
+
+/* Caret on right pointing left to trigger */
+.app-global-tooltip[data-pos="right"] .tooltip-arrow {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 4.5px solid transparent;
+  border-bottom: 4.5px solid transparent;
+  border-right: 4.5px solid #18181b;
+}
+
+/* Caret on left pointing right to trigger */
+.app-global-tooltip[data-pos="left"] .tooltip-arrow {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 4.5px solid transparent;
+  border-bottom: 4.5px solid transparent;
+  border-left: 4.5px solid #18181b;
+}
+
+/* High-contrast dark pill in light and pure-white modes */
+[data-theme="light"] .app-global-tooltip,
+[data-theme="pure-white"] .app-global-tooltip {
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #f8fafc;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.28), 0 2px 6px -1px rgba(15, 23, 42, 0.15);
+}
+
+[data-theme="light"] .app-global-tooltip[data-pos="top"] .tooltip-arrow,
+[data-theme="pure-white"] .app-global-tooltip[data-pos="top"] .tooltip-arrow {
+  border-top-color: #0f172a;
+}
+
+[data-theme="light"] .app-global-tooltip[data-pos="bottom"] .tooltip-arrow,
+[data-theme="pure-white"] .app-global-tooltip[data-pos="bottom"] .tooltip-arrow {
+  border-bottom-color: #0f172a;
+}
+
+[data-theme="light"] .app-global-tooltip[data-pos="right"] .tooltip-arrow,
+[data-theme="pure-white"] .app-global-tooltip[data-pos="right"] .tooltip-arrow {
+  border-right-color: #0f172a;
+}
+
+[data-theme="light"] .app-global-tooltip[data-pos="left"] .tooltip-arrow,
+[data-theme="pure-white"] .app-global-tooltip[data-pos="left"] .tooltip-arrow {
+  border-left-color: #0f172a;
+}
+
+/* Pure Black mode */
+[data-theme="pure-black"] .app-global-tooltip {
+  background: #141416;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+[data-theme="pure-black"] .app-global-tooltip[data-pos="top"] .tooltip-arrow {
+  border-top-color: #141416;
+}
+
+[data-theme="pure-black"] .app-global-tooltip[data-pos="bottom"] .tooltip-arrow {
+  border-bottom-color: #141416;
+}
+
+[data-theme="pure-black"] .app-global-tooltip[data-pos="right"] .tooltip-arrow {
+  border-right-color: #141416;
+}
+
+[data-theme="pure-black"] .app-global-tooltip[data-pos="left"] .tooltip-arrow {
+  border-left-color: #141416;
 }
 
 /* Delete Entry Button */
