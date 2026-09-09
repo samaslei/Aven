@@ -297,10 +297,10 @@ export function renderStartupSkeleton(targetRoute) {
                 <div class="sk-block" style="width:140px;height:20px;border-radius:999px;"></div>
               </div>
 
-              <!-- Category Cards Grid (Two-Column Grid) -->
-              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start;">
+              <!-- Category Cards Masonry Flow (Two-Column Masonry) -->
+              <div style="column-count: 2; column-gap: 14px;">
                 <!-- Category Card 1 (Expanded with assessment entries) -->
-                <div class="sk-card" style="padding: 14px; gap: 12px; background: var(--bg-surface-elevated);">
+                <div class="sk-card" style="break-inside: avoid; -webkit-column-break-inside: avoid; margin-bottom: 14px; padding: 14px; gap: 12px; background: var(--bg-surface-elevated);">
                   <div style="display:flex;justify-content:space-between;align-items:center;">
                     <div style="display:flex;align-items:center;gap:10px;">
                       <div class="sk-block" style="width:14px;height:14px;border-radius:3px;"></div>
@@ -329,7 +329,7 @@ export function renderStartupSkeleton(targetRoute) {
                 </div>
 
                 <!-- Category Card 2 (Collapsed) -->
-                <div class="sk-card" style="padding: 14px; background: var(--bg-surface-elevated);">
+                <div class="sk-card" style="break-inside: avoid; -webkit-column-break-inside: avoid; margin-bottom: 14px; padding: 14px; background: var(--bg-surface-elevated);">
                   <div style="display:flex;justify-content:space-between;align-items:center;">
                     <div style="display:flex;align-items:center;gap:10px;">
                       <div class="sk-block" style="width:14px;height:14px;border-radius:3px;"></div>
@@ -341,7 +341,7 @@ export function renderStartupSkeleton(targetRoute) {
                 </div>
 
                 <!-- Category Card 3 (Collapsed) -->
-                <div class="sk-card" style="padding: 14px; background: var(--bg-surface-elevated);">
+                <div class="sk-card" style="break-inside: avoid; -webkit-column-break-inside: avoid; margin-bottom: 14px; padding: 14px; background: var(--bg-surface-elevated);">
                   <div style="display:flex;justify-content:space-between;align-items:center;">
                     <div style="display:flex;align-items:center;gap:10px;">
                       <div class="sk-block" style="width:14px;height:14px;border-radius:3px;"></div>
@@ -353,7 +353,7 @@ export function renderStartupSkeleton(targetRoute) {
                 </div>
 
                 <!-- Category Card 4 (Collapsed) -->
-                <div class="sk-card" style="padding: 14px; background: var(--bg-surface-elevated);">
+                <div class="sk-card" style="break-inside: avoid; -webkit-column-break-inside: avoid; margin-bottom: 14px; padding: 14px; background: var(--bg-surface-elevated);">
                   <div style="display:flex;justify-content:space-between;align-items:center;">
                     <div style="display:flex;align-items:center;gap:10px;">
                       <div class="sk-block" style="width:14px;height:14px;border-radius:3px;"></div>

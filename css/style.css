@@ -4118,7 +4118,7 @@ button, input, select, textarea {
 
 @media (max-width: 768px) {
   .category-breakdown-list {
-    grid-template-columns: 1fr;
+    column-count: 1;
   }
 
   .grades-summary-panel {
@@ -5139,10 +5139,8 @@ button, input, select, textarea {
    Category Breakdown Cards & Compact Entry Rows (Prompt 75)
    ========================================================================== */
 .category-breakdown-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  align-items: start;
+  column-count: 2;
+  column-gap: 14px;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -5154,12 +5152,15 @@ button, input, select, textarea {
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  display: block;
+  width: 100%;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 14px;
   transition: all 0.16s ease;
   min-width: 0;
   box-sizing: border-box;
-  align-self: start;
   height: fit-content;
 }
 
@@ -10276,18 +10277,17 @@ body.mobile-drawer-locked {
 }
 
 /* ==========================================================================
-   Grades Breakdown Layout (Two-Column Grid Accordion Sections)
+   Grades Breakdown Layout (Masonry Multi-Column Flow)
    ========================================================================== */
 .category-breakdown-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  align-items: start;
+  column-count: 2;
+  column-gap: 14px;
   width: 100%;
   box-sizing: border-box;
 }
 
 .empty-categories-card {
+  column-span: all;
   grid-column: 1 / -1;
   width: 100%;
 }
@@ -10297,9 +10297,14 @@ body.mobile-drawer-locked {
   border: 1.5px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  display: block;
+  width: 100%;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 14px;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  align-self: start;
   height: fit-content;
 }
 
