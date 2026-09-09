@@ -290,16 +290,24 @@ export function renderStartupSkeleton(targetRoute) {
         <div class="sk-grades-layout">
           <!-- Left: Main Breakdown Area with Folder Tabs & Category Cards -->
           <div style="display: flex; flex-direction: column;">
-            <!-- Folder Tab Strip -->
-            <div style="display: flex; align-items: flex-end; gap: 4px; padding-left: 8px;">
-              <!-- Active Folder Tab (Taller, seamless merge) -->
-              <div class="sk-block" style="width: 150px; height: 40px; border-radius: 10px 10px 0 0; opacity: 0.95; display: flex; align-items: center; justify-content: space-between; padding: 0 14px;">
-                <div class="sk-block" style="width: 65px; height: 12px; border-radius: 3px; background: rgba(0,0,0,0.15);"></div>
-                <div class="sk-block" style="width: 35px; height: 16px; border-radius: 999px; background: rgba(0,0,0,0.2);"></div>
+            <!-- Folder Tab Strip with Actions -->
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; padding: 0 12px 0 8px;">
+              <div style="display: flex; align-items: flex-end; gap: 4px;">
+                <!-- Active Folder Tab (Taller, seamless merge) -->
+                <div class="sk-block" style="width: 150px; height: 40px; border-radius: 10px 10px 0 0; opacity: 0.95; display: flex; align-items: center; justify-content: space-between; padding: 0 14px;">
+                  <div class="sk-block" style="width: 65px; height: 12px; border-radius: 3px; background: rgba(0,0,0,0.15);"></div>
+                  <div class="sk-block" style="width: 35px; height: 16px; border-radius: 999px; background: rgba(0,0,0,0.2);"></div>
+                </div>
+                <!-- Inactive Tabs -->
+                <div class="sk-block" style="width: 135px; height: 33px; border-radius: 8px 8px 0 0; opacity: 0.5;"></div>
+                <div class="sk-block" style="width: 155px; height: 33px; border-radius: 8px 8px 0 0; opacity: 0.5;"></div>
               </div>
-              <!-- Inactive Tabs -->
-              <div class="sk-block" style="width: 135px; height: 33px; border-radius: 8px 8px 0 0; opacity: 0.5;"></div>
-              <div class="sk-block" style="width: 155px; height: 33px; border-radius: 8px 8px 0 0; opacity: 0.5;"></div>
+
+              <!-- Right Actions Skeleton -->
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                <div class="sk-block" style="width: 78px; height: 28px; border-radius: 999px;"></div>
+                <div class="sk-block" style="width: 110px; height: 28px; border-radius: 999px;"></div>
+              </div>
             </div>
 
             <!-- Panel Content Box -->

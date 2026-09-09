@@ -147,26 +147,43 @@ export function renderGradesView(container) {
     const standingInfo = getOverallStandingBadge(overall.rawAvgPct);
     const recentEntries = store.getRecentGradeEntries(8);
 
+    const isGwaEmpty = !overall.gradedSubjects || overall.gradedSubjects === 0;
+
     return `
       <div class="grades-summary-panel">
         <!-- 1. Overall GWA + Standing Badge -->
-        <div class="grades-summary-card gwa-card">
-          <div class="grades-summary-card-header">
-            <span class="grades-summary-card-title">Overall GWA</span>
-          </div>
-          <div class="gwa-content">
-            <div class="gwa-large-number" style="color: ${standingInfo.color};">
-              ${overall.avgPct}
+        ${isGwaEmpty ? `
+          <div class="grades-summary-card gwa-card gwa-card-empty">
+            <div class="grades-summary-card-header">
+              <span class="grades-summary-card-title">Overall GWA</span>
             </div>
-            <div class="subject-standing-pill ${standingInfo.standingClass} gwa-standing-badge">
-              <span class="standing-dot" style="background: currentColor; width: 5px; height: 5px;"></span>
-              <span>${standingInfo.label}</span>
-            </div>
-            <div class="gwa-subtext">
-              ${overall.gradedSubjects > 0 ? `${overall.gradedSubjects} of ${overall.totalSubjects} active subjects graded` : 'No subject grades calculated yet'}
+            <div class="gwa-empty-state">
+              <span class="gwa-empty-dash" aria-hidden="true">—</span>
+              <div class="gwa-empty-info">
+                <span class="gwa-empty-title">No Graded Subjects</span>
+                <span class="gwa-empty-subtext">No subject grades calculated yet</span>
+              </div>
             </div>
           </div>
-        </div>
+        ` : `
+          <div class="grades-summary-card gwa-card">
+            <div class="grades-summary-card-header">
+              <span class="grades-summary-card-title">Overall GWA</span>
+            </div>
+            <div class="gwa-content">
+              <div class="gwa-large-number" style="color: ${standingInfo.color};">
+                ${overall.avgPct}
+              </div>
+              <div class="subject-standing-pill ${standingInfo.standingClass} gwa-standing-badge">
+                <span class="standing-dot" style="background: currentColor; width: 5px; height: 5px;"></span>
+                <span>${standingInfo.label}</span>
+              </div>
+              <div class="gwa-subtext">
+                ${overall.gradedSubjects > 0 ? `${overall.gradedSubjects} of ${overall.totalSubjects} active subjects graded` : 'No subject grades calculated yet'}
+              </div>
+            </div>
+          </div>
+        `}
 
         <!-- 2. Subjects Overview (Primary Subject Switcher) -->
         <div class="grades-summary-card subjects-overview-card">
@@ -244,30 +261,72 @@ export function renderGradesView(container) {
             <p style="margin-top: 8px;">Select a subject from the Subjects Overview panel to calculate weighted grades.</p>
           </div>
         ` : `
-          <!-- Browser-Style Tab Strip (Arc / Chrome Tabs) -->
+          <!-- Browser-Style Tab Strip (Arc / Chrome Tabs) with Action Buttons -->
           <div class="browser-tab-strip">
-            <div class="browser-tab ${activeTab === 'Midterm' ? 'active' : ''}" data-tab="Midterm">
-              <span class="tab-label-full">Midterm Term</span>
-              <span class="tab-label-short">Midterm</span>
-              <span class="browser-tab-badge" style="color: ${getStandingColor(gradeStats.midterm.percentage)}; font-weight: 600;">
-                ${gradeStats.midterm.percentage !== null ? `${gradeStats.midterm.percentage}%` : '—'}
-              </span>
+            <div class="browser-tabs-group">
+              <div class="browser-tab ${activeTab === 'Midterm' ? 'active' : ''}" data-tab="Midterm">
+                <span class="tab-label-full">Midterm Term</span>
+                <span class="tab-label-short">Midterm</span>
+                <span class="browser-tab-badge" style="color: ${getStandingColor(gradeStats.midterm.percentage)}; font-weight: 600;">
+                  ${gradeStats.midterm.percentage !== null ? `${gradeStats.midterm.percentage}%` : '—'}
+                </span>
+              </div>
+
+              <div class="browser-tab ${activeTab === 'Final' ? 'active' : ''}" data-tab="Final">
+                <span class="tab-label-full">Final Term</span>
+                <span class="tab-label-short">Final</span>
+                <span class="browser-tab-badge" style="color: ${getStandingColor(gradeStats.final.percentage)}; font-weight: 600;">
+                  ${gradeStats.final.percentage !== null ? `${gradeStats.final.percentage}%` : '—'}
+                </span>
+              </div>
+
+              <div class="browser-tab ${activeTab === 'Overall' ? 'active' : ''}" data-tab="Overall">
+                <span class="tab-label-full">Overall Composite</span>
+                <span class="tab-label-short">Overall</span>
+                <span class="browser-tab-badge" style="color: ${getStandingColor(gradeStats.overallPercentage)}; font-weight: 600;">
+                  ${gradeStats.overallPercentage !== null ? `${gradeStats.overallPercentage}% · ${gradeStats.philGrade.grade}` : '—'}
+                </span>
+              </div>
             </div>
 
-            <div class="browser-tab ${activeTab === 'Final' ? 'active' : ''}" data-tab="Final">
-              <span class="tab-label-full">Final Term</span>
-              <span class="tab-label-short">Final</span>
-              <span class="browser-tab-badge" style="color: ${getStandingColor(gradeStats.final.percentage)}; font-weight: 600;">
-                ${gradeStats.final.percentage !== null ? `${gradeStats.final.percentage}%` : '—'}
-              </span>
-            </div>
+            <div class="browser-tab-actions">
+              <!-- Export to Excel Dropdown Menu -->
+              <div style="position: relative;">
+                <button class="btn btn-secondary btn-sm btn-grades-export-toggle btn-responsive-action" title="Export grade report to Excel (.xlsx)" aria-label="Export">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                  <span class="btn-text">Export</span>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="export-chevron-icon" style="margin-left: 2px;">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+                <div class="user-popover grades-export-popover">
+                  <div style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 4px 8px 6px 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 4px; letter-spacing: 0.04em;">
+                    Export Excel (.xlsx)
+                  </div>
+                  <button class="popover-item btn-export-current-subject" data-subject-id="${selectedSubject.id}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--success); flex-shrink: 0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                    <span>${selectedSubject.code || 'Current Subject'} (.xlsx)</span>
+                  </button>
+                  <button class="popover-item btn-export-all-subjects">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent); flex-shrink: 0;"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                    <span>All Active Subjects (.xlsx)</span>
+                  </button>
+                </div>
+              </div>
 
-            <div class="browser-tab ${activeTab === 'Overall' ? 'active' : ''}" data-tab="Overall">
-              <span class="tab-label-full">Overall Composite</span>
-              <span class="tab-label-short">Overall</span>
-              <span class="browser-tab-badge" style="color: ${getStandingColor(gradeStats.overallPercentage)}; font-weight: 600;">
-                ${gradeStats.overallPercentage !== null ? `${gradeStats.overallPercentage}% · ${gradeStats.philGrade.grade}` : '—'}
-              </span>
+              <button class="btn btn-primary btn-sm btn-responsive-action" id="btn-open-add-cat" title="Add Assessment Category" aria-label="Add Category" style="${activeTab === 'Overall' ? 'display: none;' : ''}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span class="btn-text">Add Category</span>
+              </button>
             </div>
           </div>
 
@@ -514,62 +573,20 @@ function renderTermTabContent(subject, term, gradeStats) {
           <h3 style="font-size: 18px; font-weight: 700; letter-spacing: -0.02em;">${subject.name} — ${term} Breakdown</h3>
         </div>
 
-        <div class="term-header-right" style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
-          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
-            <div id="grades-sync-indicator" class="sync-status-indicator sync-${syncState.status}">
-              ${renderSyncIndicatorHtml(syncState)}
-            </div>
-
-            ${term === 'Final' && midtermCategories.length > 0 ? `
-              <button class="btn btn-secondary btn-sm" id="btn-copy-to-finals" title="Duplicate category names & weights into Final term">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                Copy categories to Finals
-              </button>
-            ` : ''}
-
-
-
-            <!-- Export to Excel Dropdown Menu -->
-            <div style="position: relative;">
-              <button class="btn btn-secondary btn-sm btn-grades-export-toggle btn-responsive-action" title="Export grade report to Excel (.xlsx)" aria-label="Export">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-                <span class="btn-text">Export</span>
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="export-chevron-icon" style="margin-left: 2px;">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              <div class="user-popover grades-export-popover">
-                <div style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 4px 8px 6px 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 4px; letter-spacing: 0.04em;">
-                  Export Excel (.xlsx)
-                </div>
-                <button class="popover-item btn-export-current-subject" data-subject-id="${subject.id}">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--success); flex-shrink: 0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                  <span>${subject.code || 'Current Subject'} (.xlsx)</span>
-                </button>
-                <button class="popover-item btn-export-all-subjects">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent); flex-shrink: 0;"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-                  <span>All Active Subjects (.xlsx)</span>
-                </button>
-              </div>
-            </div>
-
-            <button class="btn btn-primary btn-sm btn-responsive-action" id="btn-open-add-cat" title="Add Assessment Category" aria-label="Add Category">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              <span class="btn-text">Add Category</span>
-            </button>
+        <div class="term-header-right" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end;">
+          <div id="grades-sync-indicator" class="sync-status-indicator sync-${syncState.status}">
+            ${renderSyncIndicatorHtml(syncState)}
           </div>
+
+          ${term === 'Final' && midtermCategories.length > 0 ? `
+            <button class="btn btn-secondary btn-sm" id="btn-copy-to-finals" title="Duplicate category names & weights into Final term">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy categories to Finals
+            </button>
+          ` : ''}
 
           <span class="term-weight-summary" style="font-size: 12.5px; color: var(--text-secondary); text-align: right;">
             Total configured weight: <strong>${termData.totalWeight}%</strong> ${termData.totalWeight === 100 ? '<span style="color: var(--success); font-weight: 600;">✓ (100% Balanced)</span>' : `<span style="color: var(--warning);">(Need ${100 - termData.totalWeight}% more)</span>`}
@@ -779,43 +796,11 @@ function renderOverallTabContent(subject, gradeStats) {
 
   return `
     <div class="overall-breakdown-container">
-      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-        <div>
-          <h3 style="font-size: 18px; font-weight: 700;">${subject.name} — Overall Standing & Target Solver</h3>
-          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">
-            Combine Midterm and Final terms with customized weighting.
-          </p>
-        </div>
-
-        <!-- Export to Excel Dropdown Menu -->
-        <div style="position: relative;">
-          <button class="btn btn-secondary btn-sm btn-grades-export-toggle btn-responsive-action" title="Export grade report to Excel (.xlsx)" aria-label="Export">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            <span class="btn-text">Export to Excel</span>
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="export-chevron-icon" style="margin-left: 2px;">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-          <div class="user-popover grades-export-popover">
-            <div style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 4px 8px 6px 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 4px; letter-spacing: 0.04em;">
-              Export Excel (.xlsx)
-            </div>
-            <button class="popover-item btn-export-current-subject" data-subject-id="${subject.id}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--success); flex-shrink: 0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-              <span>${subject.code || 'Current Subject'} (.xlsx)</span>
-            </button>
-            <button class="popover-item btn-export-all-subjects">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent); flex-shrink: 0;"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-              <span>All Active Subjects (.xlsx)</span>
-            </button>
-          </div>
-        </div>
+      <div>
+        <h3 style="font-size: 18px; font-weight: 700;">${subject.name} — Overall Standing & Target Solver</h3>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">
+          Combine Midterm and Final terms with customized weighting.
+        </p>
       </div>
 
       <!-- Weight Split Controller -->
@@ -1773,6 +1758,10 @@ function attachGradesEvents(container) {
         const isNowActive = tabEl.dataset.tab === newTab;
         tabEl.classList.toggle('active', isNowActive);
       });
+      const addCatBtn = tabStrip.querySelector('#btn-open-add-cat');
+      if (addCatBtn) {
+        addCatBtn.style.display = newTab === 'Overall' ? 'none' : '';
+      }
     }
 
     // Update modal template button text if present
