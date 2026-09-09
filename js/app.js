@@ -337,10 +337,8 @@ class AvenApp {
     });
 
     if (activeLink && navLinksGroup && indicator) {
-      const groupRect = navLinksGroup.getBoundingClientRect();
-      const linkRect = activeLink.getBoundingClientRect();
-      const leftOffset = linkRect.left - groupRect.left;
-      const width = linkRect.width;
+      const leftOffset = activeLink.offsetLeft;
+      const width = activeLink.offsetWidth;
 
       if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         indicator.style.transition = 'none';
@@ -351,6 +349,11 @@ class AvenApp {
       indicator.style.transform = `translateX(${leftOffset}px)`;
       indicator.style.width = `${width}px`;
       indicator.style.opacity = '1';
+
+      // Ensure active pill stays smoothly visible when container scrolls
+      try {
+        activeLink.scrollIntoView({ behavior: animate ? 'smooth' : 'auto', block: 'nearest', inline: 'nearest' });
+      } catch (e) {}
     } else if (indicator) {
       indicator.style.opacity = '0';
     }

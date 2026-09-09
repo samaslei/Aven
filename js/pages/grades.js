@@ -597,7 +597,7 @@ function renderTermTabContent(subject, term, gradeStats) {
       </div>
 
       <!-- Categories & Assessment Entries List (Clean Breakdown Accordion) -->
-      <div class="category-breakdown-list">
+      <div class="category-breakdown-list grid grid-cols-1 md:grid-cols-2 gap-4">
         ${categories.length === 0 ? `
           <div class="empty-categories-card">
             <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--bg-surface-elevated); border: 1px solid var(--border-default); display: flex; align-items: center; justify-content: center; margin-bottom: 4px; color: var(--accent);">

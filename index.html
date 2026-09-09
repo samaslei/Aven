@@ -78,27 +78,27 @@
 
   <div id="app" style="display: none;">
     <!-- Floating Top Pill Navigation Bar (Floating, border-radius: 999px, page-background margin) -->
-    <header class="top-nav-bar" id="top-nav-bar">
+    <header class="top-nav-bar w-full flex items-center justify-between gap-3 px-4 py-2" id="top-nav-bar">
       <!-- Left Side: Logo & Navigation Links Pill Group -->
-      <div class="top-nav-left">
-        <a href="#subjects" class="top-nav-brand" aria-label="Aven Home">
+      <div class="top-nav-left min-w-0 flex items-center gap-3">
+        <a href="#subjects" class="top-nav-brand flex-shrink-0" aria-label="Aven Home">
           <img src="favicon.svg" alt="Aven Logo" class="top-nav-brand-icon">
           <span class="top-nav-brand-text">Aven</span>
         </a>
 
-        <!-- Bordered Pill Group: Nav Links -->
-        <nav class="top-nav-pill-group top-nav-links-group" id="top-nav-links-group" aria-label="Primary Navigation">
+        <!-- Bordered Pill Group: Nav Links (Self-contained pill capsule, scrolls horizontally on constrained widths) -->
+        <nav class="top-nav-pill-group top-nav-links-group min-w-0 overflow-x-auto scrollbar-none flex-nowrap" id="top-nav-links-group" aria-label="Primary Navigation">
           <div class="nav-pill-indicator" id="nav-pill-indicator" aria-hidden="true"></div>
-          <a href="#subjects" class="nav-pill active" data-page="subjects">Subjects</a>
-          <a href="#tracker" class="nav-pill" data-page="tracker">Tracker</a>
-          <a href="#grades" class="nav-pill" data-page="grades">Grades</a>
-          <a href="#schedule" class="nav-pill" data-page="schedule">Schedule</a>
+          <a href="#subjects" class="nav-pill flex-shrink-0 active" data-page="subjects">Subjects</a>
+          <a href="#tracker" class="nav-pill flex-shrink-0" data-page="tracker">Tracker</a>
+          <a href="#grades" class="nav-pill flex-shrink-0" data-page="grades">Grades</a>
+          <a href="#schedule" class="nav-pill flex-shrink-0" data-page="schedule">Schedule</a>
         </nav>
       </div>
 
       <!-- Right Side: Controls & Profile Pill Group -->
-      <div class="top-nav-right">
-        <div class="top-nav-pill-group top-nav-controls-group" id="top-nav-controls-group">
+      <div class="top-nav-right flex-shrink-0">
+        <div class="top-nav-pill-group top-nav-controls-group flex-shrink-0" id="top-nav-controls-group">
           <!-- 1. Theme Toggle Button -->
           <button type="button" class="top-nav-icon-btn" id="top-theme-btn" aria-label="Toggle light and dark theme" title="Toggle Theme">
             <svg class="icon-theme-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
