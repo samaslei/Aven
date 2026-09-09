@@ -290,3 +290,119 @@ export function aggregateRecentStudyHistory(sessions = []) {
     return entry;
   });
 }
+
+/**
+ * Calculates daily study hours for the current week (Monday through Sunday)
+ * @param {Array<{ date: string, duration: number }>} sessions 
+ * @param {Date|string} [targetDate=new Date()] 
+ * @returns {{ days: Array<{ dayName: string, date: string, hours: number, hoursFormatted: string, minutes: number, heightPct: number, isMax: boolean, isToday: boolean }>, totalWeeklyHours: string, totalWeeklyMinutes: number }}
+ */
+export function calculateWeeklyStudyHours(sessions = [], targetDate = new Date()) {
+  const target = new Date(targetDate);
+  const dayOfWeek = target.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(target);
+  monday.setDate(target.getDate() + diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+
+  const dateMap = {};
+  sessions.forEach(s => {
+    if (s.date) {
+      dateMap[s.date] = (dateMap[s.date] || 0) + Number(s.duration || 0);
+    }
+  });
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const days = [];
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const minutes = dateMap[dateStr] || 0;
+    const hours = minutes / 60;
+
+    days.push({
+      dayName: dayNames[i],
+      date: dateStr,
+      minutes,
+      hours: Number(hours.toFixed(1)),
+      hoursFormatted: `${hours.toFixed(1)}h`,
+      isToday: dateStr === todayStr
+    });
+  }
+
+  const maxHours = Math.max(...days.map(d => d.hours));
+  const effectiveMax = maxHours > 0 ? maxHours : 1;
+
+  days.forEach(d => {
+    d.isMax = d.hours > 0 && d.hours === maxHours;
+    // Scale height between 12% min (for 0h or small bar) and 100% max
+    d.heightPct = d.hours > 0 ? Math.max(16, Math.min(100, Math.round((d.hours / effectiveMax) * 100))) : 8;
+  });
+
+  const totalWeeklyMinutes = days.reduce((sum, d) => sum + d.minutes, 0);
+  const totalWeeklyHours = (totalWeeklyMinutes / 60).toFixed(1);
+
+  return {
+    days,
+    totalWeeklyHours,
+    totalWeeklyMinutes
+  };
+}
+
+/**
+ * Calculates per-subject study progress and relative bar fill percentages
+ * @param {Array<{ subject_id?: string, duration: number }>} sessions 
+ * @param {Array<{ id: string, name: string, code?: string, color?: string }>} activeSubjects 
+ * @returns {Array<{ id: string, code: string, name: string, color: string, hours: number, hoursFormatted: string, minutes: number, progressPct: number }>}
+ */
+export function calculateSubjectProgress(sessions = [], activeSubjects = []) {
+  const subjectMinutesMap = {};
+  sessions.forEach(s => {
+    const subId = s.subject_id || 'general';
+    subjectMinutesMap[subId] = (subjectMinutesMap[subId] || 0) + Number(s.duration || 0);
+  });
+
+  const list = [];
+  (activeSubjects || []).forEach(sub => {
+    const mins = subjectMinutesMap[sub.id] || 0;
+    const hours = mins / 60;
+    list.push({
+      id: sub.id,
+      code: sub.code || sub.name,
+      name: sub.name,
+      color: sub.color || '#8A9A5B',
+      minutes: mins,
+      hours: Number(hours.toFixed(1)),
+      hoursFormatted: `${hours.toFixed(1)}h`
+    });
+  });
+
+  if (subjectMinutesMap['general'] > 0) {
+    const mins = subjectMinutesMap['general'];
+    const hours = mins / 60;
+    list.push({
+      id: 'general',
+      code: 'General',
+      name: 'General Study',
+      color: '#94a3b8',
+      minutes: mins,
+      hours: Number(hours.toFixed(1)),
+      hoursFormatted: `${hours.toFixed(1)}h`
+    });
+  }
+
+  // Sort descending by study hours
+  list.sort((a, b) => b.hours - a.hours);
+
+  const maxHours = Math.max(...list.map(s => s.hours), 0);
+  const scaleTarget = maxHours > 0 ? maxHours : 1;
+
+  list.forEach(item => {
+    item.progressPct = item.hours > 0 ? Math.min(100, Math.max(8, Math.round((item.hours / scaleTarget) * 100))) : 0;
+  });
+
+  return list;
+}

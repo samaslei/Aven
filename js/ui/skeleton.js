@@ -187,67 +187,118 @@ export function renderStartupSkeleton(targetRoute) {
       </div>
 
       <div class="sk-body">
-        <!-- Row 1: Pomodoro Timer (Capped 540px, Centered) -->
-        <div class="sk-tracker-tools-row" style="width: 100%; margin-bottom: 12px; display: flex; justify-content: center;">
-          <!-- Card 1: Bentodoro Timer (Capped 540px) -->
-          <div class="sk-card" style="min-height: 250px; width: 100%; max-width: 540px; box-sizing: border-box;">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">
-              <div class="sk-block" style="width:90px;height:16px;border-radius:4px;"></div>
-              <div class="sk-block" style="width:28px;height:28px;border-radius:6px;"></div>
+        <div class="tracker-dashboard-layout-v2">
+          <!-- Left Sidebar Column -->
+          <div class="tracker-sidebar-col">
+            <!-- Card 1: Pomodoro Timer -->
+            <div class="sk-card" style="padding: 16px; box-sizing: border-box;">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--border-subtle);">
+                <div class="sk-block" style="width:90px;height:14px;border-radius:4px;"></div>
+                <div class="sk-block" style="width:24px;height:24px;border-radius:6px;"></div>
+              </div>
+              <div style="width: 100%; display: flex; flex-direction: column; gap: 10px; padding: 6px 0;">
+                <div class="sk-block" style="width: 100%; height: 28px; border-radius: 999px;"></div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <div class="sk-block" style="flex: 1; height: 28px; border-radius: 6px;"></div>
+                  <div class="sk-block" style="width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0;"></div>
+                  <div class="sk-block" style="width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0;"></div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 0;">
+                  <div class="sk-block" style="width: 130px; height: 40px; border-radius: 8px;"></div>
+                  <div class="sk-block" style="width: 100%; height: 5px; border-radius: 999px;"></div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                  <div class="sk-block" style="width: 80px; height: 12px; border-radius: 4px;"></div>
+                  <div class="sk-block" style="width: 100px; height: 10px; border-radius: 4px;"></div>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <div class="sk-block" style="flex: 1; height: 34px; border-radius: 6px;"></div>
+                  <div class="sk-block" style="width: 36px; height: 34px; border-radius: 6px;"></div>
+                  <div class="sk-block" style="width: 36px; height: 34px; border-radius: 6px;"></div>
+                </div>
+              </div>
             </div>
-            <!-- Pomodoro Content -->
-            <div style="width: 100%; display: flex; flex-direction: column; gap: 12px; padding: 6px 0;">
-              <!-- Tabs -->
-              <div class="sk-block" style="width: 100%; height: 32px; border-radius: 999px;"></div>
-              <!-- Subject Dropdown + Icon Buttons -->
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <div class="sk-block" style="flex: 1; height: 30px; border-radius: 6px;"></div>
-                <div class="sk-block" style="width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;"></div>
-                <div class="sk-block" style="width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;"></div>
-              </div>
-              <!-- Digits & Progress Bar -->
-              <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0;">
-                <div class="sk-block" style="width: 140px; height: 44px; border-radius: 8px;"></div>
-                <div class="sk-block" style="width: 100%; height: 6px; border-radius: 999px;"></div>
-              </div>
-              <!-- Session round -->
-              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                <div class="sk-block" style="width: 80px; height: 14px; border-radius: 4px;"></div>
-                <div class="sk-block" style="width: 100px; height: 12px; border-radius: 4px;"></div>
-              </div>
-              <!-- Controls -->
-              <div style="display: flex; gap: 8px;">
-                <div class="sk-block" style="flex: 1.15; height: 36px; border-radius: 6px;"></div>
-                <div class="sk-block" style="flex: 1; height: 36px; border-radius: 6px;"></div>
-                <div class="sk-block" style="flex: 1; height: 36px; border-radius: 6px;"></div>
+
+            <!-- Card 2: Subject Progress -->
+            <div class="sk-card" style="padding: 16px; box-sizing: border-box;">
+              <div class="sk-block" style="width: 120px; height: 14px; border-radius: 4px; margin-bottom: 12px;"></div>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="sk-block" style="width: 60px; height: 12px; border-radius: 3px;"></div>
+                  <div class="sk-block" style="flex: 1; height: 6px; border-radius: 999px;"></div>
+                  <div class="sk-block" style="width: 28px; height: 12px; border-radius: 3px;"></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="sk-block" style="width: 55px; height: 12px; border-radius: 3px;"></div>
+                  <div class="sk-block" style="flex: 1; height: 6px; border-radius: 999px;"></div>
+                  <div class="sk-block" style="width: 28px; height: 12px; border-radius: 3px;"></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="sk-block" style="width: 65px; height: 12px; border-radius: 3px;"></div>
+                  <div class="sk-block" style="flex: 1; height: 6px; border-radius: 999px;"></div>
+                  <div class="sk-block" style="width: 28px; height: 12px; border-radius: 3px;"></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Row 2: Milestone Journey + Yearly Heatmap (Split evenly 50/50) -->
-        <div class="sk-tracker-analytics-row" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px;">
-          <!-- Card 1: Milestone Journey -->
-          <div class="sk-card" style="min-height: 200px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">
-              <div class="sk-block" style="width:130px;height:16px;border-radius:4px;"></div>
-              <div class="sk-block" style="width:65px;height:20px;border-radius:999px;"></div>
+          <!-- Right Main Column -->
+          <div class="tracker-main-col">
+            <!-- Card 1: Weekly Study Hours -->
+            <div class="sk-card" style="padding: 18px 22px; box-sizing: border-box;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <div class="sk-block" style="width:150px;height:14px;border-radius:4px;"></div>
+                <div class="sk-block" style="width:110px;height:14px;border-radius:4px;"></div>
+              </div>
+              <div style="display: flex; align-items: flex-end; justify-content: space-between; height: 160px; gap: 10px; padding-top: 10px;">
+                <div class="sk-block" style="flex: 1; height: 35%; border-radius: 4px 4px 0 0;"></div>
+                <div class="sk-block" style="flex: 1; height: 50%; border-radius: 4px 4px 0 0;"></div>
+                <div class="sk-block" style="flex: 1; height: 90%; border-radius: 4px 4px 0 0;"></div>
+                <div class="sk-block" style="flex: 1; height: 40%; border-radius: 4px 4px 0 0;"></div>
+                <div class="sk-block" style="flex: 1; height: 65%; border-radius: 4px 4px 0 0;"></div>
+                <div class="sk-block" style="flex: 1; height: 30%; border-radius: 4px 4px 0 0;"></div>
+                <div class="sk-block" style="flex: 1; height: 25%; border-radius: 4px 4px 0 0;"></div>
+              </div>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;">
-              <div class="sk-block" style="width:80px;height:30px;border-radius:6px;"></div>
-              <div class="sk-block" style="width:50px;height:16px;border-radius:4px;"></div>
-            </div>
-            <div class="sk-block" style="width:100%;height:8px;border-radius:999px;margin-top:12px;"></div>
-            <div class="sk-block" style="width:170px;height:12px;border-radius:4px;margin-top:auto;"></div>
-          </div>
 
-          <!-- Card 2: Yearly Heatmap -->
-          <div class="sk-card" style="min-height: 200px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-              <div class="sk-block" style="width:150px;height:16px;border-radius:4px;"></div>
-              <div class="sk-block" style="width:110px;height:24px;border-radius:6px;"></div>
+            <!-- Middle Row: Milestone & Heatmap Side by Side -->
+            <div class="tracker-analytics-row">
+              <!-- Milestone Journey Skeleton -->
+              <div class="sk-card" style="padding: 16px; box-sizing: border-box;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--border-subtle);">
+                  <div class="sk-block" style="width:140px;height:14px;border-radius:4px;"></div>
+                </div>
+                <div class="sk-block" style="width:100%;height:6px;border-radius:999px;margin:12px 0 8px;"></div>
+                <div class="sk-block" style="width:160px;height:12px;border-radius:4px;margin-bottom:12px;"></div>
+                <div style="display: flex; justify-content: space-between;">
+                  <div class="sk-block" style="width: 50px; height: 24px; border-radius: 4px;"></div>
+                  <div class="sk-block" style="width: 50px; height: 24px; border-radius: 4px;"></div>
+                  <div class="sk-block" style="width: 50px; height: 24px; border-radius: 4px;"></div>
+                </div>
+              </div>
+
+              <!-- Yearly Heatmap Skeleton -->
+              <div class="sk-card" style="min-height: 180px; padding: 18px 22px; box-sizing: border-box;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                  <div class="sk-block" style="width:110px;height:14px;border-radius:4px;"></div>
+                  <div class="sk-block" style="width:90px;height:22px;border-radius:6px;"></div>
+                </div>
+                <div class="sk-block" style="width:100%;height:100px;border-radius:6px;opacity:0.65;"></div>
+              </div>
             </div>
-            <div class="sk-block" style="width:100%;height:120px;border-radius:8px;opacity:0.65;"></div>
+
+            <!-- Card 3: Recent Study History -->
+            <div class="sk-card" style="min-height: 200px; padding: 18px 22px; box-sizing: border-box;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <div class="sk-block" style="width:140px;height:14px;border-radius:4px;"></div>
+                <div class="sk-block" style="width:70px;height:14px;border-radius:4px;"></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="sk-block" style="width: 100%; height: 32px; border-radius: 4px;"></div>
+                <div class="sk-block" style="width: 100%; height: 32px; border-radius: 4px;"></div>
+                <div class="sk-block" style="width: 100%; height: 32px; border-radius: 4px;"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

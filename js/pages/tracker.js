@@ -4,7 +4,7 @@
  */
 
 import { store, events } from '../core/store.js';
-import { calculateMilestoneData, aggregateRecentStudyHistory } from '../domain/tracker-calculator.js';
+import { calculateMilestoneData, aggregateRecentStudyHistory, calculateWeeklyStudyHours, calculateSubjectProgress } from '../domain/tracker-calculator.js';
 import { playAlarmSound, playTickSound, playDualToneChime } from '../utils/audio.js';
 import { formatMinutesAndSeconds, getTodayISO } from '../utils/date-utils.js';
 import { renderCustomSubjectDropdown, initCustomDropdown, renderSubjectSelectOptions } from '../ui/dropdown.js';
@@ -52,6 +52,8 @@ export function renderTrackerView(container) {
   const sessions = store.getSessions().sort((a, b) => new Date(b.date + ' ' + (b.created_at || '')) - new Date(a.date + ' ' + (a.created_at || '')));
   const displaySessions = aggregateRecentStudyHistory(sessions);
   const calendarData = store.getYearCalendarMatrix(heatmapYear);
+  const weeklyData = calculateWeeklyStudyHours(sessions);
+  const subjectProgress = calculateSubjectProgress(sessions, activeSubjects);
 
 
   // Set default subject if not set
@@ -156,11 +158,11 @@ export function renderTrackerView(container) {
       : (pomoPhase === 'long-break' ? 'Time for a longer break!' : 'Time for a break!');
 
     return `
-      <!-- Phase Switcher: 3 Tabs (Pomodoro, Short Break, Long Break) -->
+      <!-- Phase Switcher: 3 Tabs (Focus, Short, Long) -->
       <div class="pomo-tabs" id="pomo-tabs" role="tablist" aria-label="Timer phase selector">
-        <button type="button" class="pomo-tab-btn ${pomoPhase === 'focus' ? 'active' : ''}" data-phase="focus" role="tab" aria-selected="${pomoPhase === 'focus'}">Pomodoro</button>
-        <button type="button" class="pomo-tab-btn ${pomoPhase === 'break' ? 'active' : ''}" data-phase="break" role="tab" aria-selected="${pomoPhase === 'break'}">Short Break</button>
-        <button type="button" class="pomo-tab-btn ${pomoPhase === 'long-break' ? 'active' : ''}" data-phase="long-break" role="tab" aria-selected="${pomoPhase === 'long-break'}">Long Break</button>
+        <button type="button" class="pomo-tab-btn ${pomoPhase === 'focus' ? 'active' : ''}" data-phase="focus" role="tab" aria-selected="${pomoPhase === 'focus'}">Focus</button>
+        <button type="button" class="pomo-tab-btn ${pomoPhase === 'break' ? 'active' : ''}" data-phase="break" role="tab" aria-selected="${pomoPhase === 'break'}">Short</button>
+        <button type="button" class="pomo-tab-btn ${pomoPhase === 'long-break' ? 'active' : ''}" data-phase="long-break" role="tab" aria-selected="${pomoPhase === 'long-break'}">Long</button>
       </div>
 
       <!-- Sub-row: Subject Selector & Settings Gear Button -->
@@ -327,6 +329,38 @@ export function renderTrackerView(container) {
 
         <div id="pomo-card-body" class="pomo-card-body">
           ${renderPomodoroBodyHtml(activeSubjects)}
+        </div>
+      </div>
+    `;
+  }
+
+  // Render Subject Progress Card (Sidebar Component matching reference mockup)
+  function renderSubjectProgressCard(subjectProgress) {
+    return `
+      <div class="tool-card subject-progress-card">
+        <div class="card-header-label" style="margin-bottom: 12px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          <span>SUBJECT PROGRESS</span>
+        </div>
+
+        <div class="subject-progress-list">
+          ${subjectProgress.length === 0 ? `
+            <div style="font-size: 11.5px; color: var(--text-muted); text-align: center; padding: 12px 0;">
+              No subjects or study sessions yet.
+            </div>
+          ` : subjectProgress.slice(0, 5).map(s => `
+            <div class="subject-progress-row">
+              <span class="subject-progress-code" title="${s.name}">${s.code}</span>
+              <div class="subject-progress-track">
+                <div class="subject-progress-fill" style="width: ${s.progressPct}%;"></div>
+              </div>
+              <span class="subject-progress-hours">${s.hoursFormatted}</span>
+            </div>
+          `).join('')}
         </div>
       </div>
     `;
@@ -583,6 +617,40 @@ export function renderTrackerView(container) {
     `;
   }
 
+  // Render Weekly Study Hours Bar Chart Card (Main Column Component)
+  function renderWeeklyStudyHoursCard(weeklyData) {
+    return `
+      <div class="tool-card weekly-hours-card">
+        <div class="weekly-hours-header">
+          <div class="card-header-label" style="margin-bottom: 0;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>WEEKLY STUDY HOURS</span>
+          </div>
+          <span class="weekly-hours-total-badge">${weeklyData.totalWeeklyHours}h total &middot; this week</span>
+        </div>
+
+        <div class="weekly-chart-area">
+          <div class="weekly-chart-bars">
+            ${weeklyData.days.map(d => `
+              <div class="weekly-bar-col ${d.isMax ? 'is-peak' : ''} ${d.isToday ? 'is-today' : ''}" title="${d.dayName}: ${d.hoursFormatted}">
+                <div class="weekly-bar-top-val">${d.hours > 0 ? d.hoursFormatted : ''}</div>
+                <div class="weekly-bar-track">
+                  <div class="weekly-bar-fill" style="height: ${d.heightPct}%;"></div>
+                </div>
+                <div class="weekly-bar-label">${d.dayName}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   const settings = store.getSettings();
   if (!pomoIsInitialized) {
     pomoWorkMins = settings.pomodoro_work_mins || 25;
@@ -601,20 +669,23 @@ export function renderTrackerView(container) {
   }
 
   container.innerHTML = `
-    <div class="tracker-dashboard-layout">
-      <!-- Row 1: Pomodoro Timer (Full Width) -->
-      <div class="tracker-dashboard-row-1">
+    <div class="tracker-dashboard-layout-v2">
+      <!-- Left Sidebar Column (~400px) -->
+      <div class="tracker-sidebar-col">
         ${renderPomodoroCard(activeSubjects)}
+        ${renderSubjectProgressCard(subjectProgress)}
       </div>
 
-      <!-- Row 2: Journey to Next Milestone + Yearly Heatmap (Split evenly 50/50) -->
-      <div class="tracker-dashboard-row-2">
-        ${renderMilestoneCard(sessions)}
-        ${renderHeatmapCard(heatmapYear, sessions, calendarData)}
-      </div>
+      <!-- Right Main Column (1fr) -->
+      <div class="tracker-main-col">
+        ${renderWeeklyStudyHoursCard(weeklyData)}
 
-      <!-- Row 3: Recent Study History (Full Width, scrolls internally) -->
-      <div class="tracker-dashboard-row-3">
+        <!-- Middle Analytics Row: Milestone & Heatmap Side by Side -->
+        <div class="tracker-analytics-row">
+          ${renderMilestoneCard(sessions)}
+          ${renderHeatmapCard(heatmapYear, sessions, calendarData)}
+        </div>
+
         ${renderRecentHistoryCard(sessions, displaySessions)}
       </div>
     </div>
