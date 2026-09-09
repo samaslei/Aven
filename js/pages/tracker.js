@@ -1,17 +1,16 @@
 /**
  * Aven - Study Tracker Controller
- * Features: LeetCode-style activity heatmap, Milestone progress journey, Study time distribution, Manual Hours+Minutes logger, Streaks.
+ * Features: LeetCode-style activity heatmap, Milestone progress journey, Pomodoro timer, Manual Hours+Minutes logger, Streaks.
  */
 
 import { store, events } from '../core/store.js';
-import { calculateDistributionStats, calculateMilestoneData, aggregateRecentStudyHistory } from '../domain/tracker-calculator.js';
+import { calculateMilestoneData, aggregateRecentStudyHistory } from '../domain/tracker-calculator.js';
 import { playAlarmSound, playTickSound, playDualToneChime } from '../utils/audio.js';
 import { formatMinutesAndSeconds, getTodayISO } from '../utils/date-utils.js';
 import { renderCustomSubjectDropdown, initCustomDropdown, renderSubjectSelectOptions } from '../ui/dropdown.js';
 
 let selectedSubjectId = '';
 let heatmapYear = new Date().getFullYear(); // Year-view navigation state
-let distributionScope = 'all'; // 'all' | 'week'
 
 // Pomodoro Timer State (Persists across view switches)
 let pomoPhase = 'focus'; // 'focus' | 'break' | 'long-break'
@@ -54,12 +53,6 @@ export function renderTrackerView(container) {
   const displaySessions = aggregateRecentStudyHistory(sessions);
   const calendarData = store.getYearCalendarMatrix(heatmapYear);
 
-  // Compute color mapping consistent with Donut Chart slices
-  const allDist = calculateDistributionStats(sessions, 'all', id => store.getSubjectById(id));
-  const distColorMap = {};
-  allDist.slices.forEach(slice => {
-    distColorMap[slice.id] = slice.color;
-  });
 
   // Set default subject if not set
   if (!selectedSubjectId && activeSubjects.length > 0) {
@@ -95,150 +88,7 @@ export function renderTrackerView(container) {
 
 
 
-  // Render SVG Vertical Bar Chart Body Content (Prompt 72)
-  function renderDistributionBodyHtml(sessions) {
-    const dist = calculateDistributionStats(sessions, distributionScope, id => store.getSubjectById(id));
-    const slices = dist.slices;
 
-    if (dist.totalMinutes === 0 || slices.length === 0) {
-      return `
-        <div class="distribution-empty-state" style="padding: 20px 8px; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity: 0.35;">
-            <line x1="18" y1="20" x2="18" y2="10"></line>
-            <line x1="12" y1="20" x2="12" y2="4"></line>
-            <line x1="6" y1="20" x2="6" y2="14"></line>
-          </svg>
-          <p style="font-size: 11.5px; font-weight: 500; color: var(--text-secondary); margin: 0;">No study activity</p>
-        </div>
-      `;
-    }
-
-    const svgWidth = 320;
-    const svgHeight = 185;
-    const padLeft = 30;
-    const padRight = 10;
-    const padTop = 16;
-    const padBottom = 26;
-
-    const plotWidth = svgWidth - padLeft - padRight; // 280
-    const plotHeight = svgHeight - padTop - padBottom; // 143
-
-    const maxHoursVal = Math.max(...slices.map(s => Number(s.hours) || 0), 0.5);
-    let yMax;
-    if (maxHoursVal <= 1) yMax = 1;
-    else if (maxHoursVal <= 2) yMax = 2;
-    else if (maxHoursVal <= 5) yMax = 5;
-    else if (maxHoursVal <= 10) yMax = 10;
-    else if (maxHoursVal <= 20) yMax = 20;
-    else if (maxHoursVal <= 50) yMax = 50;
-    else yMax = Math.ceil(maxHoursVal / 10) * 10;
-
-    const yTicks = [0, yMax / 2, yMax];
-    const gridLinesHtml = yTicks.map(tick => {
-      const yPos = padTop + plotHeight - (tick / yMax) * plotHeight;
-      const formattedTick = Number.isInteger(tick) ? tick : tick.toFixed(1);
-      return `
-        <g class="dist-grid-group">
-          <line x1="${padLeft}" y1="${yPos.toFixed(1)}" x2="${(svgWidth - padRight)}" y2="${yPos.toFixed(1)}" stroke="var(--border-subtle)" stroke-dasharray="3 3" opacity="0.45" stroke-width="1" />
-          <text x="${padLeft - 5}" y="${(yPos + 3).toFixed(1)}" text-anchor="end" font-size="8.5" font-family="var(--font-numeric)" font-weight="600" fill="var(--text-muted)">${formattedTick}h</text>
-        </g>
-      `;
-    }).join('');
-
-    const n = slices.length;
-    const colWidth = plotWidth / n;
-    const barWidth = Math.min(32, Math.max(14, colWidth * 0.55));
-
-    const barsHtml = slices.map((slice, i) => {
-      const hoursNum = Number(slice.hours) || 0;
-      const barH = (hoursNum / yMax) * plotHeight;
-      const displayBarH = Math.max(3, barH);
-      const centerX = padLeft + (i + 0.5) * colWidth;
-      const barX = centerX - barWidth / 2;
-      const barY = padTop + plotHeight - displayBarH;
-
-      // X-axis label: short code or shortened name
-      const rawLabel = slice.code || slice.name;
-      const displayLabel = rawLabel.length > 9 ? rawLabel.substring(0, 8) + '…' : rawLabel;
-
-      return `
-        <g class="dist-bar-group">
-          <!-- Background hover track -->
-          <rect class="dist-bar-track"
-                x="${(centerX - colWidth / 2).toFixed(1)}"
-                y="${padTop}"
-                width="${colWidth.toFixed(1)}"
-                height="${plotHeight}"
-                fill="transparent" />
-
-          <!-- Colored Vertical Bar -->
-          <rect class="dist-bar"
-                x="${barX.toFixed(1)}"
-                y="${barY.toFixed(1)}"
-                width="${barWidth.toFixed(1)}"
-                height="${displayBarH.toFixed(1)}"
-                rx="3" ry="3"
-                fill="${slice.color}"
-                data-name="${slice.name}"
-                data-code="${slice.code || ''}"
-                data-hours="${slice.hours}"
-                data-pct="${slice.percentage.toFixed(1)}"
-                data-color="${slice.color}" />
-
-          <!-- Subject Code X-axis Label -->
-          <text class="dist-bar-xlabel"
-                x="${centerX.toFixed(1)}"
-                y="${(svgHeight - 8)}"
-                text-anchor="middle"
-                font-size="9.5"
-                font-family="var(--font-sans)"
-                font-weight="600"
-                fill="var(--text-secondary)">${displayLabel}</text>
-        </g>
-      `;
-    }).join('');
-
-    return `
-      <div class="distribution-bar-chart-wrap">
-        <svg class="dist-bar-svg" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet">
-          <!-- Horizontal Grid Lines & Ticks -->
-          ${gridLinesHtml}
-          <!-- Bars & X Labels -->
-          ${barsHtml}
-        </svg>
-      </div>
-    `;
-  }
-
-  // Render Bar Chart Card (Prompt 72: Vertical bar chart replacing donut)
-  function renderDistributionCard(sessions) {
-    const dist = calculateDistributionStats(sessions, distributionScope, id => store.getSubjectById(id));
-    const totalHours = dist.totalHours;
-
-    return `
-      <div class="tool-card distribution-container-card">
-        <div class="distribution-header">
-          <div class="card-header-label distribution-header-label" style="margin-bottom: 0;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="20" x2="18" y2="10"></line>
-              <line x1="12" y1="20" x2="12" y2="4"></line>
-              <line x1="6" y1="20" x2="6" y2="14"></line>
-            </svg>
-            <span>DISTRIBUTION</span>
-            <span class="dist-total-badge" id="dist-total-badge">${totalHours}h total</span>
-          </div>
-          <div class="segmented-control" id="dist-scope-switcher" data-active="${distributionScope}">
-            <button class="seg-btn ${distributionScope === 'all' ? 'active' : ''}" data-scope="all">All</button>
-            <button class="seg-btn ${distributionScope === 'week' ? 'active' : ''}" data-scope="week">Week</button>
-          </div>
-        </div>
-
-        <div id="dist-body-wrap" class="dist-body-wrap" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
-          ${renderDistributionBodyHtml(sessions)}
-        </div>
-      </div>
-    `;
-  }
 
   // Calculate Milestone Journey metrics
   function getMilestoneData(sessions) {
@@ -328,12 +178,23 @@ export function renderTrackerView(container) {
             })}
           </div>
 
-          <button type="button" class="pomo-settings-gear-btn" id="btn-pomo-settings" title="${pomoIsRunning ? 'Timer settings (editable while idle)' : 'Timer settings'}" aria-label="Open Timer Settings" ${pomoIsRunning ? 'disabled' : ''}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-          </button>
+          <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            <button type="button" class="pomo-manual-log-btn" id="btn-open-manual-log" title="Log study session manually" aria-label="Manual Study Log">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <polyline points="11 7 11 11 14 13"></polyline>
+                <line x1="19" y1="16" x2="19" y2="22"></line>
+                <line x1="16" y1="19" x2="22" y2="19"></line>
+              </svg>
+            </button>
+
+            <button type="button" class="pomo-settings-gear-btn" id="btn-pomo-settings" title="${pomoIsRunning ? 'Timer settings (editable while idle)' : 'Timer settings'}" aria-label="Open Timer Settings" ${pomoIsRunning ? 'disabled' : ''}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -520,53 +381,67 @@ export function renderTrackerView(container) {
     `;
   }
 
-  // Render Manual Log Entry Card
-  function renderManualLogCard(activeSubjects, selectedSubjectId, todayStr) {
+  // Render Manual Study Log Modal Dialog
+  function renderManualLogModal(activeSubjects, selectedSubjectId, todayStr) {
     return `
-      <div class="tool-card manual-log-card">
-        <div class="card-header-label manual-log-header-label" style="margin-bottom: 0;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-          </svg>
-          <span>MANUAL STUDY LOG</span>
+      <div class="modal-overlay" id="manual-log-modal">
+        <div class="modal-card" style="max-width: 460px;">
+          <div class="modal-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);">
+                <circle cx="11" cy="11" r="8"></circle>
+                <polyline points="11 7 11 11 14 13"></polyline>
+                <line x1="19" y1="16" x2="19" y2="22"></line>
+                <line x1="16" y1="19" x2="22" y2="19"></line>
+              </svg>
+              <h3 class="modal-title">Manual Study Log</h3>
+            </div>
+            <button type="button" class="btn btn-ghost btn-icon close-manual-log-btn" aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          <div class="modal-body" style="padding: 20px 24px;">
+            <form id="manual-session-form" style="display: flex; flex-direction: column; gap: 16px;">
+              <div class="form-row-paired form-row-subject-date" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                  <label class="form-label" for="manual-subject-select-trigger">Subject</label>
+                  ${renderCustomSubjectDropdown({
+                    id: 'manual-subject-select',
+                    selectedId: selectedSubjectId,
+                    subjects: activeSubjects,
+                    includeGeneral: true,
+                    generalLabel: 'General Study',
+                    searchPlaceholder: 'Search subject...'
+                  })}
+                </div>
+
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                  <label class="form-label" for="manual-date">Date *</label>
+                  <input type="date" id="manual-date" class="form-input" value="${todayStr}" max="${todayStr}" required>
+                </div>
+              </div>
+
+              <div class="form-row-paired form-row-hours-mins" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                  <label class="form-label" for="manual-hours">Hours</label>
+                  <input type="number" id="manual-hours" class="form-input" min="0" max="24" value="1" placeholder="0">
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                  <label class="form-label" for="manual-minutes">Minutes</label>
+                  <input type="number" id="manual-minutes" class="form-input" min="0" max="59" value="30" placeholder="0">
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" id="btn-submit-manual-log" style="width: 100%; margin-top: 4px;">
+                Log Study Session
+              </button>
+            </form>
+          </div>
         </div>
-
-        <form id="manual-session-form">
-          <div class="form-row-paired form-row-subject-date">
-            <div class="form-group">
-              <label class="form-label" for="manual-subject-select-trigger">Subject</label>
-              ${renderCustomSubjectDropdown({
-                id: 'manual-subject-select',
-                selectedId: selectedSubjectId,
-                subjects: activeSubjects,
-                includeGeneral: true,
-                generalLabel: 'General Study',
-                searchPlaceholder: 'Search subject...'
-              })}
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="manual-date">Date *</label>
-              <input type="date" id="manual-date" class="form-input" value="${todayStr}" max="${todayStr}" required>
-            </div>
-          </div>
-
-          <div class="form-row-paired form-row-hours-mins">
-            <div class="form-group">
-              <label class="form-label" for="manual-hours">Hours</label>
-              <input type="number" id="manual-hours" class="form-input" min="0" max="24" value="1" placeholder="0">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="manual-minutes">Minutes</label>
-              <input type="number" id="manual-minutes" class="form-input" min="0" max="59" value="30" placeholder="0">
-            </div>
-          </div>
-
-          <button type="submit" class="btn btn-primary" id="btn-submit-manual-log">
-            Log Study Session
-          </button>
-        </form>
       </div>
     `;
   }
@@ -632,7 +507,7 @@ export function renderTrackerView(container) {
   }
 
   // Render Recent Study History Card
-  function renderRecentHistoryCard(sessions, displaySessions, distColorMap) {
+  function renderRecentHistoryCard(sessions, displaySessions) {
     return `
       <div class="sessions-history-card">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
@@ -667,7 +542,7 @@ export function renderTrackerView(container) {
               ` : displaySessions.slice(0, 25).map(s => {
                 const sub = s.subject_id ? store.getSubjectById(s.subject_id) : null;
                 const subId = s.subject_id || 'general';
-                const subColor = distColorMap[subId] || (sub && sub.color) || '#8A9A5B';
+                const subColor = (sub && sub.color) || '#8A9A5B';
                 const pillText = sub ? (sub.code || sub.name) : 'General';
                 const subjectName = sub && sub.code ? sub.name : '';
                 const hrs = Math.floor(s.duration / 60);
@@ -727,24 +602,24 @@ export function renderTrackerView(container) {
 
   container.innerHTML = `
     <div class="tracker-dashboard-layout">
-      <!-- Row 1: Pomodoro Timer + Manual Study Log (Expanded 50/50) -->
+      <!-- Row 1: Pomodoro Timer (Full Width) -->
       <div class="tracker-dashboard-row-1">
         ${renderPomodoroCard(activeSubjects)}
-        ${renderManualLogCard(activeSubjects, selectedSubjectId, todayStr)}
       </div>
 
-      <!-- Row 2: Distribution Donut + Milestone Progress + Yearly Heatmap (Full Width) -->
+      <!-- Row 2: Journey to Next Milestone + Yearly Heatmap (Split evenly 50/50) -->
       <div class="tracker-dashboard-row-2">
-        ${renderDistributionCard(sessions)}
         ${renderMilestoneCard(sessions)}
         ${renderHeatmapCard(heatmapYear, sessions, calendarData)}
       </div>
 
       <!-- Row 3: Recent Study History (Full Width, scrolls internally) -->
       <div class="tracker-dashboard-row-3">
-        ${renderRecentHistoryCard(sessions, displaySessions, distColorMap)}
+        ${renderRecentHistoryCard(sessions, displaySessions)}
       </div>
     </div>
+
+    ${renderManualLogModal(activeSubjects, selectedSubjectId, todayStr)}
 
     <!-- Pomodoro Settings Popover Modal -->
     <div class="pomo-settings-popover-overlay ${isPomoSettingsOpen ? '' : 'hidden'}" id="pomo-settings-popover" style="${isPomoSettingsOpen ? '' : 'display: none;'}">
@@ -1444,6 +1319,15 @@ function attachTrackerEvents(container) {
       pomoSettingsBtn.addEventListener('click', openSettingsPopover);
     }
 
+    // Manual Log Modal open button
+    const manualLogBtn = container.querySelector('#btn-open-manual-log');
+    if (manualLogBtn) {
+      manualLogBtn.addEventListener('click', () => {
+        const manualModal = container.querySelector('#manual-log-modal');
+        manualModal?.classList.add('open');
+      });
+    }
+
     // Subject dropdown
     const pomoDd = container.querySelector('#pomo-subject-select-wrap');
     if (pomoDd) {
@@ -1630,6 +1514,22 @@ function attachTrackerEvents(container) {
 
   bindPomoBodyEvents();
 
+  // Manual Log Modal Dialog Handlers
+  const manualLogModal = container.querySelector('#manual-log-modal');
+  container.querySelectorAll('.close-manual-log-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      manualLogModal?.classList.remove('open');
+    });
+  });
+
+  if (manualLogModal) {
+    manualLogModal.addEventListener('click', (e) => {
+      if (e.target === manualLogModal) {
+        manualLogModal.classList.remove('open');
+      }
+    });
+  }
+
   // Manual Log Submission
   const manualForm = container.querySelector('#manual-session-form');
   if (manualForm) {
@@ -1653,6 +1553,7 @@ function attachTrackerEvents(container) {
         notes: 'Manually logged'
       });
 
+      manualLogModal?.classList.remove('open');
       const sub = subject_id ? store.getSubjectById(subject_id) : null;
       window.avenApp?.showToast(`Logged ${totalMins} min session${sub ? ` for ${sub.name}` : ' (General Study)'}!`, 'success');
       renderTrackerView(container);
@@ -1669,75 +1570,7 @@ function attachTrackerEvents(container) {
     });
   });
 
-  // Distribution Scope Switcher (All Time vs This Week) (Prompt 64: In-place animated sliding)
-  const distSwitcher = container.querySelector('#dist-scope-switcher');
-  if (distSwitcher) {
-    distSwitcher.querySelectorAll('.seg-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const scope = btn.dataset.scope || 'all';
-        if (scope === distributionScope) return;
-        distributionScope = scope;
 
-        // 1. Update in-place so sliding indicator animates smoothly
-        distSwitcher.dataset.active = scope;
-        distSwitcher.querySelectorAll('.seg-btn').forEach(b => {
-          b.classList.toggle('active', (b.dataset.scope || 'all') === scope);
-        });
-
-        // 2. Update distribution body & total badge
-        const sessions = store.getStudySessions();
-        const distBody = container.querySelector('#dist-body-wrap');
-        if (distBody) {
-          distBody.innerHTML = renderDistributionBodyHtml(sessions);
-          bindDistributionTooltipEvents();
-        }
-
-        const totalBadge = container.querySelector('#dist-total-badge');
-        if (totalBadge) {
-          const currentDist = calculateDistributionStats(sessions, distributionScope, id => store.getSubjectById(id));
-          totalBadge.textContent = `${currentDist.totalHours}h total`;
-        }
-      });
-    });
-  }
-
-  function bindDistributionTooltipEvents() {
-    container.querySelectorAll('.dist-bar, .dist-bar-track').forEach(el => {
-      const bar = el.classList.contains('dist-bar') ? el : el.parentElement.querySelector('.dist-bar');
-      if (!bar) return;
-
-      el.addEventListener('mouseenter', (e) => {
-        const name = bar.dataset.name;
-        const code = bar.dataset.code;
-        const hours = bar.dataset.hours;
-        const pct = bar.dataset.pct;
-        const color = bar.dataset.color;
-
-        tooltip.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text-primary);">
-            <span style="width: 7px; height: 7px; border-radius: 50%; background: ${color};"></span>
-            <span>${code ? `[${code}] ` : ''}${name}</span>
-          </div>
-          <div style="color: var(--text-secondary); margin-top: 2px;">
-            <strong>${hours}h</strong> studied (${pct}% of total)
-          </div>
-        `;
-
-        tooltip.style.display = 'flex';
-        updateTooltipPosition(e);
-      });
-
-      el.addEventListener('mousemove', (e) => {
-        updateTooltipPosition(e);
-      });
-
-      el.addEventListener('mouseleave', () => {
-        tooltip.style.display = 'none';
-      });
-    });
-  }
-
-  bindDistributionTooltipEvents();
   // Initialize Custom Dropdowns (Prompt 61)
   const pomoDd = container.querySelector('#pomo-subject-select-wrap');
   if (pomoDd) {

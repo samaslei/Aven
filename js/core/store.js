@@ -25,8 +25,7 @@ import {
 import {
   calculateStreakStats,
   generateYearCalendarMatrix,
-  calculateMilestoneData,
-  calculateDistributionStats
+  calculateMilestoneData
 } from '../domain/tracker-calculator.js';
 
 // Re-export domain constants & functions for full backward compatibility

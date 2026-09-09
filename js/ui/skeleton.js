@@ -187,26 +187,48 @@ export function renderStartupSkeleton(targetRoute) {
       </div>
 
       <div class="sk-body">
-        <!-- 3-Column Tools Row (Bentodoro + Milestone + Manual Log) -->
-        <div class="sk-tracker-tools-row">
-          <!-- Card 1: Bentodoro Timer -->
-          <div class="sk-card" style="min-height: 250px;">
+        <!-- Row 1: Pomodoro Timer (Full Width, Centered) -->
+        <div class="sk-tracker-tools-row" style="width: 100%; margin-bottom: 12px;">
+          <!-- Card 1: Bentodoro Timer (Full Width) -->
+          <div class="sk-card" style="min-height: 250px; width: 100%; box-sizing: border-box;">
             <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">
               <div class="sk-block" style="width:90px;height:16px;border-radius:4px;"></div>
-              <div class="sk-block" style="width:130px;height:26px;border-radius:999px;"></div>
+              <div class="sk-block" style="width:28px;height:28px;border-radius:6px;"></div>
             </div>
-            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin:auto 0;gap:8px;">
-              <div class="sk-block" style="width:150px;height:48px;border-radius:8px;"></div>
-              <div class="sk-block" style="width:85px;height:18px;border-radius:999px;"></div>
-            </div>
-            <div style="display:flex;gap:10px;margin-top:auto;">
-              <div class="sk-block" style="flex:1;height:36px;border-radius:999px;"></div>
-              <div class="sk-block" style="width:36px;height:36px;border-radius:50%;flex-shrink:0;"></div>
+            <!-- Centered Pomodoro Content (max-width: 480px) -->
+            <div style="max-width: 480px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; padding: 6px 0;">
+              <!-- Tabs -->
+              <div class="sk-block" style="width: 100%; height: 32px; border-radius: 999px;"></div>
+              <!-- Subject Dropdown + Icon Buttons -->
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <div class="sk-block" style="flex: 1; height: 30px; border-radius: 6px;"></div>
+                <div class="sk-block" style="width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;"></div>
+                <div class="sk-block" style="width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;"></div>
+              </div>
+              <!-- Digits & Progress Bar -->
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0;">
+                <div class="sk-block" style="width: 140px; height: 44px; border-radius: 8px;"></div>
+                <div class="sk-block" style="width: 100%; height: 6px; border-radius: 999px;"></div>
+              </div>
+              <!-- Session round -->
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                <div class="sk-block" style="width: 80px; height: 14px; border-radius: 4px;"></div>
+                <div class="sk-block" style="width: 100px; height: 12px; border-radius: 4px;"></div>
+              </div>
+              <!-- Controls -->
+              <div style="display: flex; gap: 8px;">
+                <div class="sk-block" style="flex: 1.15; height: 36px; border-radius: 6px;"></div>
+                <div class="sk-block" style="flex: 1; height: 36px; border-radius: 6px;"></div>
+                <div class="sk-block" style="flex: 1; height: 36px; border-radius: 6px;"></div>
+              </div>
             </div>
           </div>
+        </div>
 
-          <!-- Card 2: Milestone Journey -->
-          <div class="sk-card" style="min-height: 250px;">
+        <!-- Row 2: Milestone Journey + Yearly Heatmap (Split evenly 50/50) -->
+        <div class="sk-tracker-analytics-row" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px;">
+          <!-- Card 1: Milestone Journey -->
+          <div class="sk-card" style="min-height: 200px;">
             <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">
               <div class="sk-block" style="width:130px;height:16px;border-radius:4px;"></div>
               <div class="sk-block" style="width:65px;height:20px;border-radius:999px;"></div>
@@ -219,56 +241,13 @@ export function renderStartupSkeleton(targetRoute) {
             <div class="sk-block" style="width:170px;height:12px;border-radius:4px;margin-top:auto;"></div>
           </div>
 
-          <!-- Card 3: Manual Study Log -->
-          <div class="sk-card" style="min-height: 250px;">
-            <div style="display:flex;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">
-              <div class="sk-block" style="width:125px;height:16px;border-radius:4px;"></div>
-            </div>
-            <div class="sk-block" style="width:100%;height:34px;border-radius:8px;margin:10px 0 6px 0;"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-              <div class="sk-block" style="height:34px;border-radius:8px;"></div>
-              <div class="sk-block" style="height:34px;border-radius:8px;"></div>
-            </div>
-            <div class="sk-block" style="width:100%;height:36px;border-radius:999px;margin-top:auto;"></div>
-          </div>
-        </div>
-
-        <!-- Analytics Row (Yearly Heatmap + Distribution Bar Chart) -->
-        <div class="sk-tracker-analytics-row">
-          <div class="sk-card" style="flex:1.4; min-height: 200px;">
+          <!-- Card 2: Yearly Heatmap -->
+          <div class="sk-card" style="min-height: 200px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
               <div class="sk-block" style="width:150px;height:16px;border-radius:4px;"></div>
               <div class="sk-block" style="width:110px;height:24px;border-radius:6px;"></div>
             </div>
             <div class="sk-block" style="width:100%;height:120px;border-radius:8px;opacity:0.65;"></div>
-          </div>
-          <div class="sk-card" style="flex:1; min-height: 200px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-              <div class="sk-block" style="width:130px;height:16px;border-radius:4px;"></div>
-            </div>
-            <!-- Vertical Bar Chart Skeleton (5 bars + baseline) -->
-            <div style="display:flex;align-items:flex-end;justify-content:space-around;height:110px;padding-top:10px;border-bottom:1px solid var(--border-subtle);">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                <div class="sk-block" style="width:24px;height:75px;border-radius:4px 4px 0 0;"></div>
-                <div class="sk-block" style="width:30px;height:10px;border-radius:2px;"></div>
-              </div>
-              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                <div class="sk-block" style="width:24px;height:45px;border-radius:4px 4px 0 0;"></div>
-                <div class="sk-block" style="width:30px;height:10px;border-radius:2px;"></div>
-              </div>
-              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                <div class="sk-block" style="width:24px;height:95px;border-radius:4px 4px 0 0;"></div>
-                <div class="sk-block" style="width:30px;height:10px;border-radius:2px;"></div>
-              </div>
-              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                <div class="sk-block" style="width:24px;height:55px;border-radius:4px 4px 0 0;"></div>
-                <div class="sk-block" style="width:30px;height:10px;border-radius:2px;"></div>
-              </div>
-              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                <div class="sk-block" style="width:24px;height:30px;border-radius:4px 4px 0 0;"></div>
-                <div class="sk-block" style="width:30px;height:10px;border-radius:2px;"></div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -318,57 +297,81 @@ export function renderStartupSkeleton(targetRoute) {
                 <div class="sk-block" style="width:140px;height:20px;border-radius:999px;"></div>
               </div>
 
-              <!-- Category Card 1 (Expanded with assessment entries) -->
-              <div class="sk-card" style="padding: 14px; gap: 12px; background: var(--bg-surface-elevated);">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <div class="sk-block" style="width:14px;height:14px;border-radius:3px;"></div>
-                    <div class="sk-block" style="width:105px;height:16px;border-radius:4px;"></div>
-                    <div class="sk-block" style="width:50px;height:20px;border-radius:999px;"></div>
+              <!-- Category Cards Grid (Two-Column Grid) -->
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start;">
+                <!-- Category Card 1 (Expanded with assessment entries) -->
+                <div class="sk-card" style="padding: 14px; gap: 12px; background: var(--bg-surface-elevated);">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <div class="sk-block" style="width:14px;height:14px;border-radius:3px;"></div>
+                      <div class="sk-block" style="width:105px;height:16px;border-radius:4px;"></div>
+                      <div class="sk-block" style="width:50px;height:20px;border-radius:999px;"></div>
+                    </div>
+                    <div class="sk-block" style="width:80px;height:12px;border-radius:3px;"></div>
                   </div>
-                  <div class="sk-block" style="width:80px;height:12px;border-radius:3px;"></div>
+                  <!-- Entry Rows -->
+                  <div style="display:flex;flex-direction:column;gap:8px;padding-top:4px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg-surface);border-radius:8px;">
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="sk-block" style="width:8px;height:8px;border-radius:50%;"></div>
+                        <div class="sk-block" style="width:130px;height:14px;border-radius:4px;"></div>
+                      </div>
+                      <div class="sk-block" style="width:60px;height:22px;border-radius:999px;"></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg-surface);border-radius:8px;">
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="sk-block" style="width:8px;height:8px;border-radius:50%;"></div>
+                        <div class="sk-block" style="width:110px;height:14px;border-radius:4px;"></div>
+                      </div>
+                      <div class="sk-block" style="width:60px;height:22px;border-radius:999px;"></div>
+                    </div>
+                  </div>
                 </div>
-                <!-- Entry Rows -->
-                <div style="display:flex;flex-direction:column;gap:8px;padding-top:4px;">
-                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg-surface);border-radius:8px;">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <div class="sk-block" style="width:8px;height:8px;border-radius:50%;"></div>
-                      <div class="sk-block" style="width:130px;height:14px;border-radius:4px;"></div>
+
+                <!-- Category Card 2 (Collapsed) -->
+                <div class="sk-card" style="padding: 14px; background: var(--bg-surface-elevated);">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <div class="sk-block" style="width:14px;height:14px;border-radius:3px;"></div>
+                      <div class="sk-block" style="width:95px;height:16px;border-radius:4px;"></div>
+                      <div class="sk-block" style="width:50px;height:20px;border-radius:999px;"></div>
                     </div>
-                    <div class="sk-block" style="width:60px;height:22px;border-radius:999px;"></div>
+                    <div class="sk-block" style="width:80px;height:12px;border-radius:3px;"></div>
                   </div>
-                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg-surface);border-radius:8px;">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <div class="sk-block" style="width:8px;height:8px;border-radius:50%;"></div>
-                      <div class="sk-block" style="width:110px;height:14px;border-radius:4px;"></div>
+                </div>
+
+                <!-- Category Card 3 (Collapsed) -->
+                <div class="sk-card" style="padding: 14px; background: var(--bg-surface-elevated);">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <div class="sk-block" style="width:14px;height:14px;border-radius:3px;"></div>
+                      <div class="sk-block" style="width:115px;height:16px;border-radius:4px;"></div>
+                      <div class="sk-block" style="width:50px;height:20px;border-radius:999px;"></div>
                     </div>
-                    <div class="sk-block" style="width:60px;height:22px;border-radius:999px;"></div>
+                    <div class="sk-block" style="width:80px;height:12px;border-radius:3px;"></div>
+                  </div>
+                </div>
+
+                <!-- Category Card 4 (Collapsed) -->
+                <div class="sk-card" style="padding: 14px; background: var(--bg-surface-elevated);">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <div class="sk-block" style="width:14px;height:14px;border-radius:3px;"></div>
+                      <div class="sk-block" style="width:100px;height:16px;border-radius:4px;"></div>
+                      <div class="sk-block" style="width:50px;height:20px;border-radius:999px;"></div>
+                    </div>
+                    <div class="sk-block" style="width:80px;height:12px;border-radius:3px;"></div>
                   </div>
                 </div>
               </div>
 
-              <!-- Category Card 2 (Collapsed) -->
-              <div class="sk-card" style="padding: 14px; background: var(--bg-surface-elevated);">
+              <!-- Midterm Standing Summary (Full Width below grid) -->
+              <div class="sk-card" style="padding: 16px 20px; background: var(--bg-surface); border-radius: var(--radius-xl); display: flex; flex-direction: column; gap: 8px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <div class="sk-block" style="width:14px;height:14px;border-radius:3px;"></div>
-                    <div class="sk-block" style="width:95px;height:16px;border-radius:4px;"></div>
-                    <div class="sk-block" style="width:50px;height:20px;border-radius:999px;"></div>
-                  </div>
-                  <div class="sk-block" style="width:80px;height:12px;border-radius:3px;"></div>
+                  <div class="sk-block" style="width:120px;height:14px;border-radius:4px;"></div>
+                  <div class="sk-block" style="width:150px;height:14px;border-radius:4px;"></div>
                 </div>
-              </div>
-
-              <!-- Category Card 3 (Collapsed) -->
-              <div class="sk-card" style="padding: 14px; background: var(--bg-surface-elevated);">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <div class="sk-block" style="width:14px;height:14px;border-radius:3px;"></div>
-                    <div class="sk-block" style="width:115px;height:16px;border-radius:4px;"></div>
-                    <div class="sk-block" style="width:50px;height:20px;border-radius:999px;"></div>
-                  </div>
-                  <div class="sk-block" style="width:80px;height:12px;border-radius:3px;"></div>
-                </div>
+                <div class="sk-block" style="width:220px;height:32px;border-radius:6px;"></div>
               </div>
             </div>
           </div>
