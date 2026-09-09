@@ -46,6 +46,132 @@ function updateDocumentTitle() {
   }
 }
 
+// Render Pomodoro Card Body Content (Pomofocus 3-Phase Model)
+function renderPomodoroBodyHtml(activeSubjects = store.getSubjects(false)) {
+  const totalSecs = (pomoPhase === 'focus' ? pomoWorkMins : (pomoPhase === 'long-break' ? pomoLongBreakMins : pomoShortBreakMins)) * 60;
+  const progressPct = Math.min(100, Math.max(0, ((totalSecs - pomoTimeRemaining) / totalSecs) * 100));
+  const elapsedSecs = totalSecs - pomoTimeRemaining;
+  const hasElapsedToLog = (pomoPhase === 'focus' && elapsedSecs >= 30) || (pomoPhase !== 'focus' && elapsedSecs >= 300);
+
+  // Calculate completed dots in current round
+  const cycleInRound = ((pomoCurrentCycle - 1) % pomoLongBreakInterval);
+  const completedDots = pomoPhase === 'focus' ? cycleInRound : cycleInRound + 1;
+  const dotsHtml = Array.from({ length: pomoLongBreakInterval }, (_, i) => {
+    const isFilled = i < completedDots;
+    return `<span class="pomo-round-dot ${isFilled ? 'filled' : ''}" title="Session ${i + 1}"></span>`;
+  }).join('');
+
+  const statusText = pomoPhase === 'focus'
+    ? 'Time to focus!'
+    : (pomoPhase === 'long-break' ? 'Time for a longer break!' : 'Time for a break!');
+
+  return `
+    <!-- Phase Switcher: 3 Tabs (Focus, Short, Long) -->
+    <div class="pomo-tabs" id="pomo-tabs" role="tablist" aria-label="Timer phase selector">
+      <button type="button" class="pomo-tab-btn ${pomoPhase === 'focus' ? 'active' : ''}" data-phase="focus" role="tab" aria-selected="${pomoPhase === 'focus'}">Focus</button>
+      <button type="button" class="pomo-tab-btn ${pomoPhase === 'break' ? 'active' : ''}" data-phase="break" role="tab" aria-selected="${pomoPhase === 'break'}">Short</button>
+      <button type="button" class="pomo-tab-btn ${pomoPhase === 'long-break' ? 'active' : ''}" data-phase="long-break" role="tab" aria-selected="${pomoPhase === 'long-break'}">Long</button>
+    </div>
+
+    <!-- Sub-row: Subject Selector & Settings Gear Button -->
+    <div class="pomo-meta-row">
+      <div class="pomo-meta-controls" style="width: 100%; justify-content: space-between;">
+        <div class="pomo-subject-wrap" style="max-width: none; flex: 1;">
+          ${renderCustomSubjectDropdown({
+            id: 'pomo-subject-select',
+            selectedId: pomoSubjectId,
+            subjects: activeSubjects,
+            includeGeneral: true,
+            generalLabel: 'General Study',
+            searchPlaceholder: 'Search subject...',
+            customClass: 'pomo-subject-dd'
+          })}
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+          <button type="button" class="pomo-manual-log-btn" id="btn-open-manual-log" title="Log study session manually" aria-label="Manual Study Log">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <polyline points="11 7 11 11 14 13"></polyline>
+              <line x1="19" y1="16" x2="19" y2="22"></line>
+              <line x1="16" y1="19" x2="22" y2="19"></line>
+            </svg>
+          </button>
+
+          <button type="button" class="pomo-settings-gear-btn" id="btn-pomo-settings" title="${pomoIsRunning ? 'Timer settings (editable while idle)' : 'Timer settings'}" aria-label="Open Timer Settings" ${pomoIsRunning ? 'disabled' : ''}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Large Bento Digits Display -->
+    <div class="pomo-display-block">
+      <div class="pomo-time-display" id="pomo-time-display">${formatMinutesAndSeconds(pomoTimeRemaining)}</div>
+      <div class="pomo-progress-track">
+        <div class="pomo-progress-fill ${pomoPhase === 'break' ? 'break-fill' : (pomoPhase === 'long-break' ? 'long-break-fill' : '')}" id="pomo-progress-fill" style="width: ${progressPct}%;"></div>
+      </div>
+    </div>
+
+    <!-- Round Tracker: Session # and Dots + Status Text -->
+    <div class="pomo-round-tracker">
+      <div class="pomo-round-header">
+        <span class="pomo-round-count">#${pomoCurrentCycle}</span>
+        <div class="pomo-round-dots" title="Round cycle progress (${completedDots}/${pomoLongBreakInterval})">
+          ${dotsHtml}
+        </div>
+      </div>
+      <span class="pomo-phase-status-text">${statusText}</span>
+    </div>
+
+    <!-- Timer Controls Row -->
+    <div class="pomo-controls-row">
+      <button type="button" class="btn ${pomoIsRunning ? 'btn-secondary pomo-btn-pause' : 'btn-primary pomo-btn-start'}" id="btn-pomo-toggle" aria-label="${pomoIsRunning ? 'Pause' : (elapsedSecs > 0 ? 'Resume' : 'Start')}">
+        ${pomoIsRunning ? `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+            <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+          </svg>
+          <span class="pomo-btn-text">Pause</span>
+        ` : `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span class="pomo-btn-text">${elapsedSecs > 0 ? 'Resume' : 'Start'}</span>
+        `}
+      </button>
+
+      <button type="button" class="btn btn-secondary pomo-btn-reset" id="btn-pomo-reset" title="Reset current phase" aria-label="Reset">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+          <path d="M3 3v5h5"></path>
+        </svg>
+        <span class="pomo-btn-text">Reset</span>
+      </button>
+
+      <button type="button" class="btn btn-secondary pomo-btn-skip" id="btn-pomo-skip" title="${pomoPhase === 'focus' ? (pomoCurrentCycle % pomoLongBreakInterval === 0 ? 'Skip to Long Break' : 'Skip to Break') : 'Skip to Focus'}" aria-label="Skip">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 4 15 12 5 20 5 4"></polygon>
+          <line x1="19" y1="5" x2="19" y2="19"></line>
+        </svg>
+        <span class="pomo-btn-text">Skip</span>
+      </button>
+
+      ${hasElapsedToLog ? `
+        <button type="button" class="btn btn-secondary pomo-btn-stop-log" id="btn-pomo-stop-log" title="Stop & Log Session" style="color: var(--danger); font-weight: 600;" aria-label="Stop & Log">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+          </svg>
+          <span class="pomo-btn-text">Stop & Log</span>
+        </button>
+      ` : ''}
+    </div>
+  `;
+}
+
 export function renderTrackerView(container) {
   const activeSubjects = store.getSubjects(false);
   const streakStats = store.getStreakStats();
@@ -61,7 +187,8 @@ export function renderTrackerView(container) {
     selectedSubjectId = activeSubjects[0].id;
   }
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   // Build heatmap grid HTML: one block per month, month label inside
   function renderMonthBlock(month) {
@@ -71,8 +198,11 @@ export function renderTrackerView(container) {
           return `<div class="cal-day-cell cal-day-empty"></div>`;
         }
         const futureClass = day.isFuture ? ' future' : '';
-        return `<div class="cal-day-cell lvl-${day.level}${futureClass}"
+        const isToday = day.date === todayStr;
+        const todayClass = isToday ? ' is-today' : '';
+        return `<div class="cal-day-cell lvl-${day.level}${futureClass}${todayClass}"
           data-date="${day.date}"
+          ${isToday ? 'data-is-today="true"' : ''}
           data-minutes="${day.minutes}"
           data-subjects='${JSON.stringify(day.subjects).replace(/'/g, "&apos;")}'>
         </div>`;
@@ -136,132 +266,6 @@ export function renderTrackerView(container) {
       allTimeHours: totalHours,
       longestSessionHours
     };
-  }
-
-  // Render Pomodoro Card Body Content (Pomofocus 3-Phase Model)
-  function renderPomodoroBodyHtml(activeSubjects) {
-    const totalSecs = (pomoPhase === 'focus' ? pomoWorkMins : (pomoPhase === 'long-break' ? pomoLongBreakMins : pomoShortBreakMins)) * 60;
-    const progressPct = Math.min(100, Math.max(0, ((totalSecs - pomoTimeRemaining) / totalSecs) * 100));
-    const elapsedSecs = totalSecs - pomoTimeRemaining;
-    const hasElapsedToLog = (pomoPhase === 'focus' && elapsedSecs >= 30) || (pomoPhase !== 'focus' && elapsedSecs >= 300);
-
-    // Calculate completed dots in current round
-    const cycleInRound = ((pomoCurrentCycle - 1) % pomoLongBreakInterval);
-    const completedDots = pomoPhase === 'focus' ? cycleInRound : cycleInRound + 1;
-    const dotsHtml = Array.from({ length: pomoLongBreakInterval }, (_, i) => {
-      const isFilled = i < completedDots;
-      return `<span class="pomo-round-dot ${isFilled ? 'filled' : ''}" title="Session ${i + 1}"></span>`;
-    }).join('');
-
-    const statusText = pomoPhase === 'focus'
-      ? 'Time to focus!'
-      : (pomoPhase === 'long-break' ? 'Time for a longer break!' : 'Time for a break!');
-
-    return `
-      <!-- Phase Switcher: 3 Tabs (Focus, Short, Long) -->
-      <div class="pomo-tabs" id="pomo-tabs" role="tablist" aria-label="Timer phase selector">
-        <button type="button" class="pomo-tab-btn ${pomoPhase === 'focus' ? 'active' : ''}" data-phase="focus" role="tab" aria-selected="${pomoPhase === 'focus'}">Focus</button>
-        <button type="button" class="pomo-tab-btn ${pomoPhase === 'break' ? 'active' : ''}" data-phase="break" role="tab" aria-selected="${pomoPhase === 'break'}">Short</button>
-        <button type="button" class="pomo-tab-btn ${pomoPhase === 'long-break' ? 'active' : ''}" data-phase="long-break" role="tab" aria-selected="${pomoPhase === 'long-break'}">Long</button>
-      </div>
-
-      <!-- Sub-row: Subject Selector & Settings Gear Button -->
-      <div class="pomo-meta-row">
-        <div class="pomo-meta-controls" style="width: 100%; justify-content: space-between;">
-          <div class="pomo-subject-wrap" style="max-width: none; flex: 1;">
-            ${renderCustomSubjectDropdown({
-              id: 'pomo-subject-select',
-              selectedId: pomoSubjectId,
-              subjects: activeSubjects,
-              includeGeneral: true,
-              generalLabel: 'General Study',
-              searchPlaceholder: 'Search subject...',
-              customClass: 'pomo-subject-dd'
-            })}
-          </div>
-
-          <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-            <button type="button" class="pomo-manual-log-btn" id="btn-open-manual-log" title="Log study session manually" aria-label="Manual Study Log">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <polyline points="11 7 11 11 14 13"></polyline>
-                <line x1="19" y1="16" x2="19" y2="22"></line>
-                <line x1="16" y1="19" x2="22" y2="19"></line>
-              </svg>
-            </button>
-
-            <button type="button" class="pomo-settings-gear-btn" id="btn-pomo-settings" title="${pomoIsRunning ? 'Timer settings (editable while idle)' : 'Timer settings'}" aria-label="Open Timer Settings" ${pomoIsRunning ? 'disabled' : ''}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Large Bento Digits Display -->
-      <div class="pomo-display-block">
-        <div class="pomo-time-display" id="pomo-time-display">${formatMinutesAndSeconds(pomoTimeRemaining)}</div>
-        <div class="pomo-progress-track">
-          <div class="pomo-progress-fill ${pomoPhase === 'break' ? 'break-fill' : (pomoPhase === 'long-break' ? 'long-break-fill' : '')}" id="pomo-progress-fill" style="width: ${progressPct}%;"></div>
-        </div>
-      </div>
-
-      <!-- Round Tracker: Session # and Dots + Status Text -->
-      <div class="pomo-round-tracker">
-        <div class="pomo-round-header">
-          <span class="pomo-round-count">#${pomoCurrentCycle}</span>
-          <div class="pomo-round-dots" title="Round cycle progress (${completedDots}/${pomoLongBreakInterval})">
-            ${dotsHtml}
-          </div>
-        </div>
-        <span class="pomo-phase-status-text">${statusText}</span>
-      </div>
-
-      <!-- Timer Controls Row -->
-      <div class="pomo-controls-row">
-        <button type="button" class="btn ${pomoIsRunning ? 'btn-secondary pomo-btn-pause' : 'btn-primary pomo-btn-start'}" id="btn-pomo-toggle" aria-label="${pomoIsRunning ? 'Pause' : (elapsedSecs > 0 ? 'Resume' : 'Start')}">
-          ${pomoIsRunning ? `
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="4" width="4" height="16" rx="1"></rect>
-              <rect x="14" y="4" width="4" height="16" rx="1"></rect>
-            </svg>
-            <span class="pomo-btn-text">Pause</span>
-          ` : `
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-            <span class="pomo-btn-text">${elapsedSecs > 0 ? 'Resume' : 'Start'}</span>
-          `}
-        </button>
-
-        <button type="button" class="btn btn-secondary pomo-btn-reset" id="btn-pomo-reset" title="Reset current phase" aria-label="Reset">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-            <path d="M3 3v5h5"></path>
-          </svg>
-          <span class="pomo-btn-text">Reset</span>
-        </button>
-
-        <button type="button" class="btn btn-secondary pomo-btn-skip" id="btn-pomo-skip" title="${pomoPhase === 'focus' ? (pomoCurrentCycle % pomoLongBreakInterval === 0 ? 'Skip to Long Break' : 'Skip to Break') : 'Skip to Focus'}" aria-label="Skip">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="5 4 15 12 5 20 5 4"></polygon>
-            <line x1="19" y1="5" x2="19" y2="19"></line>
-          </svg>
-          <span class="pomo-btn-text">Skip</span>
-        </button>
-
-        ${hasElapsedToLog ? `
-          <button type="button" class="btn btn-secondary pomo-btn-stop-log" id="btn-pomo-stop-log" title="Stop & Log Session" style="color: var(--danger); font-weight: 600;" aria-label="Stop & Log">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="6" y="6" width="12" height="12" rx="2"></rect>
-            </svg>
-            <span class="pomo-btn-text">Stop & Log</span>
-          </button>
-        ` : ''}
-      </div>
-    `;
   }
 
   // Render Bentodoro-Style Bento Timer Tile
@@ -918,6 +922,28 @@ function attachTrackerEvents(container) {
     });
   }
 
+  // Default heatmap scroll position to center on today's date cell
+  function scrollHeatmapToToday() {
+    const heatmapScroll = container.querySelector('.heatmap-scroll-container');
+    if (!heatmapScroll) return;
+    const currentYear = new Date().getFullYear();
+    if (heatmapYear !== currentYear) return;
+
+    const todayCell = heatmapScroll.querySelector('.cal-day-cell.is-today, .cal-day-cell[data-is-today="true"]');
+    if (todayCell) {
+      requestAnimationFrame(() => {
+        const containerRect = heatmapScroll.getBoundingClientRect();
+        const cellRect = todayCell.getBoundingClientRect();
+        if (containerRect.width > 0) {
+          const currentScroll = heatmapScroll.scrollLeft;
+          const targetScroll = currentScroll + (cellRect.left - containerRect.left) - (containerRect.width / 2) + (cellRect.width / 2);
+          heatmapScroll.scrollLeft = Math.max(0, targetScroll);
+        }
+      });
+    }
+  }
+
+  scrollHeatmapToToday();
 
   // --- BENTODORO TIMER EVENT LISTENERS ---
   const pomoSubjectSelect = container.querySelector('#pomo-subject-select');
@@ -1080,7 +1106,7 @@ function attachTrackerEvents(container) {
           renderPipContent();
         }
         updateDocumentTitle();
-        renderTrackerView(container);
+        updatePomodoroUI();
       });
     }
 
@@ -1097,7 +1123,7 @@ function attachTrackerEvents(container) {
           renderPipContent();
         }
         updateDocumentTitle();
-        renderTrackerView(container);
+        updatePomodoroUI();
       });
     }
 
@@ -1122,7 +1148,7 @@ function attachTrackerEvents(container) {
           renderPipContent();
         }
         updateDocumentTitle();
-        renderTrackerView(container);
+        updatePomodoroUI();
       });
     }
 
@@ -1272,8 +1298,20 @@ function attachTrackerEvents(container) {
     });
   }
 
+  function updatePomodoroUI() {
+    if (pipWindow && !pipWindow.closed) {
+      renderPipContent();
+      return;
+    }
+    const pomoBody = container.querySelector('#pomo-card-body');
+    if (pomoBody) {
+      pomoBody.innerHTML = renderPomodoroBodyHtml(store.getSubjects(false));
+      bindPomoBodyEvents();
+    }
+  }
+
   function bindPomoBodyEvents() {
-    // Phase tabs switching
+    // Phase tabs switching (updates timer only, does not refresh heatmap or entire page)
     const tabBtns = container.querySelectorAll('.pomo-tab-btn');
     tabBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -1299,7 +1337,7 @@ function attachTrackerEvents(container) {
           renderPipContent();
         }
         updateDocumentTitle();
-        renderTrackerView(container);
+        updatePomodoroUI();
       });
     });
 
@@ -1328,7 +1366,7 @@ function attachTrackerEvents(container) {
           renderPipContent();
         }
         updateDocumentTitle();
-        renderTrackerView(container);
+        updatePomodoroUI();
       });
     }
 
@@ -1347,7 +1385,7 @@ function attachTrackerEvents(container) {
           renderPipContent();
         }
         updateDocumentTitle();
-        renderTrackerView(container);
+        updatePomodoroUI();
       });
     }
 
@@ -1374,7 +1412,7 @@ function attachTrackerEvents(container) {
           renderPipContent();
         }
         updateDocumentTitle();
-        renderTrackerView(container);
+        updatePomodoroUI();
       });
     }
 
@@ -1448,22 +1486,22 @@ function attachTrackerEvents(container) {
     });
   }
 
-  const openSettingsPopover = () => {
+  function openSettingsPopover() {
     if (pomoIsRunning) return;
     isPomoSettingsOpen = true;
     if (pomoSettingsPopover) {
       pomoSettingsPopover.classList.remove('hidden');
       pomoSettingsPopover.style.display = 'flex';
     }
-  };
+  }
 
-  const closeSettingsPopover = () => {
+  function closeSettingsPopover() {
     isPomoSettingsOpen = false;
     if (pomoSettingsPopover) {
       pomoSettingsPopover.classList.add('hidden');
       pomoSettingsPopover.style.display = 'none';
     }
-  };
+  }
 
   if (closePomoSettingsBtn) {
     closePomoSettingsBtn.addEventListener('click', closeSettingsPopover);
@@ -1531,7 +1569,7 @@ function attachTrackerEvents(container) {
   }
 
   // Helper for Pomodoro Stop & Log action
-  const executePomoStopAndLog = () => {
+  function executePomoStopAndLog() {
     pomoIsRunning = false;
     if (pomoInterval) {
       clearInterval(pomoInterval);
@@ -1643,13 +1681,6 @@ function attachTrackerEvents(container) {
 
 
   // Initialize Custom Dropdowns (Prompt 61)
-  const pomoDd = container.querySelector('#pomo-subject-select-wrap');
-  if (pomoDd) {
-    initCustomDropdown(pomoDd, (val) => {
-      pomoSubjectId = val;
-    });
-  }
-
   const manualDd = container.querySelector('#manual-subject-select-wrap');
   if (manualDd) {
     initCustomDropdown(manualDd, (val) => {

@@ -3037,6 +3037,12 @@ button, input, select, textarea {
   cursor: default;
 }
 
+/* Today cell subtle accent ring indicator */
+.cal-day-cell.is-today {
+  outline: 1.5px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* Hover: smooth scale + accent ring highlight */
 .cal-day-cell:not(.cal-day-empty):not(.future):hover {
   box-shadow: 0 0 0 2px var(--accent), 0 2px 6px rgba(0, 0, 0, 0.3);
