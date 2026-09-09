@@ -423,7 +423,7 @@ export function renderTrackerView(container) {
   function renderManualLogModal(activeSubjects, selectedSubjectId, todayStr) {
     return `
       <div class="modal-overlay" id="manual-log-modal">
-        <div class="modal-card" style="max-width: 460px;">
+        <div class="modal-card modal-overflow-visible" style="max-width: 460px;">
           <div class="modal-header">
             <div style="display: flex; align-items: center; gap: 8px;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);">
@@ -442,7 +442,7 @@ export function renderTrackerView(container) {
             </button>
           </div>
 
-          <div class="modal-body" style="padding: 20px 24px;">
+          <div class="modal-body modal-overflow-visible" style="padding: 20px 24px;">
             <form id="manual-session-form" style="display: flex; flex-direction: column; gap: 16px;">
               <div class="form-row-paired form-row-subject-date" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                 <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
@@ -579,8 +579,9 @@ export function renderTrackerView(container) {
                 </tr>
               ` : displaySessions.slice(0, 25).map(s => {
                 const sub = s.subject_id ? store.getSubjectById(s.subject_id) : null;
-                const subId = s.subject_id || 'general';
-                const subColor = (sub && sub.color) || '#8A9A5B';
+                const currentTheme = store.getTheme();
+                const defaultFallbackColor = currentTheme === 'pure-black' ? '#ffffff' : (currentTheme === 'pure-white' ? '#0f172a' : '#8A9A5B');
+                const subColor = (sub && sub.color) || defaultFallbackColor;
                 const pillText = sub ? (sub.code || sub.name) : 'General';
                 const subjectName = sub && sub.code ? sub.name : '';
                 const hrs = Math.floor(s.duration / 60);
@@ -589,24 +590,24 @@ export function renderTrackerView(container) {
 
                 return `
                   <tr>
-                    <td>
-                      <div class="dist-legend-left" style="display: flex; align-items: center; gap: 8px;">
+                    <td class="history-td-subject">
+                      <div class="dist-legend-left" style="display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%;">
                         <span class="dist-code-pill" style="background-color: ${subColor}1a; color: ${subColor}; border: 1.2px solid ${subColor}45;">
                           ${pillText}
                         </span>
                         ${subjectName ? `<span class="dist-subject-name" title="${sub.name}">${subjectName}</span>` : ''}
                       </div>
                     </td>
-                    <td style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary);">
+                    <td class="history-td-duration" style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary);">
                       ${durText}
                     </td>
-                    <td style="color: var(--text-secondary); font-size: 12px;">
+                    <td class="history-td-date" style="color: var(--text-secondary); font-size: 12px;">
                       ${s.date}
                     </td>
-                    <td style="color: var(--text-muted); font-size: 12px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <td class="history-td-notes" title="${s.notes || ''}" style="color: var(--text-muted); font-size: 12px;">
                       ${s.notes || '—'}
                     </td>
-                    <td style="text-align: right;">
+                    <td class="history-td-action" style="text-align: right;">
                       <button class="btn btn-ghost btn-sm btn-del-session" data-ids="${(s.ids || [s.id]).join(',')}" data-id="${s.id}" style="color: var(--danger); padding: 2px 6px; font-size: 11px;">
                         Delete
                       </button>
@@ -1433,7 +1434,11 @@ function attachTrackerEvents(container) {
     if (manualLogBtn) {
       manualLogBtn.addEventListener('click', () => {
         const manualModal = container.querySelector('#manual-log-modal');
-        manualModal?.classList.add('open');
+        if (manualModal) {
+          manualModal.classList.add('open');
+          const body = manualModal.querySelector('.modal-body');
+          if (body) body.scrollTop = 0;
+        }
       });
     }
 
@@ -1628,6 +1633,8 @@ function attachTrackerEvents(container) {
   container.querySelectorAll('.close-manual-log-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       manualLogModal?.classList.remove('open');
+      const body = manualLogModal?.querySelector('.modal-body');
+      if (body) body.scrollTop = 0;
     });
   });
 
@@ -1635,6 +1642,8 @@ function attachTrackerEvents(container) {
     manualLogModal.addEventListener('click', (e) => {
       if (e.target === manualLogModal) {
         manualLogModal.classList.remove('open');
+        const body = manualLogModal.querySelector('.modal-body');
+        if (body) body.scrollTop = 0;
       }
     });
   }
