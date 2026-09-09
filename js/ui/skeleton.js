@@ -187,16 +187,16 @@ export function renderStartupSkeleton(targetRoute) {
       </div>
 
       <div class="sk-body">
-        <!-- Row 1: Pomodoro Timer (Full Width, Centered) -->
-        <div class="sk-tracker-tools-row" style="width: 100%; margin-bottom: 12px;">
-          <!-- Card 1: Bentodoro Timer (Full Width) -->
-          <div class="sk-card" style="min-height: 250px; width: 100%; box-sizing: border-box;">
+        <!-- Row 1: Pomodoro Timer (Capped 540px, Centered) -->
+        <div class="sk-tracker-tools-row" style="width: 100%; margin-bottom: 12px; display: flex; justify-content: center;">
+          <!-- Card 1: Bentodoro Timer (Capped 540px) -->
+          <div class="sk-card" style="min-height: 250px; width: 100%; max-width: 540px; box-sizing: border-box;">
             <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">
               <div class="sk-block" style="width:90px;height:16px;border-radius:4px;"></div>
               <div class="sk-block" style="width:28px;height:28px;border-radius:6px;"></div>
             </div>
-            <!-- Centered Pomodoro Content (max-width: 480px) -->
-            <div style="max-width: 480px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; padding: 6px 0;">
+            <!-- Pomodoro Content -->
+            <div style="width: 100%; display: flex; flex-direction: column; gap: 12px; padding: 6px 0;">
               <!-- Tabs -->
               <div class="sk-block" style="width: 100%; height: 32px; border-radius: 999px;"></div>
               <!-- Subject Dropdown + Icon Buttons -->

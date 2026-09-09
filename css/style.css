@@ -2299,7 +2299,8 @@ button, input, select, textarea {
 }
 
 .tracker-dashboard-row-1 {
-  display: block;
+  display: flex;
+  justify-content: center;
   width: 100%;
   min-width: 0;
   flex-shrink: 0;
@@ -2909,6 +2910,21 @@ button, input, select, textarea {
   flex-direction: column;
   justify-content: space-between;
   gap: 14px;
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  background: rgba(30, 32, 27, 0.78);
+  background: color-mix(in srgb, var(--bg-surface) 78%, transparent);
+}
+
+[data-theme="light"] .bento-timer-card {
+  background: rgba(245, 243, 236, 0.78);
+  background: color-mix(in srgb, var(--bg-surface) 78%, transparent);
+}
+
+[data-theme="pure-white"] .bento-timer-card {
+  background: rgba(255, 255, 255, 0.85);
+  background: color-mix(in srgb, var(--bg-surface) 85%, transparent);
 }
 
 .pomo-card-body {
@@ -2920,8 +2936,6 @@ button, input, select, textarea {
   gap: 12px;
   min-height: 0;
   width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
 }
 
 .pomodoro-header {
