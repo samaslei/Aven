@@ -11205,6 +11205,208 @@ body.mobile-drawer-locked {
     display: block !important;
     box-sizing: border-box !important;
   }
+
+  /* ======================================================================
+     FULL BREAKDOWN VIEW — MOBILE RESPONSIVE (≤540px / 360–430px phones)
+     ====================================================================== */
+
+  /* --- 1. Container & Outer Spacing --- */
+  .term-breakdown-container,
+  .overall-breakdown-container {
+    padding: 0 4px !important;
+    gap: 14px !important;
+  }
+
+  /* --- 2. Top Bar (Title + Weight Summary): Stack Vertically --- */
+  .term-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .term-header-left h3 {
+    font-size: 15px !important;
+    line-height: 1.3 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+
+  .term-header-right {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .term-weight-summary {
+    font-size: 11.5px !important;
+    text-align: left !important;
+    width: 100% !important;
+  }
+
+  /* Copy to finals button: compact on mobile */
+  #btn-copy-to-finals {
+    font-size: 11.5px !important;
+    padding: 6px 10px !important;
+    white-space: nowrap !important;
+  }
+
+  /* --- 3. Category Cards: Full Width & Reduced Padding --- */
+  .category-breakdown-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .category-breakdown-body {
+    padding: 10px 10px 14px 10px !important;
+    gap: 6px !important;
+  }
+
+  /* --- 4. Assessment Entry Rows: Flex-Wrap for Phone --- */
+  .grade-entry-card-row {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+  }
+
+  /* Entry name takes full width first row */
+  .entry-card-left {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+
+  .entry-name-text {
+    font-size: 13px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Right side wraps onto second row, left-aligned */
+  .entry-card-right {
+    flex: 1 1 100% !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    padding-top: 4px !important;
+    border-top: 1px dashed var(--border-subtle) !important;
+  }
+
+  /* Relax fixed widths on score fraction for tighter screens */
+  .entry-score-fraction {
+    width: 88px !important;
+    min-width: 80px !important;
+    height: 30px !important;
+    font-size: 12px !important;
+  }
+
+  /* Relax standing badge width */
+  .entry-standing-badge {
+    width: auto !important;
+    min-width: 56px !important;
+    font-size: 11.5px !important;
+  }
+
+  /* Delete entry button: touch-friendly 44px tap target */
+  .btn-del-entry {
+    min-width: 36px !important;
+    min-height: 36px !important;
+    padding: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-left: auto !important;
+  }
+
+  /* --- 5. Inline "+ Add entry" Button: Full Width on Mobile --- */
+  .btn-add-entry-inline {
+    width: 100% !important;
+    min-height: 44px !important;
+    font-size: 12.5px !important;
+    border-radius: var(--radius-md) !important;
+  }
+
+  /* --- 6. Touch Targets: Minimum 44px on Interactive Elements --- */
+  .cat-chevron-btn {
+    min-width: 40px !important;
+    min-height: 40px !important;
+    padding: 8px !important;
+  }
+
+  .cat-drag-handle {
+    min-width: 28px !important;
+    min-height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .btn-del-cat {
+    min-width: 36px !important;
+    min-height: 40px !important;
+    padding: 6px 8px !important;
+  }
+
+  .cat-weight-editable {
+    min-height: 28px !important;
+    padding: 4px 8px !important;
+  }
+
+  /* --- 7. Summary Box: Stack for Mobile --- */
+  .grade-summary-box {
+    padding: 16px 14px !important;
+    gap: 10px !important;
+  }
+
+  /* Stack the summary header row (title + weighted pts) */
+  .grade-summary-box > div:first-child {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+  }
+
+  .grade-summary-box .stat-card-title {
+    font-size: 14px !important;
+  }
+
+  /* Stack grade display so big number + description wrap cleanly */
+  .phil-grade-display {
+    flex-wrap: wrap !important;
+    gap: 4px 8px !important;
+  }
+
+  .phil-grade-big {
+    font-size: 28px !important;
+  }
+
+  .phil-grade-desc {
+    font-size: 12px !important;
+  }
+
+  /* --- 8. Empty Categories Card: Responsive on Phone --- */
+  .empty-categories-card {
+    padding: 16px 12px !important;
+  }
+
+  .empty-categories-card p {
+    font-size: 13px !important;
+  }
+
+  .empty-categories-card .btn {
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+    min-height: 40px !important;
+    white-space: normal !important;
+    text-align: center !important;
+  }
+
+  /* --- 9. Category Header Average Stat: Compact --- */
+  .cat-avg-stat-number {
+    font-size: 14px !important;
+  }
+
+  .cat-avg-stat-label {
+    font-size: 8.5px !important;
+  }
 }
 
 .cat-empty-body {
