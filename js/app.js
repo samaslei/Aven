@@ -364,19 +364,26 @@ class AvenApp {
   async navigateTo(pageKey, targetSection = null) {
     if (pageKey === 'plans') pageKey = 'schedule';
     if (!this.pages[pageKey]) pageKey = 'subjects';
-    this.currentPage = pageKey;
-    window.location.hash = pageKey;
 
-    // Update Header
+    // Synchronize address bar hash if it doesn't already match
+    if (window.location.hash.replace(/^#/, '').split('?')[0] !== pageKey) {
+      window.location.hash = pageKey;
+    }
+
     const pageConfig = this.pages[pageKey];
-    if (this.pageTitleEl) this.pageTitleEl.textContent = pageConfig.title;
-    if (this.pageSubtitleEl) this.pageSubtitleEl.textContent = pageConfig.subtitle || '';
 
-    // Update Top Nav pill active state & sliding background indicator
-    this.updateNavPillActive(pageKey, true);
-
-    // Render current view with fluid entrance and cross-fade animation
+    // Confirm render will proceed before setting currentPage
     if (this.mainContainer && pageConfig.load) {
+      this.currentPage = pageKey;
+
+      // Update Header
+      if (this.pageTitleEl) this.pageTitleEl.textContent = pageConfig.title;
+      if (this.pageSubtitleEl) this.pageSubtitleEl.textContent = pageConfig.subtitle || '';
+
+      // Update Top Nav pill active state & sliding background indicator
+      this.updateNavPillActive(pageKey, true);
+
+      // Render current view with fluid entrance and cross-fade animation
       const isInitialRender = !this.mainContainer.hasChildNodes() || this.mainContainer.innerHTML.trim() === '';
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -400,6 +407,8 @@ class AvenApp {
           await doRender();
         }, 120);
       }
+    } else {
+      this.currentPage = pageKey;
     }
 
     // Handle scroll to target section if in settings
@@ -412,12 +421,20 @@ class AvenApp {
   }
 
   setupNavigation() {
-    // 1. Navigation link pills
+    // 1. Navigation link pills (route through hashchange as single source of truth)
     document.querySelectorAll('.top-nav-bar .nav-pill').forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
         const targetPage = link.dataset.page;
-        this.navigateTo(targetPage);
+        if (targetPage) {
+          if (window.location.hash.replace(/^#/, '').split('?')[0] === targetPage) {
+            if (this.currentPage !== targetPage) {
+              this.navigateTo(targetPage);
+            }
+          } else {
+            window.location.hash = targetPage;
+          }
+        }
       });
     });
 
