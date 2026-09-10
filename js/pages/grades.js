@@ -591,7 +591,7 @@ function renderTermTabContent(subject, term, gradeStats) {
           ` : ''}
 
           <span class="term-weight-summary" style="font-size: 12.5px; color: var(--text-secondary); text-align: right;">
-            Total configured weight: <strong>${termData.totalWeight}%</strong> ${termData.totalWeight === 100 ? '<span style="color: var(--success); font-weight: 600;">✓ (100% Balanced)</span>' : `<span style="color: var(--warning);">(Need ${100 - termData.totalWeight}% more)</span>`}
+            Total configured weight: <strong>${termData.totalWeight}%</strong>${termData.totalWeight === 100 ? '' : ` <span style="color: var(--warning);">${termData.totalWeight > 100 ? `(Exceeds by ${termData.totalWeight - 100}%)` : `(Need ${100 - termData.totalWeight}% more)`}</span>`}
           </span>
         </div>
       </div>
