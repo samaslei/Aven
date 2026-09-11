@@ -13074,16 +13074,391 @@ body.mobile-drawer-locked {
   animation: fadeIn var(--dur-normal) var(--ease-out);
 }
 
-.profile-activity-item:hover {
-  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.05)) !important;
-  border-color: var(--border-default) !important;
+/* Header Badge Pills: Distinct high-contrast tint */
+.profile-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 550;
+  padding: 4px 11px;
+  border-radius: var(--radius-full);
+  background: #e5e0cf;
+  border: 1px solid rgba(80, 85, 55, 0.22);
+  color: #383c24;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .profile-meta-pill {
+  background: #e5e0cf;
+  border-color: rgba(80, 85, 55, 0.22);
+  color: #383c24;
+}
+
+[data-theme="pure-black"] .profile-meta-pill {
+  background: #1c1c1f;
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #e4e4e7;
+}
+
+[data-theme="pure-white"] .profile-meta-pill {
+  background: #eef2f6;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+[data-theme="dark"] .profile-meta-pill {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #d4d4d8;
+}
+
+/* Stat Card Pastel Icon Badges */
+.profile-page-view .stat-icon-gwa {
+  background: rgba(71, 104, 59, 0.14) !important;
+  color: #47683b !important;
+  border: 1px solid rgba(71, 104, 59, 0.24);
+}
+
+.profile-page-view .stat-icon-study-time {
+  background: rgba(184, 134, 40, 0.14) !important;
+  color: #b88628 !important;
+  border: 1px solid rgba(184, 134, 40, 0.24);
+}
+
+.profile-page-view .stat-icon-subjects {
+  background: rgba(80, 85, 55, 0.14) !important;
+  color: #505537 !important;
+  border: 1px solid rgba(80, 85, 55, 0.24);
+}
+
+.profile-page-view .stat-icon-streak {
+  background: rgba(194, 65, 54, 0.12) !important;
+  color: #c24136 !important;
+  border: 1px solid rgba(194, 65, 54, 0.24);
+}
+
+.profile-page-view .stat-card:hover .stat-icon-gwa {
+  background: rgba(71, 104, 59, 0.22) !important;
+}
+
+.profile-page-view .stat-card:hover .stat-icon-study-time {
+  background: rgba(184, 134, 40, 0.22) !important;
+}
+
+.profile-page-view .stat-card:hover .stat-icon-subjects {
+  background: rgba(80, 85, 55, 0.22) !important;
+}
+
+.profile-page-view .stat-card:hover .stat-icon-streak {
+  background: rgba(194, 65, 54, 0.20) !important;
+}
+
+[data-theme="pure-black"] .profile-page-view .stat-icon-gwa {
+  background: rgba(71, 104, 59, 0.25) !important;
+  color: #86efac !important;
+}
+[data-theme="pure-black"] .profile-page-view .stat-icon-study-time {
+  background: rgba(184, 134, 40, 0.25) !important;
+  color: #fde047 !important;
+}
+[data-theme="pure-black"] .profile-page-view .stat-icon-subjects {
+  background: rgba(162, 170, 120, 0.22) !important;
+  color: #d9e0b8 !important;
+}
+[data-theme="pure-black"] .profile-page-view .stat-icon-streak {
+  background: rgba(194, 65, 54, 0.24) !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .profile-page-view .stat-icon-gwa {
+  background: rgba(71, 104, 59, 0.22) !important;
+  color: #86efac !important;
+}
+[data-theme="dark"] .profile-page-view .stat-icon-study-time {
+  background: rgba(184, 134, 40, 0.22) !important;
+  color: #fde047 !important;
+}
+[data-theme="dark"] .profile-page-view .stat-icon-subjects {
+  background: rgba(162, 170, 120, 0.20) !important;
+  color: #d9e0b8 !important;
+}
+[data-theme="dark"] .profile-page-view .stat-icon-streak {
+  background: rgba(194, 65, 54, 0.20) !important;
+  color: #fca5a5 !important;
+}
+
+/* ==========================================================================
+   Profile Study Time Trend Line Graph (Un-distorted Responsive Layout)
+   ========================================================================== */
+.profile-trend-chart-container {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  padding: 8px 0 0 0;
+  box-sizing: border-box;
+}
+
+.profile-trend-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Y-Axis Grid & Labels */
+.profile-trend-grid {
+  position: absolute;
+  left: 0;
+  right: 14px;
+  top: 20px;
+  bottom: 28px;
+  pointer-events: none;
+}
+
+.profile-trend-grid-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  transform: translateY(-50%);
+}
+
+.profile-trend-y-label {
+  width: 32px;
+  font-size: 10.5px;
+  font-family: var(--font-numeric);
+  color: var(--text-muted);
+  text-align: right;
+  padding-right: 8px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.profile-trend-grid-line {
+  flex: 1;
+  height: 0;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+
+/* Plot Area (Line & Points) */
+.profile-trend-plot {
+  position: absolute;
+  left: 40px;
+  right: 14px;
+  top: 20px;
+  bottom: 28px;
+}
+
+.profile-trend-svg-path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.profile-trend-empty-hint {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Point Anchors & Dots */
+.profile-trend-point-anchor {
+  position: absolute;
+  width: 0;
+  height: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.profile-trend-drop-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  border-left: 1px dashed var(--olive-deep, #505537);
+  opacity: 0.18;
+  transition: opacity var(--dur-fast) var(--ease-out);
+  pointer-events: none;
+}
+
+.profile-trend-point-anchor:hover .profile-trend-drop-line {
+  opacity: 0.55;
+}
+
+.profile-trend-val-pill {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-numeric);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: color var(--dur-fast), font-weight var(--dur-fast);
+}
+
+.profile-trend-val-pill.is-highlight {
+  font-weight: 700;
+  color: var(--olive-deep, #505537);
+}
+
+[data-theme="dark"] .profile-trend-val-pill.is-highlight {
+  color: var(--text-primary);
+}
+
+.profile-trend-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 2px solid var(--olive-deep, #505537);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: transform var(--dur-fast) var(--ease-out), background-color var(--dur-fast);
+  box-sizing: border-box;
+}
+
+.profile-trend-dot.is-current {
+  width: 11px;
+  height: 11px;
+  border-width: 2.5px;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(80, 85, 55, 0.35);
+}
+
+[data-theme="dark"] .profile-trend-dot.is-current {
+  background: #1e201b;
+  box-shadow: 0 2px 6px rgba(168, 176, 130, 0.35);
+}
+
+[data-theme="pure-black"] .profile-trend-dot.is-current {
+  background: #000000;
+  border-color: var(--olive-light, #a8b082);
+}
+
+.profile-trend-point-anchor:hover .profile-trend-dot {
+  transform: translate(-50%, -50%) scale(1.35);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(80, 85, 55, 0.18);
+}
+
+[data-theme="dark"] .profile-trend-point-anchor:hover .profile-trend-dot {
+  background: #141512;
+  box-shadow: 0 0 0 4px rgba(168, 176, 130, 0.25);
+}
+
+/* X-Axis Month Labels */
+.profile-trend-x-axis {
+  position: absolute;
+  left: 40px;
+  right: 14px;
+  bottom: 0;
+  height: 20px;
+  pointer-events: none;
+}
+
+.profile-trend-x-col {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+}
+
+.profile-trend-x-text {
+  font-size: 11px;
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+  font-weight: 500;
+  user-select: none;
+}
+
+.profile-trend-x-text.is-current {
+  font-weight: 700;
+  color: var(--olive-deep, #505537);
+}
+
+[data-theme="dark"] .profile-trend-x-text.is-current {
+  color: var(--text-primary);
+}
+
+/* Profile List Rows Contrast (Subject Grade Standings & Recent Activity) */
+.profile-activity-item,
+.profile-subject-row {
+  background: #ffffff;
+  border: 1px solid rgba(45, 50, 35, 0.10);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.profile-activity-item:hover,
+.profile-subject-row:hover {
+  background: #fdfcf9 !important;
+  border-color: rgba(45, 50, 35, 0.22) !important;
   transform: translateY(-1px);
 }
 
-.profile-subject-row:hover {
-  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.05)) !important;
-  border-color: var(--border-default) !important;
-  transform: translateY(-1px);
+[data-theme="light"] .profile-activity-item,
+[data-theme="light"] .profile-subject-row {
+  background: #ffffff;
+  border: 1px solid rgba(45, 50, 35, 0.10);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .profile-activity-item:hover,
+[data-theme="light"] .profile-subject-row:hover {
+  background: #fdfcf9 !important;
+  border-color: rgba(45, 50, 35, 0.22) !important;
+}
+
+[data-theme="dark"] .profile-activity-item,
+[data-theme="dark"] .profile-subject-row {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(235, 230, 215, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+}
+
+[data-theme="dark"] .profile-activity-item:hover,
+[data-theme="dark"] .profile-subject-row:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(235, 230, 215, 0.16) !important;
+}
+
+[data-theme="pure-black"] .profile-activity-item,
+[data-theme="pure-black"] .profile-subject-row {
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: none;
+}
+
+[data-theme="pure-black"] .profile-activity-item:hover,
+[data-theme="pure-black"] .profile-subject-row:hover {
+  background: #222226 !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
+}
+
+[data-theme="pure-white"] .profile-activity-item,
+[data-theme="pure-white"] .profile-subject-row {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="pure-white"] .profile-activity-item:hover,
+[data-theme="pure-white"] .profile-subject-row:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
 }
 
 @media (max-width: 960px) {
