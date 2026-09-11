@@ -182,7 +182,7 @@ export function renderSettingsView(container) {
             <div class="settings-profile-info">
               <strong class="settings-profile-name" id="settings-hero-name">${user.name || 'Student'}</strong>
               <span class="settings-profile-email" id="settings-hero-email">${user.email || 'student@university.edu'}</span>
-              <span class="settings-profile-badge" id="settings-hero-badge">${user.year_level || '1st Year'} · ${user.institution || 'Aven Academic OS'}</span>
+              <span class="settings-profile-badge" id="settings-hero-badge">${user.year_level || '1st Year'}${user.program ? ` · ${user.program}` : ''}</span>
             </div>
           </div>
 
@@ -190,7 +190,6 @@ export function renderSettingsView(container) {
           <div class="settings-row settings-avatar-row">
             <div class="setting-info">
               <strong class="setting-title">Profile Picture</strong>
-              <p class="setting-desc">Personalize your student identity across the app (PNG, JPG, WebP up to 5MB)</p>
             </div>
             <div class="setting-control settings-avatar-actions">
               <input type="file" id="setting-avatar-input" accept="image/png, image/jpeg, image/webp, image/gif" style="display: none;">
@@ -212,7 +211,6 @@ export function renderSettingsView(container) {
           <div class="settings-row">
             <div class="setting-info">
               <strong class="setting-title">Display Name</strong>
-              <p class="setting-desc">Student profile name displayed across the app</p>
             </div>
             <div class="setting-control">
               <input type="text" id="setting-user-name" class="form-input auto-save-input" value="${user.name || ''}" placeholder="Alex Rivera" style="width: 220px; font-size: 13px;">
@@ -223,7 +221,6 @@ export function renderSettingsView(container) {
           <div class="settings-row">
             <div class="setting-info">
               <strong class="setting-title">Email Address</strong>
-              <p class="setting-desc">Student contact email</p>
             </div>
             <div class="setting-control">
               <input type="email" id="setting-user-email" class="form-input auto-save-input" value="${user.email || ''}" placeholder="alex.rivera@university.edu" style="width: 220px; font-size: 13px;">
@@ -234,7 +231,6 @@ export function renderSettingsView(container) {
           <div class="settings-row">
             <div class="setting-info">
               <strong class="setting-title">Current Year Level</strong>
-              <p class="setting-desc">Overall academic standing (profile-level label)</p>
             </div>
             <div class="setting-control">
               <select id="setting-user-year" class="form-select auto-save-input" style="width: 220px; font-size: 13px;">
@@ -245,22 +241,10 @@ export function renderSettingsView(container) {
             </div>
           </div>
 
-          <!-- School / University Name -->
-          <div class="settings-row">
-            <div class="setting-info">
-              <strong class="setting-title">School / University</strong>
-              <p class="setting-desc">Institution name for academic reports and exports</p>
-            </div>
-            <div class="setting-control">
-              <input type="text" id="setting-user-institution" class="form-input auto-save-input" value="${user.institution || ''}" placeholder="e.g. State University" style="width: 220px; font-size: 13px;">
-            </div>
-          </div>
-
           <!-- Program / Major -->
           <div class="settings-row">
             <div class="setting-info">
               <strong class="setting-title">Program / Major</strong>
-              <p class="setting-desc">Degree program or academic field of study</p>
             </div>
             <div class="setting-control">
               <input type="text" id="setting-user-program" class="form-input auto-save-input" value="${user.program || ''}" placeholder="e.g. BS Computer Science" style="width: 220px; font-size: 13px;">
@@ -268,10 +252,9 @@ export function renderSettingsView(container) {
           </div>
 
           <!-- Avatar Color Customization -->
-          <div class="settings-row">
+          <div class="settings-row" id="setting-avatar-color-row" style="${user.avatar_url ? 'display: none;' : ''}">
             <div class="setting-info">
               <strong class="setting-title">Avatar Color</strong>
-              <p class="setting-desc">Pick a background color tint for your initials circle</p>
             </div>
             <div class="setting-control">
               <div class="color-swatches" id="account-avatar-colors" style="max-width: 240px; justify-content: flex-end;">
@@ -289,7 +272,6 @@ export function renderSettingsView(container) {
           <div class="settings-row" style="border-bottom: none; border-top: 1px solid var(--border-subtle); background: var(--bg-surface); padding: 14px 20px;">
             <div class="setting-info">
               <strong class="setting-title" style="color: var(--danger);">Delete Account</strong>
-              <p class="setting-desc">Permanently delete your account, login credentials, and all synchronized academic data</p>
             </div>
             <div class="setting-control">
               <button type="button" class="btn btn-danger" id="btn-delete-account">
@@ -505,7 +487,6 @@ function attachSettingsEvents(container) {
   const nameInput = container.querySelector('#setting-user-name');
   const emailInput = container.querySelector('#setting-user-email');
   const yearSelect = container.querySelector('#setting-user-year');
-  const institutionInput = container.querySelector('#setting-user-institution');
   const programInput = container.querySelector('#setting-user-program');
   const accountBadge = container.querySelector('#account-save-indicator');
   const avatarPreview = container.querySelector('#settings-avatar-preview');
@@ -514,6 +495,7 @@ function attachSettingsEvents(container) {
   const btnUploadAvatar = container.querySelector('#btn-upload-avatar');
   const btnRemoveAvatar = container.querySelector('#btn-remove-avatar');
   const btnUploadText = container.querySelector('#btn-upload-avatar-text');
+  const avatarColorRow = container.querySelector('#setting-avatar-color-row');
 
   const initialProfile = store.getUserProfile();
   let currentAvatarColor = initialProfile.avatar_color || '#6366f1';
@@ -535,20 +517,21 @@ function attachSettingsEvents(container) {
     if (btnRemoveAvatar) {
       btnRemoveAvatar.style.display = hasPhoto ? 'inline-flex' : 'none';
     }
+    if (avatarColorRow) {
+      avatarColorRow.style.display = hasPhoto ? 'none' : '';
+    }
   };
 
   const saveAccount = () => {
     const name = nameInput ? nameInput.value : initialProfile.name;
     const email = emailInput ? emailInput.value : initialProfile.email;
     const year_level = yearSelect ? yearSelect.value : initialProfile.year_level;
-    const institution = institutionInput ? institutionInput.value : initialProfile.institution;
     const program = programInput ? programInput.value : initialProfile.program;
 
     const updated = store.saveUserProfile({
       name,
       email,
       year_level,
-      institution,
       program,
       avatar_color: currentAvatarColor
     });
@@ -560,7 +543,7 @@ function attachSettingsEvents(container) {
     const heroBadge = container.querySelector('#settings-hero-badge');
     if (heroName) heroName.textContent = updated.name || 'Student';
     if (heroEmail) heroEmail.textContent = updated.email || 'student@university.edu';
-    if (heroBadge) heroBadge.textContent = `${updated.year_level || '1st Year'} · ${updated.institution || 'Aven Academic OS'}`;
+    if (heroBadge) heroBadge.textContent = `${updated.year_level || '1st Year'}${updated.program ? ` · ${updated.program}` : ''}`;
     
     showInlineSaved(accountBadge);
   };
@@ -615,7 +598,7 @@ function attachSettingsEvents(container) {
     showInlineSaved(accountBadge);
   });
 
-  [nameInput, emailInput, institutionInput, programInput].forEach(inp => {
+  [nameInput, emailInput, programInput].forEach(inp => {
     inp?.addEventListener('blur', saveAccount);
     inp?.addEventListener('change', saveAccount);
   });
