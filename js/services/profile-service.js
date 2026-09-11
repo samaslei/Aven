@@ -8,17 +8,58 @@ import { events } from '../core/events.js';
 import { syncEngine } from '../core/sync-engine.js';
 import * as ls from '../utils/local-storage.js';
 
-const DEFAULT_USER = {
-  name: 'Alex Rivera',
-  email: 'student@university.edu',
-  bio: 'Undergraduate Student',
+export const DEFAULT_USER = {
+  name: '',
+  email: '',
+  bio: '',
   year_level: '1st Year',
-  institution: 'University of the Philippines',
-  program: 'BS Computer Science',
-  avatar: 'AR',
+  institution: '',
+  program: '',
+  avatar: '',
   avatar_color: '#6366f1',
-  avatar_url: null
+  avatar_url: null,
+  is_loaded: false
 };
+
+/**
+ * Derives a neutral/clean user profile from an active Supabase session or user object.
+ * Avoids any hardcoded fake names or placeholder institutions.
+ * @param {object|null} sessionUser - Supabase session.user
+ * @returns {object}
+ */
+export function deriveUserFromSession(sessionUser) {
+  if (!sessionUser) return { ...DEFAULT_USER };
+  const meta = sessionUser.user_metadata || {};
+  const email = sessionUser.email || '';
+  const rawMetaName = meta.display_name || meta.full_name || meta.name || '';
+  const cleanName = (rawMetaName && rawMetaName.toLowerCase() !== 'alex rivera')
+    ? rawMetaName
+    : (email ? email.split('@')[0] : '');
+
+  const initials = cleanName
+    ? cleanName.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase()
+    : (email ? email.slice(0, 2).toUpperCase() : 'U');
+
+  return {
+    ...DEFAULT_USER,
+    name: cleanName,
+    email,
+    avatar: initials,
+    avatar_color: meta.avatar_color || '#6366f1',
+    avatar_url: meta.avatar_url || null,
+    is_loaded: false
+  };
+}
+
+/**
+ * Checks if a cached profile object is the legacy fake placeholder.
+ */
+function isDummyUser(u) {
+  if (!u) return true;
+  const name = (u.name || '').trim().toLowerCase();
+  const email = (u.email || '').trim().toLowerCase();
+  return name === 'alex rivera' || email === 'student@university.edu';
+}
 
 /**
  * @param {object} state - The central reactive state object
@@ -37,13 +78,27 @@ export function createProfileService(state, context) {
   function getLocalCachedUser(userId = null) {
     if (userId) {
       const userSpecific = ls.getJSON(`aven_user_profile_${userId}`);
-      if (userSpecific) return userSpecific;
+      if (userSpecific) {
+        if (isDummyUser(userSpecific)) {
+          ls.removeItem(`aven_user_profile_${userId}`);
+        } else {
+          return userSpecific;
+        }
+      }
     }
-    return ls.getJSON('aven_user_profile');
+    const legacy = ls.getJSON('aven_user_profile');
+    if (legacy) {
+      if (isDummyUser(legacy)) {
+        ls.removeItem('aven_user_profile');
+        return null;
+      }
+      return legacy;
+    }
+    return null;
   }
 
   function saveLocalCachedUser(user, userId = null) {
-    if (!user) return;
+    if (!user || isDummyUser(user)) return;
     ls.setJSON('aven_user_profile', user);
     if (userId) {
       ls.setJSON(`aven_user_profile_${userId}`, user);
@@ -109,14 +164,15 @@ export function createProfileService(state, context) {
       .map(part => part[0])
       .slice(0, 2)
       .join('')
-      .toUpperCase() || 'ST';
+      .toUpperCase() || (email ? email.slice(0, 2).toUpperCase() : 'U');
 
     const updatedProfile = {
       ...current,
       ...profileData,
       name, email, bio, year_level, institution, program,
       avatar_color, avatar_url,
-      avatar: initials
+      avatar: initials,
+      is_loaded: true
     };
 
     state.user = updatedProfile;

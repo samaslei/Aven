@@ -52,7 +52,7 @@ import { createSessionsService } from '../services/sessions-service.js';
 import { createGradesService } from '../services/grades-service.js';
 import { createPlansService } from '../services/plans-service.js';
 import { createSettingsService } from '../services/settings-service.js';
-import { createProfileService } from '../services/profile-service.js';
+import { createProfileService, DEFAULT_USER, deriveUserFromSession } from '../services/profile-service.js';
 import { createAccountService } from '../services/account-service.js';
 
 // Re-export domain constants & functions for backward compatibility
@@ -67,7 +67,9 @@ export {
   getPhilippineGrade,
   getGradeStandingTier,
   getStandingColor,
-  getStandingClass
+  getStandingClass,
+  DEFAULT_USER,
+  deriveUserFromSession
 };
 
 // ---------------------------------------------------------------------------
@@ -101,6 +103,9 @@ class Store {
 
     if (clearCachedUser) {
       ls.removeItem('aven_user_profile');
+      if (this.currentUserId) {
+        ls.removeItem(`aven_user_profile_${this.currentUserId}`);
+      }
     }
 
     const savedUser = clearCachedUser ? null : this._profileService?.getLocalCachedUser(this.currentUserId) ?? null;
@@ -109,11 +114,7 @@ class Store {
       document.documentElement.setAttribute('data-neutral-colors', 'true');
     }
 
-    const defaultUser = {
-      name: 'Alex Rivera', email: 'student@university.edu', bio: 'Undergraduate Student',
-      year_level: '1st Year', institution: 'University of the Philippines',
-      program: 'BS Computer Science', avatar: 'AR', avatar_color: '#6366f1', avatar_url: null
-    };
+    const defaultUser = this._profileService ? this._profileService.getDefaultUser() : { ...DEFAULT_USER };
 
     this.state = {
       subjects: [],
@@ -121,7 +122,7 @@ class Store {
       grades: [],
       grade_configs: [],
       plans: [],
-      user: savedUser ? { ...defaultUser, ...savedUser } : { ...defaultUser },
+      user: savedUser ? { ...defaultUser, ...savedUser, is_loaded: true } : { ...defaultUser },
       settings: { neutral_colors: savedNeutralColors },
       grading_scale: JSON.parse(JSON.stringify(PHILIPPINE_GRADE_SCALE)),
       subjects_sort: savedSubjectsSort,
@@ -194,29 +195,67 @@ class Store {
         : (metaAvatar || cached?.avatar_url || this.state.user?.avatar_url || null);
 
       if (profile) {
-        const name = profile.display_name || user?.user_metadata?.display_name || cached?.name || 'Student';
-        const initials = name.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase() || 'ST';
+        const rawName = profile.display_name || user?.user_metadata?.display_name || cached?.name;
+        const name = (rawName && rawName.trim().toLowerCase() !== 'alex rivera')
+          ? rawName.trim()
+          : (profile.email || user?.email ? (profile.email || user?.email).split('@')[0] : '');
+        const initials = name
+          ? name.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase()
+          : ((profile.email || user?.email || '').slice(0, 2).toUpperCase() || 'U');
+
+        const institution = (profile.school && profile.school.trim().toLowerCase() !== 'university of the philippines')
+          ? profile.school.trim()
+          : ((cached?.institution && cached.institution.trim().toLowerCase() !== 'university of the philippines') ? cached.institution.trim() : '');
+
+        const program = (profile.program && profile.program.trim().toLowerCase() !== 'bs computer science')
+          ? profile.program.trim()
+          : ((cached?.program && cached.program.trim().toLowerCase() !== 'bs computer science') ? cached.program.trim() : '');
+
         this.state.user = {
           name,
           email: profile.email || user?.email || '',
           bio: profile.bio || '',
           year_level: profile.year_level || cached?.year_level || '1st Year',
-          institution: profile.school || cached?.institution || '',
-          program: profile.program || cached?.program || '',
+          institution,
+          program,
           avatar: initials,
           avatar_color: profile.avatar_color || user?.user_metadata?.avatar_color || cached?.avatar_color || '#6366f1',
           avatar_url: resolvedAvatarUrl,
-          created_at: profile?.created_at || user?.created_at || cached?.created_at || null
+          created_at: profile?.created_at || user?.created_at || cached?.created_at || null,
+          is_loaded: true
         };
         this._profileService.saveLocalCachedUser(this.state.user, userId);
         events.emit('user:updated', this.state.user);
-      } else if (cached || metaAvatar) {
-        const defaultUser = this._profileService.getDefaultUser();
-        this.state.user = { 
-          ...defaultUser, 
-          ...(cached || {}), 
+      } else {
+        // No profiles row found in database (e.g. fresh sign up)
+        const email = user?.email || '';
+        const rawName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || cached?.name;
+        const name = (rawName && rawName.trim().toLowerCase() !== 'alex rivera')
+          ? rawName.trim()
+          : (email ? email.split('@')[0] : '');
+        const initials = name
+          ? name.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase()
+          : (email ? email.slice(0, 2).toUpperCase() : 'U');
+
+        const institution = (cached?.institution && cached.institution.trim().toLowerCase() !== 'university of the philippines')
+          ? cached.institution.trim()
+          : '';
+        const program = (cached?.program && cached.program.trim().toLowerCase() !== 'bs computer science')
+          ? cached.program.trim()
+          : '';
+
+        this.state.user = {
+          ...this._profileService.getDefaultUser(),
+          ...(cached || {}),
+          name,
+          email: email || cached?.email || '',
+          avatar: initials,
           avatar_url: resolvedAvatarUrl,
-          created_at: cached?.created_at || user?.created_at || null 
+          avatar_color: user?.user_metadata?.avatar_color || cached?.avatar_color || '#6366f1',
+          created_at: user?.created_at || cached?.created_at || null,
+          institution,
+          program,
+          is_loaded: true
         };
         this._profileService.saveLocalCachedUser(this.state.user, userId);
         events.emit('user:updated', this.state.user);
@@ -427,6 +466,7 @@ class Store {
   getLocalCachedUser(userId) { return this._profileService.getLocalCachedUser(userId); }
   saveLocalCachedUser(user, userId) { return this._profileService.saveLocalCachedUser(user, userId); }
   getUserProfile() { return this._profileService.getUserProfile(); }
+  isProfileLoaded() { return Boolean(this.state.user?.is_loaded); }
   uploadAvatarImage(blob) { return this._profileService.uploadAvatarImage(blob); }
   saveUserProfile(data) { return this._profileService.saveUserProfile(data); }
 

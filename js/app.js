@@ -3,7 +3,7 @@
  * Integrated with Supabase Auth, Cloud Sync, and Local Data Migration
  */
 
-import { store, events } from './core/store.js';
+import { store, events, deriveUserFromSession } from './core/store.js';
 import { supabase, getCurrentSession, signOut, onAuthStateChange } from './core/supabase.js';
 import { renderStartupSkeleton } from './ui/skeleton.js';
 import { initGlobalTooltips } from './core/tooltip.js';
@@ -223,6 +223,16 @@ class AvenApp {
       this.appContainer.style.display = 'flex';
     }
 
+    // Seed user profile from live session metadata if cloud profile not yet loaded
+    if (!store.isProfileLoaded()) {
+      const derived = deriveUserFromSession(session.user);
+      const existing = store.getUserProfile();
+      store.state.user = {
+        ...derived,
+        ...(existing?.is_loaded ? existing : {})
+      };
+    }
+
     // 1. Initial local profile render
     this.renderUser();
 
@@ -350,27 +360,76 @@ class AvenApp {
 
   renderUser() {
     const user = store.getUserProfile();
+    const isLoaded = store.isProfileLoaded();
     const avatarEl = document.getElementById('user-avatar');
     const nameEl = document.getElementById('user-name');
     const roleEl = document.getElementById('user-role');
     const emailEl = document.getElementById('user-email');
 
-    const email = (this.currentUser && this.currentUser.email) || user.email || 'student@university.edu';
-    const name = user.name || (email ? email.split('@')[0] : 'Student');
-    const roleText = `${user.year_level || '1st Year'}${user.program ? ` · ${user.program}` : ' · Student'}`;
+    const email = (this.currentUser && this.currentUser.email) || user.email || '';
+
+    // Ignore legacy dummy values
+    let rawName = (user.name || '').trim();
+    if (rawName.toLowerCase() === 'alex rivera') {
+      rawName = '';
+    }
+
+    const metaName = (this.currentUser?.user_metadata?.display_name || this.currentUser?.user_metadata?.full_name || '').trim();
+    const cleanMetaName = (metaName.toLowerCase() !== 'alex rivera') ? metaName : '';
+
+    // Derive display name: preference given to clean stored name, then session metadata, then email prefix
+    const derivedName = rawName || cleanMetaName || (email ? email.split('@')[0] : '');
+
+    // Program & role text
+    let program = (user.program || '').trim();
+    if (program.toLowerCase() === 'bs computer science' && !isLoaded) {
+      program = '';
+    }
 
     if (avatarEl) {
       if (user.avatar_url) {
-        avatarEl.innerHTML = `<img src="${user.avatar_url}" alt="${name}" class="user-avatar-img">`;
+        avatarEl.innerHTML = `<img src="${user.avatar_url}" alt="${derivedName || 'User'}" class="user-avatar-img">`;
         avatarEl.style.backgroundColor = 'transparent';
-      } else {
-        avatarEl.textContent = user.avatar || 'ST';
+      } else if (derivedName || email) {
+        const initials = derivedName
+          ? derivedName.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase()
+          : (email ? email.slice(0, 2).toUpperCase() : 'U');
+        avatarEl.textContent = initials;
         avatarEl.style.backgroundColor = user.avatar_color || '#6366f1';
+      } else {
+        avatarEl.innerHTML = `<span class="sk-block" style="width: 100%; height: 100%; border-radius: 50%; display: block;"></span>`;
+        avatarEl.style.backgroundColor = 'transparent';
       }
     }
-    if (nameEl) nameEl.textContent = name;
-    if (roleEl) roleEl.textContent = roleText;
-    if (emailEl) emailEl.textContent = email;
+
+    if (nameEl) {
+      if (derivedName) {
+        nameEl.textContent = derivedName;
+      } else if (!isLoaded) {
+        nameEl.innerHTML = `<span class="sk-block" style="width: 72px; height: 11px; border-radius: 3px; display: inline-block;"></span>`;
+      } else {
+        nameEl.textContent = 'Student';
+      }
+    }
+
+    if (roleEl) {
+      if (!isLoaded && !program) {
+        roleEl.innerHTML = `<span class="sk-block" style="width: 80px; height: 10px; border-radius: 3px; display: inline-block;"></span>`;
+      } else {
+        const roleText = `${user.year_level || '1st Year'}${program ? ` · ${program}` : ''}`;
+        roleEl.textContent = roleText;
+      }
+    }
+
+    if (emailEl) {
+      if (email) {
+        emailEl.textContent = email;
+      } else if (!isLoaded) {
+        emailEl.innerHTML = `<span class="sk-block" style="width: 90px; height: 9px; border-radius: 3px; display: inline-block; opacity: 0.6; margin-top: 2px;"></span>`;
+      } else {
+        emailEl.textContent = '';
+      }
+    }
   }
 
   updateNavPillActive(pageKey, animate = true) {
