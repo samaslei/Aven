@@ -69,6 +69,11 @@ class AvenApp {
         title: 'Settings',
         subtitle: 'Manage your academic defaults, grading scale, account, and data.',
         load: () => import('./pages/settings.js').then(m => m.renderSettingsView)
+      },
+      profile: {
+        title: 'Profile',
+        subtitle: 'View your student identity, overall academic performance, and study statistics.',
+        load: () => import('./pages/profile.js').then(m => m.renderProfileView)
       }
     };
 
@@ -456,14 +461,26 @@ class AvenApp {
       this.navigateTo('settings');
     });
 
-    // 4. Profile cluster (click opens Settings account section)
+    // 4. Profile cluster (click navigates to Profile page)
     document.getElementById('top-profile-cluster')?.addEventListener('click', () => {
-      this.navigateTo('settings', 'settings-account');
+      if (window.location.hash.replace(/^#/, '').split('?')[0] === 'profile') {
+        if (this.currentPage !== 'profile') {
+          this.navigateTo('profile');
+        }
+      } else {
+        window.location.hash = 'profile';
+      }
     });
     document.getElementById('top-profile-cluster')?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        this.navigateTo('settings', 'settings-account');
+        if (window.location.hash.replace(/^#/, '').split('?')[0] === 'profile') {
+          if (this.currentPage !== 'profile') {
+            this.navigateTo('profile');
+          }
+        } else {
+          window.location.hash = 'profile';
+        }
       }
     });
 

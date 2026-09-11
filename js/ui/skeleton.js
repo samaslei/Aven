@@ -6,12 +6,12 @@
 export function renderStartupSkeleton(targetRoute) {
   const hashRoute = window.location.hash.replace('#', '') || 'subjects';
   const route = targetRoute || hashRoute;
-  const validRoutes = ['subjects', 'tracker', 'grades', 'schedule', 'plans', 'settings'];
+  const validRoutes = ['subjects', 'tracker', 'grades', 'schedule', 'plans', 'settings', 'profile'];
   const activeRoute = validRoutes.includes(route) ? route : 'subjects';
 
   // Highlight active nav item in skeleton top nav bar
   const navItems = document.querySelectorAll('#sk-nav-list .sk-nav-pill');
-  const navIndices = { subjects: 0, tracker: 1, grades: 2, schedule: 3, plans: 3, settings: -1 };
+  const navIndices = { subjects: 0, tracker: 1, grades: 2, schedule: 3, plans: 3, settings: -1, profile: -1 };
   const activeIdx = navIndices[activeRoute] !== undefined ? navIndices[activeRoute] : 0;
   navItems.forEach((item, idx) => {
     item.classList.toggle('active', idx === activeIdx);

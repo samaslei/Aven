@@ -198,13 +198,19 @@ class Store {
           program: profile.program || cached?.program || '',
           avatar: initials,
           avatar_color: profile.avatar_color || user?.user_metadata?.avatar_color || cached?.avatar_color || '#6366f1',
-          avatar_url: resolvedAvatarUrl
+          avatar_url: resolvedAvatarUrl,
+          created_at: profile?.created_at || user?.created_at || cached?.created_at || null
         };
         this._profileService.saveLocalCachedUser(this.state.user, userId);
         events.emit('user:updated', this.state.user);
       } else if (cached || metaAvatar) {
         const defaultUser = this._profileService.getDefaultUser();
-        this.state.user = { ...defaultUser, ...(cached || {}), avatar_url: resolvedAvatarUrl };
+        this.state.user = { 
+          ...defaultUser, 
+          ...(cached || {}), 
+          avatar_url: resolvedAvatarUrl,
+          created_at: cached?.created_at || user?.created_at || null 
+        };
         this._profileService.saveLocalCachedUser(this.state.user, userId);
         events.emit('user:updated', this.state.user);
       }

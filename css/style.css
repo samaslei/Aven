@@ -13067,3 +13067,29 @@ body.mobile-drawer-locked {
   background: var(--bg-card);
 }
 
+/* ==========================================================================
+   Profile Page (#profile) Styling
+   ========================================================================== */
+.profile-page-view {
+  animation: fadeIn var(--dur-normal) var(--ease-out);
+}
+
+.profile-activity-item:hover {
+  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.05)) !important;
+  border-color: var(--border-default) !important;
+  transform: translateY(-1px);
+}
+
+.profile-subject-row:hover {
+  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.05)) !important;
+  border-color: var(--border-default) !important;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 960px) {
+  .profile-dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
