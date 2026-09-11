@@ -319,8 +319,8 @@ class Store {
         }, { onConflict: 'user_id' }).catch(() => {});
       }
 
-      // 3. Parallel fetch of all entities
-      const [subjectsRes, configsRes, sessionsRes, categoriesRes, plansRes, allTimeDurationRes] = await Promise.all([
+      // 3. Parallel fetch of all entities using allSettled so one slow/failing query doesn't block other data
+      const entityQueries = await Promise.allSettled([
         supabase.from('subjects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('subject_grade_configs').select('*').eq('user_id', userId),
         supabase.from('study_sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
@@ -329,17 +329,29 @@ class Store {
         supabase.from('study_sessions').select('duration').eq('user_id', userId)
       ]);
 
-      this.state.subjects = subjectsRes.data || [];
-      this.state.grade_configs = configsRes.data || [];
-      this.state.sessions = sessionsRes.data || [];
-      this.state.plans = plansRes.data || [];
-      this.state.allTimeStudyMinutes = (allTimeDurationRes.data || []).reduce((sum, s) => sum + (s.duration || 0), 0);
+      const [subjectsRes, configsRes, sessionsRes, categoriesRes, plansRes, allTimeDurationRes] = entityQueries.map((r, i) => {
+        if (r.status === 'fulfilled') return r.value;
+        console.warn(`Entity query index ${i} failed during cloud sync:`, r.reason);
+        return { data: null, error: r.reason };
+      });
 
-      let categories = categoriesRes.data;
-      if (categoriesRes.error) {
-        console.warn('Grade categories sort_index query warning, falling back:', categoriesRes.error.message);
-        const fallbackRes = await supabase.from('grade_categories').select('*, grade_entries(*)').eq('user_id', userId);
-        categories = fallbackRes.data;
+      if (subjectsRes?.data) this.state.subjects = subjectsRes.data;
+      if (configsRes?.data) this.state.grade_configs = configsRes.data;
+      if (sessionsRes?.data) this.state.sessions = sessionsRes.data;
+      if (plansRes?.data) this.state.plans = plansRes.data;
+      if (allTimeDurationRes?.data) {
+        this.state.allTimeStudyMinutes = allTimeDurationRes.data.reduce((sum, s) => sum + (s.duration || 0), 0);
+      }
+
+      let categories = categoriesRes?.data;
+      if (categoriesRes?.error) {
+        console.warn('Grade categories sort_index query warning, falling back:', categoriesRes.error.message || categoriesRes.error);
+        try {
+          const fallbackRes = await supabase.from('grade_categories').select('*, grade_entries(*)').eq('user_id', userId);
+          if (fallbackRes?.data) categories = fallbackRes.data;
+        } catch (fbErr) {
+          console.warn('Grade categories fallback error:', fbErr);
+        }
       }
 
       if (categories) {
@@ -355,19 +367,28 @@ class Store {
             updated_at: e.updated_at || null
           }))
         }));
-      } else {
-        this.state.grades = [];
+      }
+
+      const anyRejected = entityQueries.some(r => r.status === 'rejected' || r.value?.error);
+      const allRejected = entityQueries.every(r => r.status === 'rejected' || r.value?.error);
+
+      if (allRejected) {
+        const firstErr = entityQueries.find(r => r.status === 'rejected')?.reason || entityQueries[0]?.value?.error;
+        throw (firstErr instanceof Error ? firstErr : new Error(firstErr?.message || 'Failed to load workspace data from cloud'));
       }
 
       syncEngine.lastSyncedAt = Date.now();
-      syncEngine.setStatus('synced', 'Workspace synchronized');
+      syncEngine.setStatus('synced', anyRejected ? 'Workspace partially synchronized' : 'Workspace synchronized');
       events.emit('store:synced');
       events.emit('store:changed', { type: 'cloud_sync' });
       events.emit('sync:connection', syncEngine.getConnectionStatus());
+
+      return { success: !anyRejected, partial: anyRejected };
     } catch (err) {
       console.error('Error syncing from Supabase:', err);
       const isNetworkError = !syncEngine.isOnline || err?.message?.toLowerCase().includes('failed to fetch');
       syncEngine.setStatus(isNetworkError ? 'offline' : 'error', isNetworkError ? 'Network unreachable' : (err.message || 'Sync failed'));
+      return { success: false, partial: false, error: err };
     } finally {
       this.isSyncing = false;
       events.emit('sync:connection', syncEngine.getConnectionStatus());

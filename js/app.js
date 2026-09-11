@@ -39,6 +39,9 @@ class AvenApp {
     this.currentUser = null;
     this.authController = null;
     this.landingPage = null;
+    this._inFlightAuthPromise = null;
+    this._inFlightAuthUserId = null;
+    this._navExitTimeout = null;
 
     this.pages = {
       subjects: {
@@ -188,6 +191,11 @@ class AvenApp {
   setupAuthListener() {
     onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        // If an authentication flow is already handling this user (e.g. form login in auth.js), deduplicate
+        if (this._inFlightAuthUserId === session.user.id) {
+          return;
+        }
+
         // If this is a new sign-in or different user, perform full initial authentication setup
         if (!this.currentUser || this.currentUser.id !== session.user.id) {
           const isFreshLogin = !this.authScreen?.classList.contains('hidden') || !this.landingScreen?.classList.contains('hidden');
@@ -211,56 +219,120 @@ class AvenApp {
   }
 
   async handleAuthenticated(session, isFreshLogin = false) {
+    if (!session?.user) return;
+
+    // Deduplicate concurrent handleAuthenticated calls for the same user
+    if (this._inFlightAuthPromise && this._inFlightAuthUserId === session.user.id) {
+      return this._inFlightAuthPromise;
+    }
+
+    this._inFlightAuthUserId = session.user.id;
     this.currentUser = session.user;
 
-    const authParams = extractAuthUrlParams();
-    const isConfirmedSignup = authParams.type === 'signup' || authParams.hasAuthTokens;
+    this._inFlightAuthPromise = (async () => {
+      let syncFailed = false;
+      try {
+        const authParams = extractAuthUrlParams();
+        const isConfirmedSignup = authParams.type === 'signup' || authParams.hasAuthTokens;
 
-    // Show App, Hide Landing and Auth Screens
-    if (this.landingScreen) this.landingScreen.classList.add('hidden');
-    if (this.authScreen) this.authScreen.classList.add('hidden');
-    if (this.appContainer) {
-      this.appContainer.style.display = 'flex';
-    }
+        // Show App, Hide Landing and Auth Screens
+        if (this.landingScreen) this.landingScreen.classList.add('hidden');
+        if (this.authScreen) this.authScreen.classList.add('hidden');
+        if (this.appContainer) {
+          this.appContainer.style.display = 'flex';
+        }
 
-    // Seed user profile from live session metadata if cloud profile not yet loaded
-    if (!store.isProfileLoaded()) {
-      const derived = deriveUserFromSession(session.user);
-      const existing = store.getUserProfile();
-      store.state.user = {
-        ...derived,
-        ...(existing?.is_loaded ? existing : {})
-      };
-    }
+        // Seed user profile from live session metadata if cloud profile not yet loaded
+        if (!store.isProfileLoaded()) {
+          const derived = deriveUserFromSession(session.user);
+          const existing = store.getUserProfile();
+          store.state.user = {
+            ...derived,
+            ...(existing?.is_loaded ? existing : {})
+          };
+        }
 
-    // 1. Initial local profile render
-    this.renderUser();
+        // 1. Initial local profile render
+        this.renderUser();
 
-    // 2. Sync directly from Supabase Cloud (carrying over landing theme on fresh login)
-    await store.syncFromCloud(session.user.id, isFreshLogin);
-    this.renderUser();
+        // 2. Sync directly from Supabase Cloud (carrying over landing theme on fresh login)
+        try {
+          const syncResult = await store.syncFromCloud(session.user.id, isFreshLogin);
+          if (syncResult && syncResult.success === false && !syncResult.partial) {
+            syncFailed = true;
+          }
+        } catch (syncErr) {
+          console.warn('Initial cloud sync notice:', syncErr);
+          syncFailed = true;
+        }
 
-    // 3. Clean up URL search / hash if they contained auth tokens / query params
-    if (authParams.hasAuthTokens && window.history && window.history.replaceState) {
-      window.history.replaceState({}, document.title, window.location.pathname + '#subjects');
-    }
+        this.renderUser();
 
-    // 4. Initial page load (check hash or default to subjects)
-    const rawHash = window.location.hash.replace('#', '');
-    const targetRoute = this.pages[rawHash] ? rawHash : 'subjects';
-    if (typeof window.renderStartupSkeleton === 'function') {
-      window.renderStartupSkeleton(targetRoute);
-    }
-    this.navigateTo(targetRoute);
+        // 3. Clean up URL search / hash if they contained auth tokens / query params
+        if (authParams.hasAuthTokens && window.history && window.history.replaceState) {
+          window.history.replaceState({}, document.title, window.location.pathname + '#subjects');
+        }
 
-    if (isConfirmedSignup) {
-      setTimeout(() => {
-        this.showToast('Email confirmed successfully! Welcome to Aven.', 'success');
-      }, 300);
-    }
+        // 4. Initial page load (check hash or default to subjects)
+        const rawHash = window.location.hash.replace('#', '').split('?')[0];
+        const targetRoute = this.pages[rawHash] ? rawHash : 'subjects';
+        if (typeof window.renderStartupSkeleton === 'function') {
+          window.renderStartupSkeleton(targetRoute);
+        }
+        await this.navigateTo(targetRoute);
 
-    // Smoothly reveal sharp, interactive content
-    this.dismissStartupLoader();
+        if (isConfirmedSignup) {
+          setTimeout(() => {
+            this.showToast('Email confirmed successfully! Welcome to Aven.', 'success');
+          }, 300);
+        }
+
+        // 5. If cloud sync completely failed, show visible error toast with retry action
+        if (syncFailed) {
+          this.showToast("Couldn't load your data — check your connection", 'danger', {
+            actionLabel: 'Retry',
+            actionCallback: async () => {
+              this.showToast('Retrying sync...', 'info');
+              try {
+                const res = await store.syncFromCloud(session.user.id, false);
+                this.renderUser();
+                if (typeof this.currentPage === 'string') {
+                  this.navigateTo(this.currentPage);
+                }
+                if (res?.success !== false) {
+                  this.showToast('Data synchronized successfully', 'success');
+                } else {
+                  this.showToast('Could not sync all data. Please check your connection.', 'warning');
+                }
+              } catch (e) {
+                this.showToast('Retry failed. Please check your connection.', 'danger');
+              }
+            },
+            duration: 8000
+          });
+        }
+      } catch (fatalErr) {
+        console.error('Fatal error during authentication setup:', fatalErr);
+        if (this.appContainer) this.appContainer.style.display = 'flex';
+        if (this.landingScreen) this.landingScreen.classList.add('hidden');
+        if (this.authScreen) this.authScreen.classList.add('hidden');
+        this.navigateTo('subjects').catch(() => {});
+        this.showToast("Couldn't load your data — check your connection", 'danger', {
+          actionLabel: 'Retry',
+          actionCallback: () => {
+            window.location.reload();
+          },
+          duration: 8000
+        });
+      } finally {
+        // Startup loader overlay is guaranteed to dismiss regardless of success or thrown errors
+        this.dismissStartupLoader();
+        this._inFlightAuthPromise = null;
+        this._inFlightAuthUserId = null;
+      }
+    })();
+
+    return this._inFlightAuthPromise;
   }
 
   handleUnauthenticated() {
@@ -510,6 +582,10 @@ class AvenApp {
       }
     }
 
+    // Set this.currentPage immediately BEFORE changing hash so that any synchronous or queued
+    // hashchange listener knows we are already on this page and does not re-trigger navigateTo
+    this.currentPage = pageKey;
+
     // Synchronize address bar hash if it doesn't already match
     if (window.location.hash.replace(/^#/, '').split('?')[0] !== pageKey) {
       window.location.hash = pageKey;
@@ -523,7 +599,13 @@ class AvenApp {
       let isRenderComplete = false;
       this.hidePageSpinner();
 
-      this.currentPage = pageKey;
+      // Clear any pending exit animation timeout from previous navigation
+      if (this._navExitTimeout) {
+        clearTimeout(this._navExitTimeout);
+        this._navExitTimeout = null;
+      }
+      // Guarantee view-exit is cleared when starting a new navigation sequence
+      this.mainContainer.classList.remove('view-exit');
 
       // Update Header
       if (this.pageTitleEl) this.pageTitleEl.textContent = pageConfig.title;
@@ -544,7 +626,10 @@ class AvenApp {
       }, 150);
 
       const doRender = async () => {
-        if (this._navId !== navId) return;
+        if (this._navId !== navId) {
+          this.mainContainer.classList.remove('view-exit');
+          return;
+        }
 
         if (typeof this.currentPageCleanup === 'function') {
           try {
@@ -555,7 +640,10 @@ class AvenApp {
 
         try {
           const renderer = await pageConfig.load();
-          if (this._navId !== navId) return;
+          if (this._navId !== navId) {
+            this.mainContainer.classList.remove('view-exit');
+            return;
+          }
 
           isRenderComplete = true;
           this.hidePageSpinner();
@@ -585,9 +673,12 @@ class AvenApp {
         await doRender();
       } else {
         this.mainContainer.classList.add('view-exit');
-        setTimeout(async () => {
+        this._navExitTimeout = setTimeout(async () => {
+          this._navExitTimeout = null;
           if (this._navId === navId) {
             await doRender();
+          } else {
+            this.mainContainer.classList.remove('view-exit');
           }
         }, 120);
       }
@@ -943,7 +1034,14 @@ class AvenApp {
   showToast(message, type = 'info', options = {}) {
     if (!this.toastContainer) return;
 
-    const { subtitle, actionLabel, actionCallback, duration = 3500 } = options;
+    let opts = options;
+    if (typeof opts === 'number') {
+      opts = { duration: opts, ...(typeof arguments[3] === 'object' && arguments[3] ? arguments[3] : {}) };
+    } else if (typeof opts !== 'object' || opts === null) {
+      opts = {};
+    }
+
+    const { subtitle, actionLabel, actionCallback, duration = 3500 } = opts;
 
     // Normalize type aliases
     const typeClass = (type === 'error') ? 'toast-danger' : `toast-${type}`;
