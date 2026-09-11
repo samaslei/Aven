@@ -274,42 +274,40 @@ class Store {
       }
 
       // 3. Parallel fetch of all entities
-      const [subjectsRes, configsRes, sessionsRes, categoriesRes, entriesRes, plansRes] = await Promise.all([
+      const [subjectsRes, configsRes, sessionsRes, categoriesRes, plansRes, allTimeDurationRes] = await Promise.all([
         supabase.from('subjects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('subject_grade_configs').select('*').eq('user_id', userId),
-        supabase.from('study_sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-        supabase.from('grade_categories').select('*').eq('user_id', userId).order('sort_index', { ascending: true }).order('created_at', { ascending: true }),
-        supabase.from('grade_entries').select('*').eq('user_id', userId),
-        supabase.from('study_plans').select('*').eq('user_id', userId)
+        supabase.from('study_sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
+        supabase.from('grade_categories').select('*, grade_entries(*)').eq('user_id', userId).order('sort_index', { ascending: true }).order('created_at', { ascending: true }),
+        supabase.from('study_plans').select('id, subject_id, title, updated_at').eq('user_id', userId),
+        supabase.from('study_sessions').select('duration').eq('user_id', userId)
       ]);
 
       this.state.subjects = subjectsRes.data || [];
       this.state.grade_configs = configsRes.data || [];
       this.state.sessions = sessionsRes.data || [];
       this.state.plans = plansRes.data || [];
+      this.state.allTimeStudyMinutes = (allTimeDurationRes.data || []).reduce((sum, s) => sum + (s.duration || 0), 0);
 
       let categories = categoriesRes.data;
       if (categoriesRes.error) {
         console.warn('Grade categories sort_index query warning, falling back:', categoriesRes.error.message);
-        const fallbackRes = await supabase.from('grade_categories').select('*').eq('user_id', userId);
+        const fallbackRes = await supabase.from('grade_categories').select('*, grade_entries(*)').eq('user_id', userId);
         categories = fallbackRes.data;
       }
 
-      const entries = entriesRes.data || [];
-
       if (categories) {
-        const entriesByCat = {};
-        entries.forEach(e => {
-          if (!entriesByCat[e.category_id]) entriesByCat[e.category_id] = [];
-          entriesByCat[e.category_id].push({
-            id: e.id, name: e.name, score: Number(e.score), out_of: Number(e.out_of),
-            created_at: e.created_at || null, updated_at: e.updated_at || null
-          });
-        });
         this.state.grades = categories.map((cat, idx) => ({
           ...cat,
           sort_index: cat.sort_index != null ? Number(cat.sort_index) : idx,
-          entries: entriesByCat[cat.id] || []
+          entries: (cat.grade_entries || []).map(e => ({
+            id: e.id,
+            name: e.name,
+            score: Number(e.score),
+            out_of: Number(e.out_of),
+            created_at: e.created_at || null,
+            updated_at: e.updated_at || null
+          }))
         }));
       } else {
         this.state.grades = [];
@@ -412,6 +410,7 @@ class Store {
   getStudyPlanBySubject(subjectId) { return this._plansService.getStudyPlanBySubject(subjectId); }
   saveStudyPlan(a, b, c, d, e) { return this._plansService.saveStudyPlan(a, b, c, d, e); }
   deleteStudyPlan(id) { return this._plansService.deleteStudyPlan(id); }
+  loadStudyPlanContent(id) { return this._plansService.loadStudyPlanContent(id); }
 
   // ---------------------------------------------------------------------------
   // Delegated API — Profile
@@ -458,6 +457,12 @@ class Store {
   getStreakStats() { return studyStats.getStreakStats(this.getSessions()); }
   getYearCalendarMatrix(year) { return studyStats.getYearCalendarMatrix(this.getSessions(), year, id => this.getSubjectById(id)); }
   getLeetCodeCalendarMatrix() { return this.getYearCalendarMatrix(new Date().getFullYear()); }
+  getAllTimeStudyMinutes() {
+    if (this.state.allTimeStudyMinutes != null && this.state.allTimeStudyMinutes > 0) {
+      return this.state.allTimeStudyMinutes;
+    }
+    return (this.state.sessions || []).reduce((acc, s) => acc + (s.duration || 0), 0);
+  }
 
   // ---------------------------------------------------------------------------
   // Grade Calculations (inline, delegates to domain functions)

@@ -234,13 +234,14 @@ export function createAccountService(state, services) {
 
     const user = await getCurrentUser();
     if (user) {
-      // Delete in dependency order: children before parents
-      await supabase.from('grade_entries').delete().eq('user_id', user.id);
-      await supabase.from('grade_categories').delete().eq('user_id', user.id);
-      await supabase.from('study_sessions').delete().eq('user_id', user.id);
-      await supabase.from('study_plans').delete().eq('user_id', user.id);
-      await supabase.from('subject_grade_configs').delete().eq('user_id', user.id);
-      await supabase.from('subjects').delete().eq('user_id', user.id);
+      await Promise.all([
+        supabase.from('grade_entries').delete().eq('user_id', user.id),
+        supabase.from('grade_categories').delete().eq('user_id', user.id),
+        supabase.from('study_sessions').delete().eq('user_id', user.id),
+        supabase.from('study_plans').delete().eq('user_id', user.id),
+        supabase.from('subject_grade_configs').delete().eq('user_id', user.id),
+        supabase.from('subjects').delete().eq('user_id', user.id)
+      ]);
     }
 
     events.emit('store:cleared');
@@ -293,18 +294,20 @@ export function createAccountService(state, services) {
       }
     }
 
-    // 3. Clean up user data tables
+    // 3. Clean up user data tables in parallel
     try {
-      await supabase.from('study_sessions').delete().eq('user_id', user.id);
-      await supabase.from('grade_entries').delete().eq('user_id', user.id);
-      await supabase.from('grade_categories').delete().eq('user_id', user.id);
-      await supabase.from('subject_grade_configs').delete().eq('user_id', user.id);
-      await supabase.from('study_plans').delete().eq('user_id', user.id);
-      await supabase.from('subjects').delete().eq('user_id', user.id);
-      await supabase.from('profiles').delete().eq('user_id', user.id);
-      await supabase.from('settings').delete().eq('user_id', user.id);
+      await Promise.all([
+        supabase.from('study_sessions').delete().eq('user_id', user.id),
+        supabase.from('grade_entries').delete().eq('user_id', user.id),
+        supabase.from('grade_categories').delete().eq('user_id', user.id),
+        supabase.from('subject_grade_configs').delete().eq('user_id', user.id),
+        supabase.from('study_plans').delete().eq('user_id', user.id),
+        supabase.from('subjects').delete().eq('user_id', user.id),
+        supabase.from('profiles').delete().eq('user_id', user.id),
+        supabase.from('settings').delete().eq('user_id', user.id)
+      ]);
     } catch (dataErr) {
-      console.warn('Data cascade error:', dataErr);
+      console.warn('Data cleanup error:', dataErr);
     }
 
     if (!deleted) {

@@ -104,11 +104,40 @@ export function createPlansService(state) {
     }, 'Deleting plan');
   }
 
+  async function loadStudyPlanContent(planId) {
+    if (!planId) return '';
+    const plan = (state.plans || []).find(p => p.id === planId);
+    if (!plan) return '';
+    if (plan.html_content !== undefined && plan.html_content !== null) {
+      return plan.html_content;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('study_plans')
+        .select('html_content')
+        .eq('id', planId)
+        .maybeSingle();
+
+      if (!error && data) {
+        plan.html_content = data.html_content || '';
+      } else {
+        plan.html_content = plan.html_content || '';
+      }
+    } catch (e) {
+      console.warn('Failed to lazy load study plan html_content:', e);
+      plan.html_content = plan.html_content || '';
+    }
+
+    return plan.html_content;
+  }
+
   return {
     getStudyPlans,
     getStudyPlanById,
     getStudyPlanBySubject,
     saveStudyPlan,
-    deleteStudyPlan
+    deleteStudyPlan,
+    loadStudyPlanContent
   };
 }

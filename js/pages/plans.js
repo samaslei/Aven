@@ -354,8 +354,18 @@ export function renderPlansView(container) {
 
   // Safely assign iframe.srcdoc as a direct DOM property to avoid HTML attribute escaping bugs and preserve scripts byte-for-byte
   const iframe = container.querySelector('#sandboxed-plan-iframe');
-  if (iframe && currentPlan && currentPlan.html_content) {
-    iframe.srcdoc = prepareSandboxedHtml(currentPlan.html_content, currentPlan.id);
+  if (iframe && currentPlan) {
+    if (currentPlan.html_content !== undefined && currentPlan.html_content !== null) {
+      iframe.srcdoc = prepareSandboxedHtml(currentPlan.html_content, currentPlan.id);
+    } else {
+      iframe.srcdoc = `<!DOCTYPE html><html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; color: #64748b; font-size: 13px; background: transparent;"><div style="display: flex; align-items: center; gap: 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span>Loading study plan...</span></div><style>@keyframes spin { 100% { transform: rotate(360deg); } }</style></body></html>`;
+      const requestedId = currentPlan.id;
+      store.loadStudyPlanContent(requestedId).then(content => {
+        if (selectedPlanId === requestedId && iframe.isConnected) {
+          iframe.srcdoc = prepareSandboxedHtml(content, requestedId);
+        }
+      });
+    }
   }
 
   attachPlansEvents(container);
@@ -527,17 +537,33 @@ function attachPlansEvents(container) {
   const editIdInput = container.querySelector('#plan-edit-id');
   const modalTitle = container.querySelector('#plan-modal-title');
 
-  const openUploadModal = (planToEdit = null) => {
+  const openUploadModal = async (planToEdit = null) => {
     planForm.reset();
     if (planToEdit) {
       if (modalTitle) modalTitle.textContent = 'Replace / Update Study Plan';
       if (editIdInput) editIdInput.value = planToEdit.id;
       if (subjectSelect) subjectSelect.value = planToEdit.subject_id || '';
       if (titleInput) titleInput.value = planToEdit.title || '';
-      if (htmlTextarea) htmlTextarea.value = planToEdit.html_content || '';
+      if (planToEdit.html_content !== undefined && planToEdit.html_content !== null) {
+        if (htmlTextarea) {
+          htmlTextarea.value = planToEdit.html_content || '';
+          htmlTextarea.disabled = false;
+        }
+      } else {
+        if (htmlTextarea) {
+          htmlTextarea.value = 'Loading study plan content...';
+          htmlTextarea.disabled = true;
+        }
+        const content = await store.loadStudyPlanContent(planToEdit.id);
+        if (htmlTextarea) {
+          htmlTextarea.value = content || '';
+          htmlTextarea.disabled = false;
+        }
+      }
     } else {
       if (modalTitle) modalTitle.textContent = 'Upload Interactive HTML Study Plan';
       if (editIdInput) editIdInput.value = '';
+      if (htmlTextarea) htmlTextarea.disabled = false;
     }
     planModal.classList.add('open');
   };
@@ -622,11 +648,16 @@ function attachPlansEvents(container) {
   });
 
   // Download / Export Plan
-  container.querySelector('#btn-download-plan')?.addEventListener('click', () => {
+  container.querySelector('#btn-download-plan')?.addEventListener('click', async () => {
     const currentPlan = selectedPlanId ? store.getStudyPlanById(selectedPlanId) : null;
     if (!currentPlan) return;
 
-    const blob = new Blob([currentPlan.html_content], { type: 'text/html;charset=utf-8' });
+    let content = currentPlan.html_content;
+    if (content === undefined || content === null) {
+      content = await store.loadStudyPlanContent(currentPlan.id);
+    }
+
+    const blob = new Blob([content || ''], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

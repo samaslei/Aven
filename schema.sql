@@ -138,7 +138,9 @@ CREATE TABLE IF NOT EXISTS public.settings (
 -- INDEXES FOR PERFORMANCE
 -- ==============================================================================
 CREATE INDEX IF NOT EXISTS idx_subjects_user ON public.subjects(user_id);
+CREATE INDEX IF NOT EXISTS idx_subjects_user_created ON public.subjects(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_study_sessions_user ON public.study_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_study_sessions_user_created ON public.study_sessions(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_study_sessions_subject ON public.study_sessions(subject_id);
 CREATE INDEX IF NOT EXISTS idx_grade_categories_user ON public.grade_categories(user_id);
 CREATE INDEX IF NOT EXISTS idx_grade_categories_subject ON public.grade_categories(subject_id);

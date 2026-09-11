@@ -224,7 +224,9 @@ export function renderTrackerView(container) {
 
   // Calculate Milestone Journey metrics
   function getMilestoneData(sessions) {
-    const totalMinutes = sessions.reduce((acc, s) => acc + (s.duration || 0), 0);
+    const totalMinutes = typeof store.getAllTimeStudyMinutes === 'function'
+      ? store.getAllTimeStudyMinutes()
+      : sessions.reduce((acc, s) => acc + (s.duration || 0), 0);
     const totalHoursNum = totalMinutes / 60;
     const totalHours = totalHoursNum.toFixed(1);
 

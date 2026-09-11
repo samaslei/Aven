@@ -9,7 +9,7 @@ import { syncEngine } from '../core/sync-engine.js';
 import { generateId } from '../core/id.js';
 
 /** Maximum number of sessions retained in-memory and cloud. */
-const MAX_SESSION_COUNT = 25;
+const MAX_SESSION_COUNT = 100;
 
 /**
  * @param {object} state - The central reactive state object (injected by Store)
@@ -34,19 +34,28 @@ export function createSessionsService(state) {
       // Update existing
       const idx = sessions.findIndex(s => s.id === sessionData.id);
       if (idx !== -1) {
-        sessions[idx] = { ...sessions[idx], ...sessionData, subject_id: cleanSubjectId };
+        const oldDuration = Number(sessions[idx].duration) || 0;
+        const newDuration = Math.max(1, parseInt(sessionData.duration, 10) || oldDuration);
+        if (state.allTimeStudyMinutes != null) {
+          state.allTimeStudyMinutes += (newDuration - oldDuration);
+        }
+        sessions[idx] = { ...sessions[idx], ...sessionData, duration: newDuration, subject_id: cleanSubjectId };
         session = sessions[idx];
       }
     } else {
       // Create new
+      const duration = Math.max(1, parseInt(sessionData.duration, 10) || 0);
       session = {
         id: generateId('ses'),
         subject_id: cleanSubjectId,
-        duration: Math.max(1, parseInt(sessionData.duration, 10) || 0),
+        duration,
         date: sessionData.date || new Date().toISOString().split('T')[0],
         notes: sessionData.notes ? sessionData.notes.trim() : '',
         created_at: new Date().toISOString()
       };
+      if (state.allTimeStudyMinutes != null) {
+        state.allTimeStudyMinutes += duration;
+      }
       sessions.unshift(session);
     }
 
@@ -95,6 +104,10 @@ export function createSessionsService(state) {
   }
 
   function deleteSession(id) {
+    const existing = (state.sessions || []).find(s => s.id === id);
+    if (existing && state.allTimeStudyMinutes != null) {
+      state.allTimeStudyMinutes = Math.max(0, state.allTimeStudyMinutes - (existing.duration || 0));
+    }
     state.sessions = (state.sessions || []).filter(s => s.id !== id);
     events.emit('session:deleted', id);
     events.emit('store:changed', { type: 'session' });
