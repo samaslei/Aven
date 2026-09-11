@@ -5,7 +5,7 @@
  * Zero side effects, zero DOM access.
  */
 
-import { calculateStreakStats, generateYearCalendarMatrix } from './tracker-calculator.js';
+import { calculateStreakStats, generateYearCalendarMatrix, calculateHeatmapDateMap } from './tracker-calculator.js';
 
 /**
  * Weekly study hours for the current ISO week.
@@ -103,13 +103,7 @@ export function getMonthlyStudyStats(sessions) {
  * @returns {Object<string, number>}
  */
 export function getStudyHeatmapData(sessions, year = new Date().getFullYear()) {
-  const map = {};
-  (sessions || []).forEach(s => {
-    if (s.date?.startsWith(String(year))) {
-      map[s.date] = (map[s.date] || 0) + Number(s.duration || 0);
-    }
-  });
-  return map;
+  return calculateHeatmapDateMap(sessions, year);
 }
 
 /**

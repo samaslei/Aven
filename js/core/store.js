@@ -78,8 +78,14 @@ class Store {
   constructor() {
     this.currentUserId = null;
     this.isSyncing = false;
+    this._cachedAcademicStanding = null;
     this.resetState();
     this._initServices();
+    events.on('store:changed', (data) => {
+      if (!data || !['session', 'plan', 'plan_autosave'].includes(data.type)) {
+        this._cachedAcademicStanding = null;
+      }
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -87,6 +93,7 @@ class Store {
   // ---------------------------------------------------------------------------
 
   resetState(clearCachedUser = false) {
+    this._cachedAcademicStanding = null;
     const savedGradesSort = ls.getItem('aven_grades_sidebar_sort', 'year-sem-grouped');
     const savedSubjectsSort = ls.getItem('aven_subjects_sort', 'recent-desc');
     const savedTheme = ls.getItem('aven_theme', 'dark');
@@ -491,9 +498,13 @@ class Store {
   }
 
   calculateOverallAcademicStanding() {
+    if (this._cachedAcademicStanding) {
+      return this._cachedAcademicStanding;
+    }
     const activeSubjects = this.getSubjects(false);
     if (activeSubjects.length === 0) {
-      return { gpa: '—', avgPct: '—', totalSubjects: 0, gradedSubjects: 0 };
+      this._cachedAcademicStanding = { gpa: '—', avgPct: '—', rawAvgPct: null, totalSubjects: 0, gradedSubjects: 0 };
+      return this._cachedAcademicStanding;
     }
 
     let sumGradePoints = 0;
@@ -513,7 +524,8 @@ class Store {
     const rawAvgPct = gradedCount > 0 ? (sumPct / gradedCount) : null;
     const avgPct = gradedCount > 0 ? (sumPct / gradedCount).toFixed(1) + '%' : '—';
 
-    return { gpa, avgPct, rawAvgPct, totalSubjects: activeSubjects.length, gradedSubjects: gradedCount };
+    this._cachedAcademicStanding = { gpa, avgPct, rawAvgPct, totalSubjects: activeSubjects.length, gradedSubjects: gradedCount };
+    return this._cachedAcademicStanding;
   }
 
   getRecentGradeEntries(limit = 8) {

@@ -4,7 +4,7 @@
  */
 
 import { store, events, getStandingColor } from '../core/store.js';
-import { formatRelativeTime } from '../utils/date-utils.js';
+import { formatRelativeTime, formatDurationLabel } from '../utils/date-utils.js';
 import { showTooltip, hideTooltip, positionTooltipAtCursor } from '../core/tooltip.js';
 
 // Helper to determine standing badge for overall GWA
@@ -337,6 +337,40 @@ export function generateTonalGradient(baseHex, count, isDarkTheme = false) {
   return colors;
 }
 
+// Module-level caches for analytics computations
+let _cachedTrendSessions = null;
+let _cachedMonthlyTrend = null;
+
+function getCachedSixMonthStudyTrend(sessions) {
+  if (_cachedTrendSessions === sessions && _cachedMonthlyTrend) {
+    return _cachedMonthlyTrend;
+  }
+  _cachedTrendSessions = sessions;
+  _cachedMonthlyTrend = calculateSixMonthStudyTrend(sessions);
+  return _cachedMonthlyTrend;
+}
+
+let _cachedBreakdownSessions = null;
+let _cachedBreakdownSubjects = null;
+let _cachedBreakdownTheme = null;
+let _cachedSubjectBreakdown = null;
+
+function getCachedSubjectTimeBreakdown(sessions, activeSubjects, currentTheme) {
+  if (
+    _cachedBreakdownSessions === sessions &&
+    _cachedBreakdownSubjects === activeSubjects &&
+    _cachedBreakdownTheme === currentTheme &&
+    _cachedSubjectBreakdown
+  ) {
+    return _cachedSubjectBreakdown;
+  }
+  _cachedBreakdownSessions = sessions;
+  _cachedBreakdownSubjects = activeSubjects;
+  _cachedBreakdownTheme = currentTheme;
+  _cachedSubjectBreakdown = calculateSubjectTimeBreakdown(sessions, activeSubjects);
+  return _cachedSubjectBreakdown;
+}
+
 // Helper to calculate subject study time breakdown
 function calculateSubjectTimeBreakdown(sessions = [], activeSubjects = []) {
   const subjectMinutesMap = {};
@@ -530,9 +564,7 @@ function getMergedRecentActivity(limit = 8) {
   rawSessions.forEach(s => {
     const duration = Number(s.duration) || 0;
     const sub = s.subject_id ? store.getSubjectById(s.subject_id) : null;
-    const durFormatted = duration >= 60 
-      ? `${Math.floor(duration / 60)}h ${duration % 60 > 0 ? `${duration % 60}m` : ''}`.trim()
-      : `${duration}m`;
+    const durFormatted = formatDurationLabel(duration);
 
     const noteText = (s.notes && s.notes.trim()) ? s.notes.trim() : 'Logged study session';
     const timestamp = s.created_at || (s.date ? `${s.date}T12:00:00.000Z` : new Date().toISOString());
@@ -611,8 +643,9 @@ export function renderProfileView(container) {
   const standingInfo = getOverallStandingBadge(academicStanding.rawAvgPct);
   const streakStats = store.getStreakStats();
   const sessions = store.getSessions();
-  const monthlyTrend = calculateSixMonthStudyTrend(sessions);
-  const subjectBreakdown = calculateSubjectTimeBreakdown(sessions, activeSubjects);
+  const currentTheme = store.getTheme ? store.getTheme() : 'dark';
+  const monthlyTrend = getCachedSixMonthStudyTrend(sessions);
+  const subjectBreakdown = getCachedSubjectTimeBreakdown(sessions, activeSubjects, currentTheme);
   const recentActivities = getMergedRecentActivity(8);
 
   // Format "Member since [Month Year]"

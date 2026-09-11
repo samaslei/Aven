@@ -52,34 +52,32 @@ export function sortSubjectsList(subjects, sortKey) {
       return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
     case 'recent-desc':
       return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-    case 'standing-desc':
-      return list.sort((a, b) => {
-        const aGrade = store.calculateSubjectGrade(a.id).overallPercentage;
-        const bGrade = store.calculateSubjectGrade(b.id).overallPercentage;
-        const aVal = aGrade !== null && aGrade !== undefined ? aGrade : -1;
-        const bVal = bGrade !== null && bGrade !== undefined ? bGrade : -1;
-        return bVal - aVal;
+    case 'standing-desc': {
+      const gradeMap = new Map();
+      list.forEach(s => {
+        const grade = store.calculateSubjectGrade(s.id).overallPercentage;
+        gradeMap.set(s.id, grade !== null && grade !== undefined ? grade : -1);
       });
-    case 'standing-asc':
-      return list.sort((a, b) => {
-        const aGrade = store.calculateSubjectGrade(a.id).overallPercentage;
-        const bGrade = store.calculateSubjectGrade(b.id).overallPercentage;
-        const aVal = aGrade !== null && aGrade !== undefined ? aGrade : 9999;
-        const bVal = bGrade !== null && bGrade !== undefined ? bGrade : 9999;
-        return aVal - bVal;
+      return list.sort((a, b) => gradeMap.get(b.id) - gradeMap.get(a.id));
+    }
+    case 'standing-asc': {
+      const gradeMap = new Map();
+      list.forEach(s => {
+        const grade = store.calculateSubjectGrade(s.id).overallPercentage;
+        gradeMap.set(s.id, grade !== null && grade !== undefined ? grade : 9999);
       });
-    case 'time-desc':
-      return list.sort((a, b) => {
-        const aTime = store.getSubjectTotalStudyMinutes(a.id);
-        const bTime = store.getSubjectTotalStudyMinutes(b.id);
-        return bTime - aTime;
-      });
-    case 'time-asc':
-      return list.sort((a, b) => {
-        const aTime = store.getSubjectTotalStudyMinutes(a.id);
-        const bTime = store.getSubjectTotalStudyMinutes(b.id);
-        return aTime - bTime;
-      });
+      return list.sort((a, b) => gradeMap.get(a.id) - gradeMap.get(b.id));
+    }
+    case 'time-desc': {
+      const timeMap = new Map();
+      list.forEach(s => timeMap.set(s.id, store.getSubjectTotalStudyMinutes(s.id)));
+      return list.sort((a, b) => timeMap.get(b.id) - timeMap.get(a.id));
+    }
+    case 'time-asc': {
+      const timeMap = new Map();
+      list.forEach(s => timeMap.set(s.id, store.getSubjectTotalStudyMinutes(s.id)));
+      return list.sort((a, b) => timeMap.get(a.id) - timeMap.get(b.id));
+    }
     case 'year-sem-asc':
       return list.sort((a, b) => {
         const aY = YEAR_ORDER[a.year_level] || 99;

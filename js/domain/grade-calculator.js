@@ -100,6 +100,18 @@ export function calculateCategoryStats(entries = []) {
 }
 
 /**
+ * Calculates raw score, total out of, percentage, and weighted points for a category.
+ * @param {Array<{ score: number, out_of: number }>} entries 
+ * @param {number} [weight=0] Category weight (0-100)
+ * @returns {{ totalScore: number, totalOutOf: number, percentage: number|null, weightedPoints: number|null }}
+ */
+export function calculateCategoryPoints(entries = [], weight = 0) {
+  const { totalScore, totalOutOf, percentage } = calculateCategoryStats(entries);
+  const weightedPoints = percentage !== null ? (percentage * (Number(weight || 0) / 100)) : null;
+  return { totalScore, totalOutOf, percentage, weightedPoints };
+}
+
+/**
  * Calculates weighted term grade from categories.
  * @param {Array<{ id: string, category: string, weight: number, entries: Array }>} categories 
  * @param {Array} [scale] Optional grading scale
@@ -116,8 +128,7 @@ export function calculateTermGradeBreakdown(categories = [], scale = null) {
   categories.forEach(cat => {
     const weight = Number(cat.weight || 0);
     totalWeight += weight;
-    const { totalScore, totalOutOf, percentage: rawPct } = calculateCategoryStats(cat.entries || []);
-    const catWeightedPts = rawPct !== null ? (rawPct * (weight / 100)) : null;
+    const { totalScore, totalOutOf, percentage: rawPct, weightedPoints: catWeightedPts } = calculateCategoryPoints(cat.entries || [], weight);
 
     if (catWeightedPts !== null) {
       weightedEarned += catWeightedPts;

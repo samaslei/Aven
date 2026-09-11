@@ -8,6 +8,7 @@
 import { store, events, GRADE_CATEGORIES, PHILIPPINE_GRADE_SCALE, getPhilippineGrade, getStandingColor, getStandingClass } from '../core/store.js';
 import { exportSubjectGradesToExcel, exportAllSubjectsGradesToExcel } from '../utils/export-excel.js';
 import { formatRelativeTime } from '../utils/date-utils.js';
+import { calculateCategoryPoints } from '../domain/grade-calculator.js';
 
 export const GRADE_CATEGORY_TEMPLATES = [
   {
@@ -654,10 +655,9 @@ function renderTermTabContent(subject, term, gradeStats) {
           const safeCatName = (cat.category || '').replace(/"/g, '&quot;');
           const isExpanded = categoryExpandedState[cat.id] !== undefined ? categoryExpandedState[cat.id] : true;
 
-          const totalScore = entries.reduce((a, e) => a + Number(e.score || 0), 0);
-          const totalOutOf = entries.reduce((a, e) => a + Number(e.out_of || 0), 0);
-          const catPct = totalOutOf > 0 ? ((totalScore / totalOutOf) * 100).toFixed(1) : '—';
-          const weightedPts = totalOutOf > 0 ? (((totalScore / totalOutOf) * cat.weight)).toFixed(2) : '0.00';
+          const { totalScore, totalOutOf, percentage: rawPct, weightedPoints: rawWeightedPts } = calculateCategoryPoints(entries, cat.weight);
+          const catPct = rawPct !== null ? rawPct.toFixed(1) : '—';
+          const weightedPts = rawWeightedPts !== null ? rawWeightedPts.toFixed(2) : '0.00';
 
           return `
             <div class="category-breakdown-section ${isExpanded ? 'is-expanded' : 'is-collapsed'} ${entries.length === 0 ? 'is-empty-category' : 'has-entries'}" data-cat-id="${cat.id}">

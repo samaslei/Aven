@@ -6,7 +6,7 @@
 import { store, events } from '../core/store.js';
 import { calculateMilestoneData, aggregateRecentStudyHistory, calculateWeeklyStudyHours, calculateSubjectProgress } from '../domain/tracker-calculator.js';
 import { playAlarmSound, playTickSound, playDualToneChime } from '../utils/audio.js';
-import { formatMinutesAndSeconds, getTodayISO } from '../utils/date-utils.js';
+import { formatMinutesAndSeconds, getTodayISO, formatDurationLabel } from '../utils/date-utils.js';
 import { renderCustomSubjectDropdown, initCustomDropdown, renderSubjectSelectOptions } from '../ui/dropdown.js';
 
 let selectedSubjectId = '';
@@ -585,9 +585,7 @@ export function renderTrackerView(container) {
                 const defaultFallbackColor = currentTheme === 'cool-light' ? '#4A6C8C' : (currentTheme === 'cool-dark' ? '#6E93B5' : (currentTheme === 'pure-black' ? '#ffffff' : (currentTheme === 'pure-white' ? '#0f172a' : '#8A9A5B')));
                 const subColor = (sub && sub.color) || defaultFallbackColor;
                 const subjectName = sub ? (sub.name || sub.code || 'General Study') : 'General Study';
-                const hrs = Math.floor(s.duration / 60);
-                const mins = s.duration % 60;
-                const durText = hrs > 0 ? `${hrs}h ${mins > 0 ? `${mins}m` : ''}` : `${mins}m`;
+                const durText = formatDurationLabel(s.duration);
 
                 return `
                   <tr>

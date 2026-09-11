@@ -93,18 +93,34 @@ export function calculateStreakStats(sessions = []) {
 }
 
 /**
+ * Heatmap date map: date -> total minutes for a given year.
+ * @param {Array<{ date: string, duration: number }>} sessions 
+ * @param {number} [year] 
+ * @returns {Object<string, number>}
+ */
+export function calculateHeatmapDateMap(sessions = [], year = new Date().getFullYear()) {
+  const map = {};
+  const yearPrefix = String(year);
+  (sessions || []).forEach(s => {
+    if (s.date && s.date.startsWith(yearPrefix)) {
+      map[s.date] = (map[s.date] || 0) + Number(s.duration || 0);
+    }
+  });
+  return map;
+}
+
+/**
  * Builds the 12-month calendar grid matrix for the yearly activity heatmap.
  * @param {Array<{ date: string, duration: number, subject_id?: string }>} sessions 
  * @param {number} year 
  * @param {Function} [getSubjectById] 
  */
 export function generateYearCalendarMatrix(sessions = [], year = new Date().getFullYear(), getSubjectById = null) {
-  const dateMap = {};
+  const dateMap = calculateHeatmapDateMap(sessions, year);
   const subjectsMap = {};
 
   sessions.forEach(s => {
     if (!s.date) return;
-    dateMap[s.date] = (dateMap[s.date] || 0) + Number(s.duration || 0);
     if (!subjectsMap[s.date]) subjectsMap[s.date] = [];
     const sub = getSubjectById && s.subject_id ? getSubjectById(s.subject_id) : null;
     subjectsMap[s.date].push({

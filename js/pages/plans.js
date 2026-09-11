@@ -9,6 +9,7 @@
  */
 
 import { store, events } from '../core/store.js';
+import { formatDateHuman } from '../utils/date-utils.js';
 
 let selectedPlanId = null;
 let isFullscreenActive = false;
@@ -127,7 +128,7 @@ export function renderPlansView(container) {
               </div>
               ${standalonePlans.map(p => {
                 const isSelected = p.id === selectedPlanId;
-                const updatedDate = new Date(p.updated_at).toLocaleDateString();
+                const updatedDate = formatDateHuman(p.updated_at);
                 return `
                   <div class="plan-subject-item ${isSelected ? 'active' : ''}" data-plan-id="${p.id}">
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -160,7 +161,7 @@ export function renderPlansView(container) {
               </div>
               ${subjectPlans.map(({ plan, subject }) => {
                 const isSelected = plan.id === selectedPlanId;
-                const updatedDate = new Date(plan.updated_at).toLocaleDateString();
+                const updatedDate = formatDateHuman(plan.updated_at);
                 return `
                   <div class="plan-subject-item ${isSelected ? 'active' : ''}" data-plan-id="${plan.id}">
                     <div style="display: flex; align-items: center; gap: 8px;">

@@ -7,6 +7,7 @@ import { store, events } from './core/store.js';
 import { supabase, getCurrentSession, signOut, onAuthStateChange } from './core/supabase.js';
 import { renderStartupSkeleton } from './ui/skeleton.js';
 import { initGlobalTooltips } from './core/tooltip.js';
+import { formatRelativeTime as formatRelativeTimeUtil } from './utils/date-utils.js';
 
 function extractAuthUrlParams() {
   if (typeof window === 'undefined') return {};
@@ -637,16 +638,37 @@ class AvenApp {
       this.renderUser();
     });
 
+    const PAGE_AFFECTING_TYPES = {
+      subjects: ['subject', 'grade', 'session', 'config'],
+      tracker: ['session', 'subject'],
+      grades: ['grade', 'config', 'subject', 'scale'],
+      schedule: ['plan', 'subject'],
+      plans: ['plan', 'subject'],
+      profile: ['user', 'subject', 'grade', 'session', 'config', 'scale'],
+      settings: ['scale', 'subject']
+    };
+
     events.on('store:changed', (data) => {
       if (data && data.type === 'user') {
         this.renderUser();
       }
+
+      if (data && data.type) {
+        const isGlobal = ['cloud_sync', 'import', 'clear', 'account_deleted'].includes(data.type);
+        if (!isGlobal) {
+          if (data.type === 'plan_autosave') {
+            return;
+          }
+          const relevantTypes = PAGE_AFFECTING_TYPES[this.currentPage];
+          if (relevantTypes && !relevantTypes.includes(data.type)) {
+            return;
+          }
+        }
+      }
+
       const pageConfig = this.pages[this.currentPage];
       if (this.mainContainer && pageConfig && pageConfig.renderer) {
         if (this.currentPage === 'settings' && data && (data.type === 'user' || data.type === 'settings')) {
-          return;
-        }
-        if (this.currentPage === 'plans' && data && data.type === 'plan_autosave') {
           return;
         }
         pageConfig.renderer(this.mainContainer);
@@ -832,15 +854,7 @@ class AvenApp {
   }
 
   formatRelativeTime(timestamp) {
-    if (!timestamp) return 'Just now';
-    const diffSec = Math.floor((Date.now() - timestamp) / 1000);
-    if (diffSec < 10) return 'Just now';
-    if (diffSec < 60) return `${diffSec}s ago`;
-    const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin}m ago`;
-    const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr}h ago`;
-    return new Date(timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return formatRelativeTimeUtil(timestamp);
   }
 
   showToast(message, type = 'info', options = {}) {

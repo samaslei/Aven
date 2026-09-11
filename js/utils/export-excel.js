@@ -3,7 +3,8 @@
  * Generates formatted, multi-section academic grade reports with SheetJS.
  */
 import { store } from '../core/store.js';
-import { getTodayISO } from './date-utils.js';
+import { getTodayISO, formatDateHuman } from './date-utils.js';
+import { calculateCategoryPoints } from '../domain/grade-calculator.js';
 
 /**
  * Ensures SheetJS (XLSX) library is loaded in the window.
@@ -61,7 +62,7 @@ function buildSubjectWorksheetData(subject) {
   // 1. Report Header Block
   rows.push(['AVEN ACADEMIC OPERATING SYSTEM — GRADE REPORT']);
   rows.push(['Subject Name:', subject.name || '—', '', 'Subject Code:', subject.code || '—', 'Units:', subject.units || 0]);
-  rows.push(['Academic Level:', `${subject.year_level || '—'} · ${subject.semester || '—'}`, '', 'Instructor:', subject.instructor || '—', 'Export Date:', new Date().toLocaleDateString()]);
+  rows.push(['Academic Level:', `${subject.year_level || '—'} · ${subject.semester || '—'}`, '', 'Instructor:', subject.instructor || '—', 'Export Date:', formatDateHuman(new Date().toISOString())]);
   rows.push([]);
 
   // Helper to build term section rows
@@ -75,10 +76,7 @@ function buildSubjectWorksheetData(subject) {
     } else {
       categories.forEach(cat => {
         const entries = cat.entries || [];
-        const totalScore = entries.reduce((acc, e) => acc + Number(e.score || 0), 0);
-        const totalOutOf = entries.reduce((acc, e) => acc + Number(e.out_of || 0), 0);
-        const catPct = totalOutOf > 0 ? (totalScore / totalOutOf) * 100 : null;
-        const catWeightedPts = catPct !== null ? (catPct * (cat.weight / 100)) : null;
+        const { totalScore, totalOutOf, percentage: catPct, weightedPoints: catWeightedPts } = calculateCategoryPoints(entries, cat.weight);
 
         if (entries.length === 0) {
           rows.push([`(Empty Category — No entries)`, cat.category, `${cat.weight}%`, '—', '—', '—', '—']);
@@ -197,7 +195,7 @@ export async function exportAllSubjectsGradesToExcel() {
   // 1. Overview Summary Sheet
   const summaryRows = [
     ['AVEN ACADEMIC OPERATING SYSTEM — ALL SUBJECTS GRADE REPORT'],
-    ['Generated Date:', new Date().toLocaleDateString(), '', 'Total Active Subjects:', activeSubjects.length],
+    ['Generated Date:', formatDateHuman(new Date().toISOString()), '', 'Total Active Subjects:', activeSubjects.length],
     [],
     ['Subject Code', 'Subject Name', 'Units', 'Midterm %', 'Midterm Grade', 'Final %', 'Final Grade', 'Composite %', 'Phil Grade Point', 'Academic Status']
   ];
