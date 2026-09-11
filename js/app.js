@@ -73,10 +73,12 @@ class AvenApp {
       profile: {
         title: 'Profile',
         subtitle: 'View your student identity, overall academic performance, and study statistics.',
-        load: () => import('./pages/profile.js').then(m => m.renderProfileView)
+        load: () => import('./pages/profile.js').then(m => m.renderProfileView),
+        cleanup: () => import('./pages/profile.js').then(m => m.cleanupProfileView?.())
       }
     };
 
+    this.currentPageCleanup = null;
     this.init();
   }
 
@@ -246,6 +248,10 @@ class AvenApp {
 
   handleUnauthenticated() {
     this.currentUser = null;
+    if (typeof this.currentPageCleanup === 'function') {
+      try { this.currentPageCleanup(); } catch (e) {}
+      this.currentPageCleanup = null;
+    }
     store.resetState();
 
     // Hide App, show appropriate public page based on hash
@@ -376,6 +382,26 @@ class AvenApp {
     if (pageKey === 'plans') pageKey = 'schedule';
     if (!this.pages[pageKey]) pageKey = 'subjects';
 
+    // Page teardown: clean up previous page before navigating away
+    if (this.currentPage && this.currentPage !== pageKey) {
+      if (typeof this.currentPageCleanup === 'function') {
+        try {
+          this.currentPageCleanup();
+        } catch (err) {
+          console.error(`Error cleaning up page ${this.currentPage}:`, err);
+        }
+        this.currentPageCleanup = null;
+      }
+      const prevConfig = this.pages[this.currentPage];
+      if (typeof prevConfig?.cleanup === 'function') {
+        try {
+          prevConfig.cleanup();
+        } catch (err) {
+          console.error(`Error in page cleanup for ${this.currentPage}:`, err);
+        }
+      }
+    }
+
     // Synchronize address bar hash if it doesn't already match
     if (window.location.hash.replace(/^#/, '').split('?')[0] !== pageKey) {
       window.location.hash = pageKey;
@@ -399,9 +425,19 @@ class AvenApp {
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       const doRender = async () => {
+        if (typeof this.currentPageCleanup === 'function') {
+          try {
+            this.currentPageCleanup();
+          } catch (e) {}
+          this.currentPageCleanup = null;
+        }
         const renderer = await pageConfig.load();
+        pageConfig.renderer = renderer;
         this.mainContainer.classList.remove('view-exit');
-        renderer(this.mainContainer);
+        const cleanup = renderer(this.mainContainer);
+        if (typeof cleanup === 'function') {
+          this.currentPageCleanup = cleanup;
+        }
         this.mainContainer.classList.remove('view-enter');
         void this.mainContainer.offsetWidth; // Trigger reflow for clean re-animation
         this.mainContainer.classList.add('view-enter');
@@ -754,29 +790,75 @@ class AvenApp {
     return new Date(timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
-  showToast(message, type = 'info') {
+  showToast(message, type = 'info', options = {}) {
     if (!this.toastContainer) return;
+
+    const { subtitle, actionLabel, actionCallback, duration = 3500 } = options;
+
+    // Normalize type aliases
+    const typeClass = (type === 'error') ? 'toast-danger' : `toast-${type}`;
+
     const toast = document.createElement('div');
-    toast.className = `toast ${type} toast-${type}`;
-    
-    let iconSvg = '';
-    if (type === 'success') {
-      iconSvg = `<svg class="toast-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-    } else if (type === 'danger' || type === 'error') {
-      iconSvg = `<svg class="toast-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
-    } else if (type === 'warning') {
-      iconSvg = `<svg class="toast-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
-    } else {
-      iconSvg = `<svg class="toast-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+    toast.className = `toast ${typeClass}`;
+
+    // ---- Icon SVGs per type ----
+    const icons = {
+      success: `<polyline points="20 6 9 17 4 12"></polyline>`,
+      danger:  `<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>`,
+      error:   `<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>`,
+      warning: `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>`,
+      info:    `<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>`,
+    };
+    const iconKey = (type === 'error') ? 'danger' : type;
+    const iconPath = icons[iconKey] || icons.info;
+
+    // Determine if badge accent is light enough to need dark icon/text
+    const needsDark = (type === 'warning') ||
+      (type === 'success' && ['cool-dark', 'pure-black'].includes(
+        document.documentElement.getAttribute('data-theme')
+      ));
+
+    // ---- Build inner HTML ----
+    let html = '';
+
+    // Icon badge
+    html += `<div class="toast-icon-badge${needsDark ? ' badge-dark' : ''}">
+      <svg viewBox="0 0 24 24">${iconPath}</svg>
+    </div>`;
+
+    // Text content
+    html += `<div class="toast-content">
+      <span class="toast-title">${message}</span>
+      ${subtitle ? `<span class="toast-subtitle">${subtitle}</span>` : ''}
+    </div>`;
+
+    // Optional action button
+    if (actionLabel && actionCallback) {
+      html += `<button class="toast-action${needsDark ? ' action-dark' : ''}">${actionLabel}</button>`;
     }
 
-    toast.innerHTML = `${iconSvg}<span class="toast-message">${message}</span>`;
+    toast.innerHTML = html;
+
+    let dismissTimer = null;
+
+    // Wire up action button if present
+    if (actionLabel && actionCallback) {
+      const actionBtn = toast.querySelector('.toast-action');
+      actionBtn?.addEventListener('click', () => {
+        if (dismissTimer) clearTimeout(dismissTimer);
+        actionCallback();
+        toast.classList.add('toast-dismissing');
+        setTimeout(() => toast.remove(), 220);
+      });
+    }
+
     this.toastContainer.appendChild(toast);
 
-    setTimeout(() => {
+    // Auto-dismiss
+    dismissTimer = setTimeout(() => {
       toast.classList.add('toast-dismissing');
       setTimeout(() => toast.remove(), 220);
-    }, 3200);
+    }, duration);
   }
 }
 

@@ -5,6 +5,7 @@
 
 import { store, events, getStandingColor } from '../core/store.js';
 import { formatRelativeTime } from '../utils/date-utils.js';
+import { showTooltip, hideTooltip, positionTooltipAtCursor } from '../core/tooltip.js';
 
 // Helper to determine standing badge for overall GWA
 function getOverallStandingBadge(rawAvgPct) {
@@ -239,6 +240,285 @@ function renderStudyTrendLineGraph(monthlyTrend) {
   `;
 }
 
+// Base accent colors per theme for Subject Time Breakdown tonal gradient
+const THEME_ACCENTS = {
+  'dark': '#8A9A5B',       // Sage green
+  'light': '#505537',      // Deep sage/olive
+  'cool-dark': '#6E93B5',  // Cool slate blue
+  'cool-light': '#4A6C8C', // Steel blue
+  'pure-black': '#ffffff', // OLED white
+  'pure-white': '#0f172a'  // Slate charcoal
+};
+
+function hexToHsl(hex) {
+  hex = hex.replace('#', '').trim();
+  if (hex.length === 3) {
+    hex = hex.split('').map(c => c + c).join('');
+  }
+  const r = parseInt(hex.substring(0, 2), 16) / 255;
+  const g = parseInt(hex.substring(2, 4), 16) / 255;
+  const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  let l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+
+  return {
+    h: Math.round(h * 360),
+    s: Math.round(s * 100),
+    l: Math.round(l * 100)
+  };
+}
+
+function getThemeBaseAccent(theme) {
+  if (typeof document !== 'undefined' && document.documentElement) {
+    const style = getComputedStyle(document.documentElement);
+    const cssVal = style.getPropertyValue('--breakdown-base')?.trim();
+    if (cssVal) return cssVal;
+  }
+  return THEME_ACCENTS[theme] || THEME_ACCENTS['dark'];
+}
+
+/**
+ * Programmatically generates a tonal gradient array of colors from a theme's base accent color.
+ * The first color (index 0) is the full accent color (darkest/most saturated),
+ * stepping down through progressively lighter/desaturated tints for subjects with fewer hours.
+ */
+export function generateTonalGradient(baseHex, count, isDarkTheme = false) {
+  if (count <= 0) return [];
+  if (count === 1) return [baseHex];
+
+  const hsl = hexToHsl(baseHex);
+  const colors = [];
+
+  // Special handling for pure white / pure grayscale where saturation is 0 and lightness is high
+  if (hsl.s === 0 && hsl.l >= 90) {
+    const minL = 44; // Minimum lightness to maintain strong contrast against OLED black
+    for (let i = 0; i < count; i++) {
+      const t = i / (count - 1);
+      const l = Math.round(100 - (100 - minL) * t);
+      colors.push(`hsl(0, 0%, ${l}%)`);
+    }
+    return colors;
+  }
+
+  for (let i = 0; i < count; i++) {
+    const t = i / (count - 1);
+    let targetL;
+    let targetS;
+
+    if (isDarkTheme) {
+      // In dark theme: step from base accent up to luminous, lighter tints
+      targetL = Math.min(84, hsl.l + 30);
+      targetS = Math.max(12, hsl.s - 14);
+    } else {
+      // In light theme: step from deep accent up to soft, lighter tints
+      targetL = Math.min(76, hsl.l + 38);
+      targetS = Math.max(12, hsl.s - 12);
+    }
+
+    const curL = Math.round(hsl.l + (targetL - hsl.l) * t);
+    const curS = Math.round(hsl.s + (targetS - hsl.s) * t);
+    colors.push(`hsl(${hsl.h}, ${curS}%, ${curL}%)`);
+  }
+
+  return colors;
+}
+
+// Helper to calculate subject study time breakdown
+function calculateSubjectTimeBreakdown(sessions = [], activeSubjects = []) {
+  const subjectMinutesMap = {};
+  sessions.forEach(s => {
+    if (s.subject_id) {
+      subjectMinutesMap[s.subject_id] = (subjectMinutesMap[s.subject_id] || 0) + Number(s.duration || 0);
+    }
+  });
+
+  const currentTheme = typeof store !== 'undefined' && store.getTheme ? store.getTheme() : 'dark';
+  const isDark = currentTheme.includes('dark') || currentTheme === 'pure-black';
+  const baseAccent = getThemeBaseAccent(currentTheme);
+
+  let totalMinutes = 0;
+  const items = (activeSubjects || []).map((sub) => {
+    const mins = subjectMinutesMap[sub.id] || 0;
+    totalMinutes += mins;
+    const hours = mins / 60;
+    return {
+      id: sub.id,
+      code: sub.code || sub.name,
+      name: sub.name,
+      minutes: mins,
+      hours: Number(hours.toFixed(1)),
+      hoursFormatted: `${hours.toFixed(1)}h`
+    };
+  });
+
+  const totalHours = (totalMinutes / 60).toFixed(1);
+
+  // Add percentage share of active study time
+  items.forEach(item => {
+    item.percentage = totalMinutes > 0 ? Math.round((item.minutes / totalMinutes) * 100) : 0;
+  });
+
+  // Sort descending by study minutes: most-studied subject first
+  items.sort((a, b) => b.minutes - a.minutes);
+
+  const subjectsWithTime = items.filter(item => item.minutes > 0);
+
+  // Programmatically generate tonal gradient: full accent for subject with most hours down to lighter tints
+  const gradientColors = generateTonalGradient(baseAccent, subjectsWithTime.length, isDark);
+
+  subjectsWithTime.forEach((item, idx) => {
+    item.color = gradientColors[idx];
+  });
+
+  // For any subjects with 0 logged minutes, assign a subtle muted tone
+  const zeroMuted = isDark ? 'rgba(255, 255, 255, 0.20)' : 'rgba(0, 0, 0, 0.16)';
+  items.forEach(item => {
+    if (!item.color) {
+      item.color = zeroMuted;
+    }
+  });
+
+  return {
+    items,
+    subjectsWithTime,
+    totalMinutes,
+    totalHours,
+    hasData: subjectsWithTime.length > 0 && totalMinutes > 0
+  };
+}
+
+// Helper to render Subject Time Breakdown Card (Doughnut Chart + Legend)
+function renderSubjectTimeBreakdownCard(breakdown) {
+  const { items, subjectsWithTime, totalHours, hasData } = breakdown;
+
+  if (!hasData) {
+    return `
+      <div class="tool-card subject-breakdown-card" style="padding: 20px 22px; border-radius: var(--radius-xl); border: var(--border-card); background: var(--bg-surface); display: flex; flex-direction: column;">
+        <div class="card-header-label" style="margin-bottom: 0;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 2a10 10 0 0 1 10 10"></path>
+          </svg>
+          <span>SUBJECT TIME BREAKDOWN</span>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px 16px; text-align: center; gap: 8px;">
+          <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.05)); display: flex; align-items: center; justify-content: center; color: var(--text-muted); margin-bottom: 4px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <span style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">No study time logged</span>
+          <span style="font-size: 11.5px; color: var(--text-muted); max-width: 220px; line-height: 1.4;">
+            Log study sessions in Study Tracker to see your subject time breakdown.
+          </span>
+        </div>
+      </div>
+    `;
+  }
+
+  // SVG Doughnut Configuration (radius 38, circumference ~238.76)
+  const r = 38;
+  const C = 2 * Math.PI * r;
+  let accumulatedPercent = 0;
+
+  const slicesSvg = subjectsWithTime.map((item) => {
+    const fraction = item.minutes / breakdown.totalMinutes;
+    const strokeDash = fraction * C;
+    const gap = subjectsWithTime.length > 1 ? 1.5 : 0;
+    const dashLength = Math.max(0, strokeDash - gap);
+    const dashArray = `${dashLength.toFixed(2)} ${(C - dashLength).toFixed(2)}`;
+    const offset = -(accumulatedPercent * C);
+    accumulatedPercent += fraction;
+    const subjectName = (item.name || item.code || '').replace(/"/g, '&quot;');
+
+    return `
+      <circle
+        cx="50"
+        cy="50"
+        r="${r}"
+        fill="none"
+        stroke="${item.color}"
+        stroke-width="13"
+        stroke-dasharray="${dashArray}"
+        stroke-dashoffset="${offset.toFixed(2)}"
+        class="doughnut-segment"
+        data-tooltip="${subjectName}"
+        data-tooltip-pos="cursor"
+        data-tooltip-follow="true"
+        aria-label="${subjectName}"
+      ></circle>
+    `;
+  }).join('');
+
+  return `
+    <div class="tool-card subject-breakdown-card" style="padding: 20px 22px; border-radius: var(--radius-xl); border: var(--border-card); background: var(--bg-surface); display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+        <div class="card-header-label" style="margin-bottom: 0;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 2a10 10 0 0 1 10 10"></path>
+          </svg>
+          <span>SUBJECT TIME BREAKDOWN</span>
+        </div>
+        <span class="weekly-hours-total-badge">${totalHours}h active total</span>
+      </div>
+
+      <div class="subject-breakdown-body" style="display: flex; align-items: center; gap: 18px; flex: 1; min-height: 0;">
+        <!-- Doughnut Chart Container -->
+        <div class="doughnut-chart-box" style="position: relative; width: 120px; height: 120px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+          <svg viewBox="0 0 100 100" style="transform: rotate(-90deg); width: 100%; height: 100%; overflow: visible;">
+            <!-- Background Track -->
+            <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--border-subtle, rgba(255,255,255,0.06))" stroke-width="13" />
+            ${slicesSvg}
+          </svg>
+          <!-- Center Callout -->
+          <div style="position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; text-align: center;">
+            <span style="font-size: 15px; font-weight: 700; color: var(--text-primary); font-family: var(--font-numeric); line-height: 1.1;">${totalHours}h</span>
+            <span style="font-size: 9.5px; color: var(--text-muted); font-weight: 550; letter-spacing: 0.04em; text-transform: uppercase;">Total</span>
+          </div>
+        </div>
+
+        <!-- Legend List -->
+        <div class="doughnut-legend" style="display: flex; flex-direction: column; gap: 7px; flex: 1; min-width: 0; max-height: 140px; overflow-y: auto;">
+          ${items.map(item => {
+            const subjectName = (item.name || item.code || '').replace(/"/g, '&quot;');
+            return `
+            <div class="doughnut-legend-row" data-subject-id="${item.id}" data-tooltip="${subjectName}" data-tooltip-pos="top" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; min-width: 0; cursor: pointer;">
+              <div style="display: flex; align-items: center; gap: 7px; min-width: 0;">
+                <span class="doughnut-legend-dot" style="background-color: ${item.color};"></span>
+                <span style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  ${item.code}
+                </span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                <span style="color: var(--text-muted); font-size: 11px; font-family: var(--font-numeric);">${item.percentage}%</span>
+                <span style="font-weight: 600; color: var(--text-secondary); font-family: var(--font-numeric); font-size: 11.5px;">${item.hoursFormatted}</span>
+              </div>
+            </div>
+          `;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 // Helper to get merged, timestamp-sorted activity feed
 function getMergedRecentActivity(limit = 8) {
   const rawSessions = store.getSessions();
@@ -259,6 +539,7 @@ function getMergedRecentActivity(limit = 8) {
 
     activities.push({
       id: `session-${s.id}`,
+      rawId: s.id,
       type: 'study',
       title: sub ? (sub.code || sub.name) : 'General Study',
       subtext: `${durFormatted} · ${noteText}`,
@@ -276,6 +557,8 @@ function getMergedRecentActivity(limit = 8) {
 
     activities.push({
       id: `grade-${g.id}`,
+      rawId: g.id,
+      categoryId: g.categoryId,
       type: 'grade',
       title: `${g.name} · ${g.subjectCode}`,
       subtext: `Scored ${g.score}/${g.out_of} (${scorePct}%) in ${g.categoryName}`,
@@ -295,7 +578,32 @@ function getMergedRecentActivity(limit = 8) {
   return activities.slice(0, limit);
 }
 
+let themeListenerCleanUp = null;
+
+export function cleanupProfileView() {
+  if (themeListenerCleanUp) {
+    themeListenerCleanUp();
+    themeListenerCleanUp = null;
+  }
+}
+
 export function renderProfileView(container) {
+  cleanupProfileView();
+
+  themeListenerCleanUp = events.on('theme:changed', () => {
+    // Safety net: ensure Profile is currently the active page before re-rendering
+    const currentHash = (window.location.hash || '').replace(/^#/, '').split('?')[0];
+    const isProfileActive = currentHash === 'profile' || (window.avenApp && window.avenApp.currentPage === 'profile');
+    if (!isProfileActive) {
+      cleanupProfileView();
+      return;
+    }
+
+    if (container && container.isConnected) {
+      renderProfileView(container);
+    }
+  });
+
   const user = store.getUserProfile();
   const activeSubjects = store.getSubjects(false);
   const allSubjects = store.getSubjects(true);
@@ -304,6 +612,7 @@ export function renderProfileView(container) {
   const streakStats = store.getStreakStats();
   const sessions = store.getSessions();
   const monthlyTrend = calculateSixMonthStudyTrend(sessions);
+  const subjectBreakdown = calculateSubjectTimeBreakdown(sessions, activeSubjects);
   const recentActivities = getMergedRecentActivity(8);
 
   // Format "Member since [Month Year]"
@@ -451,152 +760,148 @@ export function renderProfileView(container) {
       </div>
 
 
-      <!-- 3. Two-Column Analytics Layout -->
-      <div class="profile-dashboard-grid" style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start;">
+      <!-- 3. 2x2 Analytics Layout Grid (Row 1: ~60% Trend | ~40% Breakdown; Row 2: ~60% Activity | ~40% Standings) -->
+      <div class="profile-dashboard-grid" style="display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: stretch;">
 
-        <!-- Left Column: Study Trend + Recent Activity -->
-        <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
-
-          <!-- Card: 6-Month Study Time Trend (SVG Line Graph) -->
-          <div class="tool-card weekly-hours-card" style="padding: 20px 22px; border-radius: var(--radius-xl); border: var(--border-card); background: var(--bg-surface);">
-            <div class="weekly-hours-header">
-              <div class="card-header-label" style="margin-bottom: 0;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
-                  <polyline points="16 7 22 7 22 13"></polyline>
-                </svg>
-                <span>STUDY TIME TREND</span>
-              </div>
-              <span class="weekly-hours-total-badge">${monthlyTrend.totalHours}h total &middot; last 6 months</span>
+        <!-- Row 1 Left: Study Time Trend (SVG Line Graph, ~60% width) -->
+        <div class="tool-card weekly-hours-card" style="padding: 20px 22px; border-radius: var(--radius-xl); border: var(--border-card); background: var(--bg-surface); display: flex; flex-direction: column;">
+          <div class="weekly-hours-header">
+            <div class="card-header-label" style="margin-bottom: 0;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+                <polyline points="16 7 22 7 22 13"></polyline>
+              </svg>
+              <span>STUDY TIME TREND</span>
             </div>
-
-            <div class="profile-trend-chart-container">
-              ${renderStudyTrendLineGraph(monthlyTrend)}
-            </div>
+            <span class="weekly-hours-total-badge">${monthlyTrend.totalHours}h total &middot; last 6 months</span>
           </div>
 
-          <!-- Card: Recent Activity (Merged Study Logs + Graded Entries) -->
-          <div class="tool-card" style="padding: 20px 22px; border-radius: var(--radius-xl); border: var(--border-card); background: var(--bg-surface);">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-              <div class="card-header-label" style="margin-bottom: 0;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                </svg>
-                <span>RECENT ACTIVITY</span>
-              </div>
-              <span style="font-size: 11.5px; color: var(--text-muted); font-weight: 550;">Latest ${recentActivities.length} actions</span>
-            </div>
-
-            <div class="profile-activity-list" style="display: flex; flex-direction: column; gap: 8px;">
-              ${recentActivities.length === 0 ? `
-                <div style="text-align: center; padding: 28px 16px; color: var(--text-muted); font-size: 13px;">
-                  No study sessions or grade entries recorded yet.
-                </div>
-              ` : recentActivities.map(act => {
-                const relTime = formatRelativeTime(act.timestamp) || 'Recent';
-                const isStudy = act.type === 'study';
-
-                return `
-                  <div class="profile-activity-item" data-route="${act.targetRoute}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition);">
-                    <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                      <!-- Type Icon (No blue/purple - warm olive/sage/green) -->
-                      <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background-color: ${isStudy ? 'rgba(80, 85, 55, 0.12)' : 'rgba(71, 104, 59, 0.12)'}; color: ${isStudy ? 'var(--olive-deep, #505537)' : 'var(--success, #47683b)'};">
-                        ${isStudy ? `
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                          </svg>
-                        ` : `
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <polyline points="9 15 11 17 15 13"></polyline>
-                          </svg>
-                        `}
-                      </div>
-                      
-                      <!-- Activity Details -->
-                      <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
-                        <span style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                          ${act.title}
-                        </span>
-                        <span style="font-size: 11.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                          ${act.subtext}
-                        </span>
-                      </div>
-                    </div>
-
-                    <!-- Timestamp Badge -->
-                    <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-numeric); white-space: nowrap; flex-shrink: 0;">
-                      ${relTime}
-                    </span>
-                  </div>
-                `;
-              }).join('')}
-            </div>
+          <div class="profile-trend-chart-container">
+            ${renderStudyTrendLineGraph(monthlyTrend)}
           </div>
-
         </div>
 
+        <!-- Row 1 Right: Subject Time Breakdown (Doughnut Chart + Legend, ~40% width) -->
+        ${renderSubjectTimeBreakdownCard(subjectBreakdown)}
 
-        <!-- Right Column: Grade Standing by Subject -->
-        <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
-
-          <div class="tool-card" style="padding: 20px 22px; border-radius: var(--radius-xl); border: var(--border-card); background: var(--bg-surface);">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-              <div class="card-header-label" style="margin-bottom: 0;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                </svg>
-                <span>SUBJECT GRADE STANDINGS</span>
-              </div>
-              <span class="overview-count-badge" style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: var(--bg-app); border: 1px solid var(--border-subtle); color: var(--text-secondary);">
-                ${activeSubjects.length}
-              </span>
+        <!-- Row 2 Left: Recent Activity (Merged Study Logs + Graded Entries, ~60% width) -->
+        <div class="tool-card" style="padding: 20px 22px; border-radius: var(--radius-xl); border: var(--border-card); background: var(--bg-surface); display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-shrink: 0;">
+            <div class="card-header-label" style="margin-bottom: 0;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              <span>RECENT ACTIVITY</span>
             </div>
+            <span style="font-size: 11.5px; color: var(--text-muted); font-weight: 550;">Latest ${recentActivities.length} actions</span>
+          </div>
 
-            <div class="profile-subject-list" style="display: flex; flex-direction: column; gap: 8px;">
-              ${activeSubjects.length === 0 ? `
-                <div style="text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 13px;">
-                  No active subjects found. Enroll courses to see grade standings.
-                </div>
-              ` : activeSubjects.map(sub => {
-                const subStats = store.calculateSubjectGrade(sub.id);
-                const pct = subStats.overallPercentage;
-                const standingColor = pct !== null ? getStandingColor(pct) : 'var(--text-muted)';
-                const philGrade = (subStats.philGrade && subStats.philGrade.grade !== '—') ? subStats.philGrade.grade : null;
-                // Sage green per-subject color coding (no blue/purple)
-                const dotColor = (sub.color && !['#6366f1', '#3b82f6', '#a855f7', '#06b6d4'].includes(sub.color.toLowerCase())) ? sub.color : 'var(--olive-mid, #8A9A5B)';
+          <div class="profile-activity-list" style="display: flex; flex-direction: column; gap: 7px; max-height: 282px; overflow-y: auto; overflow-x: hidden; padding-right: 2px;">
+            ${recentActivities.length === 0 ? `
+              <div style="text-align: center; padding: 28px 16px; color: var(--text-muted); font-size: 13px;">
+                No study sessions or grade entries recorded yet.
+              </div>
+            ` : recentActivities.map(act => {
+              const relTime = formatRelativeTime(act.timestamp) || 'Recent';
+              const isStudy = act.type === 'study';
 
-                return `
-                  <div class="profile-subject-row" data-subject-id="${sub.id}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition);">
-                    <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                      <span style="width: 8px; height: 8px; border-radius: 50%; background-color: ${dotColor}; flex-shrink: 0;"></span>
-                      <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
-                        <span style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                          ${sub.code || sub.name}
-                        </span>
-                        ${sub.code ? `<span style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${sub.name}</span>` : ''}
-                      </div>
+              return `
+                <div class="profile-activity-item" data-route="${act.targetRoute}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-radius: var(--radius-lg, 12px); cursor: pointer; transition: var(--transition);">
+                  <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                    <!-- Type Icon (No blue/purple - warm olive/sage/green) -->
+                    <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background-color: ${isStudy ? 'rgba(80, 85, 55, 0.12)' : 'rgba(71, 104, 59, 0.12)'}; color: ${isStudy ? 'var(--olive-deep, #505537)' : 'var(--success, #47683b)'};">
+                      ${isStudy ? `
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                      ` : `
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                          <polyline points="14 2 14 8 20 8"></polyline>
+                          <polyline points="9 15 11 17 15 13"></polyline>
+                        </svg>
+                      `}
                     </div>
-
-                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                      ${philGrade ? `
-                        <span style="font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--bg-surface); border: 1px solid var(--border-subtle); color: var(--text-secondary);">
-                          ${philGrade}
-                        </span>
-                      ` : ''}
-                      <span style="font-size: 13px; font-weight: 600; color: ${standingColor}; font-family: var(--font-numeric);">
-                        ${pct !== null ? `${pct.toFixed(1)}%` : '—'}
+                    
+                    <!-- Activity Details -->
+                    <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                      <span style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${act.title}
+                      </span>
+                      <span style="font-size: 11.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${act.subtext}
                       </span>
                     </div>
                   </div>
-                `;
-              }).join('')}
+
+                  <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                    <!-- Timestamp Badge -->
+                    <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-numeric); white-space: nowrap;">
+                      ${relTime}
+                    </span>
+                    <!-- Delete Action Button -->
+                    <button type="button" class="btn-del-activity-item" data-type="${act.type}" data-raw-id="${act.rawId}" ${act.categoryId ? `data-cat-id="${act.categoryId}"` : ''} title="Delete ${isStudy ? 'study session' : 'grade entry'}" aria-label="Delete">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Row 2 Right: Subject Grade Standings (~40% width) -->
+        <div class="tool-card" style="padding: 20px 22px; border-radius: var(--radius-xl); border: var(--border-card); background: var(--bg-surface); display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <div class="card-header-label" style="margin-bottom: 0;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+              <span>SUBJECT GRADE STANDINGS</span>
             </div>
+            <span class="overview-count-badge" style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: var(--bg-app); border: 1px solid var(--border-subtle); color: var(--text-secondary);">
+              ${activeSubjects.length}
+            </span>
           </div>
 
+          <div class="profile-subject-list" style="display: flex; flex-direction: column; gap: 7px;">
+            ${activeSubjects.length === 0 ? `
+              <div style="text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 13px;">
+                No active subjects found. Enroll courses to see grade standings.
+              </div>
+            ` : activeSubjects.map(sub => {
+              const subStats = store.calculateSubjectGrade(sub.id);
+              const pct = subStats.overallPercentage;
+              const standingColor = pct !== null ? getStandingColor(pct) : 'var(--text-muted)';
+              const philGrade = (subStats.philGrade && subStats.philGrade.grade !== '—') ? subStats.philGrade.grade : null;
+
+              return `
+                <div class="profile-subject-row" data-subject-id="${sub.id}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-radius: var(--radius-lg, 12px); cursor: pointer; transition: var(--transition);">
+                  <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                    <span style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      ${sub.code || sub.name}
+                    </span>
+                    ${sub.code ? `<span style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${sub.name}</span>` : ''}
+                  </div>
+
+                  <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                    ${philGrade ? `
+                      <span style="font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--bg-surface); border: 1px solid var(--border-subtle); color: var(--text-secondary);">
+                        ${philGrade}
+                      </span>
+                    ` : ''}
+                    <span style="font-size: 13px; font-weight: 600; color: ${standingColor}; font-family: var(--font-numeric);">
+                      ${pct !== null ? `${pct.toFixed(1)}%` : '—'}
+                    </span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
         </div>
 
       </div>
@@ -620,6 +925,16 @@ export function renderProfileView(container) {
     });
   });
 
+  // Navigate to Grades when clicking a subject row in breakdown legend
+  container.querySelectorAll('.doughnut-legend-row[data-subject-id]').forEach(row => {
+    row.addEventListener('click', () => {
+      const subjectId = row.dataset.subjectId;
+      if (subjectId) {
+        window.location.hash = `grades?subjectId=${subjectId}`;
+      }
+    });
+  });
+
   // Navigate to target route on activity click
   container.querySelectorAll('.profile-activity-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -629,4 +944,86 @@ export function renderProfileView(container) {
       }
     });
   });
+
+  // Delete activity item (study session or grade entry) with Undo
+  container.querySelectorAll('.btn-del-activity-item').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent navigating to route
+      const type = btn.dataset.type;
+      const rawId = btn.dataset.rawId;
+
+      if (type === 'study') {
+        const allSessions = store.getSessions();
+        const idx = allSessions.findIndex(s => s.id === rawId);
+        const session = store.getSessionById(rawId);
+        if (!session) return;
+        const snapshot = { ...session };
+
+        store.deleteSession(rawId);
+        renderProfileView(container);
+
+        window.avenApp?.showToast('Study session deleted', 'info', {
+          duration: 5000,
+          actionLabel: 'Undo',
+          actionCallback: () => {
+            store.restoreSession(snapshot, idx);
+            renderProfileView(container);
+            window.avenApp?.showToast('Study session restored', 'success');
+          }
+        });
+      } else if (type === 'grade') {
+        const catId = btn.dataset.catId;
+        const cat = store.getGradeCategoryById ? store.getGradeCategoryById(catId) : (store.state.grades || []).find(g => g.id === catId);
+        const entryIndex = cat?.entries ? cat.entries.findIndex(e => e.id === rawId) : -1;
+        const entrySnapshot = entryIndex !== -1 ? { ...cat.entries[entryIndex] } : null;
+        if (!entrySnapshot) return;
+
+        store.deleteGradeEntry(catId, rawId);
+        renderProfileView(container);
+
+        window.avenApp?.showToast('Grade entry deleted', 'info', {
+          duration: 5000,
+          actionLabel: 'Undo',
+          actionCallback: () => {
+            store.restoreGradeEntry(catId, entrySnapshot, entryIndex);
+            renderProfileView(container);
+            window.avenApp?.showToast('Grade entry restored', 'success');
+          }
+        });
+      }
+    });
+  });
+
+  // Tooltip hover & cursor-follow handlers for doughnut segments
+  container.querySelectorAll('.doughnut-segment[data-tooltip]').forEach(segment => {
+    segment.addEventListener('mouseenter', (e) => {
+      const text = segment.getAttribute('data-tooltip');
+      if (text) {
+        showTooltip(segment, text, {
+          position: 'cursor',
+          clientX: e.clientX,
+          clientY: e.clientY
+        });
+      }
+    });
+    segment.addEventListener('mousemove', (e) => {
+      positionTooltipAtCursor(e.clientX, e.clientY);
+    });
+    segment.addEventListener('mouseleave', () => {
+      hideTooltip();
+    });
+  });
+
+  // Tooltip hover handlers for doughnut legend rows
+  container.querySelectorAll('.doughnut-legend-row[data-tooltip]').forEach(row => {
+    row.addEventListener('mouseenter', () => {
+      const text = row.getAttribute('data-tooltip');
+      if (text) showTooltip(row, text, { position: 'top' });
+    });
+    row.addEventListener('mouseleave', () => {
+      hideTooltip();
+    });
+  });
+
+  return cleanupProfileView;
 }

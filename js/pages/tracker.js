@@ -1674,13 +1674,39 @@ function attachTrackerEvents(container) {
     });
   }
 
-  // Delete Session (Supports single or merged sub-hour session entries)
+  // Delete Session (Supports single or merged sub-hour session entries) with Undo
   container.querySelectorAll('.btn-del-session').forEach(btn => {
     btn.addEventListener('click', () => {
       const ids = btn.dataset.ids ? btn.dataset.ids.split(',') : [btn.dataset.id];
+      const allSessions = store.getSessions();
+
+      // Capture snapshots of sessions to be deleted with original indices
+      const snapshots = ids.map(id => {
+        const idx = allSessions.findIndex(s => s.id === id);
+        const session = store.getSessionById(id);
+        return session ? { session: { ...session }, index: idx } : null;
+      }).filter(Boolean);
+
+      if (snapshots.length === 0) return;
+
+      // Delete immediately
       ids.forEach(id => store.deleteSession(id));
-      window.avenApp?.showToast(ids.length > 1 ? `${ids.length} study sessions deleted` : 'Session deleted', 'info');
       renderTrackerView(container);
+
+      // Toast with Undo action (5-second auto-dismiss window)
+      const msg = snapshots.length > 1 ? `${snapshots.length} study sessions deleted` : 'Study session deleted';
+      window.avenApp?.showToast(msg, 'info', {
+        duration: 5000,
+        actionLabel: 'Undo',
+        actionCallback: () => {
+          // Restore in order of original indices so positions are preserved
+          snapshots.sort((a, b) => a.index - b.index).forEach(snap => {
+            store.restoreSession(snap.session, snap.index);
+          });
+          renderTrackerView(container);
+          window.avenApp?.showToast(snapshots.length > 1 ? 'Study sessions restored' : 'Study session restored', 'success');
+        }
+      });
     });
   });
 

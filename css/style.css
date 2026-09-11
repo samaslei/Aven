@@ -85,26 +85,26 @@
 
 :root {
   /* Color Palette - Dark Theme (Warm Olive & Deep Earth) */
-  --bg-app: #2a2820;
-  --bg-sidebar: #222019;
-  --bg-surface: #3a3830;
-  --bg-surface-elevated: #444238;
-  --bg-surface-hover: #4c4a3e;
-  --bg-input: #302e26;
+  --bg-app: #201E18;
+  --bg-sidebar: #1B1913;
+  --bg-surface: #3F3B31;
+  --bg-surface-elevated: #49453B;
+  --bg-surface-hover: #524E41;
+  --bg-input: #2B2820;
   
-  --border-subtle: rgba(245, 242, 232, 0.08);
-  --border-default: rgba(245, 242, 232, 0.14);
-  --border-strong: rgba(245, 242, 232, 0.22);
+  --border-subtle: rgba(247, 244, 234, 0.08);
+  --border-default: rgba(247, 244, 234, 0.14);
+  --border-strong: rgba(247, 244, 234, 0.22);
   --border-focus: #a8b082;
 
-  --text-primary: #f5f2e8;
-  --text-secondary: #b5b3a4;
-  --text-muted: #949182;
-  --text-inverse: #2a2820;
+  --text-primary: #F7F4EA;
+  --text-secondary: #B5B0A0;
+  --text-muted: #A09C8D;
+  --text-inverse: #201E18;
 
   /* Primary Active Pill & High Contrast */
-  --accent: #f5f2e8;
-  --accent-hover: #ede9dc;
+  --accent: #F7F4EA;
+  --accent-hover: #EFECE0;
   --accent-surface: rgba(168, 176, 130, 0.16);
   --accent-border: rgba(168, 176, 130, 0.30);
 
@@ -145,6 +145,9 @@
   --heat-level-3: #7c8a4d;
   --heat-level-4: #a8b868;
   --heat-border: rgba(245, 242, 232, 0.05);
+
+  /* Subject Time Breakdown Base Accent Token */
+  --breakdown-base: #8A9A5B;
 
   /* Shadows & Radius */
   --radius-xs: 4px;
@@ -226,27 +229,30 @@
    Refined Dark Mode (Warm Olive & Deep Earth Identity)
    ========================================================================== */
 [data-theme="dark"] {
-  --bg-app: #2a2820;
-  --bg-sidebar: #222019;
-  --bg-surface: #3a3830;
-  --bg-surface-elevated: #444238;
-  --bg-surface-hover: #4c4a3e;
-  --bg-input: #302e26;
+  --bg-app: #201E18;
+  --bg-sidebar: #1B1913;
+  --bg-surface: #3F3B31;
+  --bg-surface-elevated: #49453B;
+  --bg-surface-hover: #524E41;
+  --bg-input: #2B2820;
   
-  --border-subtle: rgba(245, 242, 232, 0.08);
-  --border-default: rgba(245, 242, 232, 0.14);
-  --border-strong: rgba(245, 242, 232, 0.22);
+  --border-subtle: rgba(247, 244, 234, 0.08);
+  --border-default: rgba(247, 244, 234, 0.14);
+  --border-strong: rgba(247, 244, 234, 0.22);
   --border-focus: #a8b082;
 
-  --text-primary: #f5f2e8;
-  --text-secondary: #b5b3a4;
-  --text-muted: #949182;
-  --text-inverse: #2a2820;
+  --text-primary: #F7F4EA;
+  --text-secondary: #B5B0A0;
+  --text-muted: #A09C8D;
+  --text-inverse: #201E18;
 
-  --accent: #f5f2e8;
-  --accent-hover: #ede9dc;
+  --accent: #F7F4EA;
+  --accent-hover: #EFECE0;
   --accent-surface: rgba(168, 176, 130, 0.16);
   --accent-border: rgba(168, 176, 130, 0.30);
+
+  /* Subject Time Breakdown Base Accent Token - Default Dark (Sage) */
+  --breakdown-base: #8A9A5B;
 }
 
 /* ==========================================================================
@@ -315,6 +321,9 @@
   --heat-level-3: #656b43;
   --heat-level-4: #3e4424;
   --heat-border: rgba(45, 50, 35, 0.08);
+
+  /* Subject Time Breakdown Base Accent Token - Default Light (Deep Olive/Sage) */
+  --breakdown-base: #505537;
 
   --border-card: 2px solid #ffffff;
 
@@ -6491,6 +6500,20 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]):not([data-theme="c
   transform: scale(1) translateX(0);
 }
 
+.app-global-tooltip[data-pos="cursor"] {
+  transform-origin: left bottom;
+  transform: scale(0.96) translateY(2px);
+}
+
+.app-global-tooltip[data-pos="cursor"].is-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.app-global-tooltip[data-pos="cursor"] .tooltip-arrow {
+  display: none;
+}
+
 /* Caret Arrow */
 .app-global-tooltip .tooltip-arrow {
   position: absolute;
@@ -7706,53 +7729,162 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]):not([data-theme="c
 }
 
 /* ==========================================================================
-   Toast Notification System (Prompt 67 — Bottom-Center Flat Minimalist)
+   Toast Notification System — Redesigned Shell
+   Rounded rectangle, diagonal gradient, icon badge, title + optional subtitle,
+   optional action pill. Theme-aware accent colors per notification type.
    ========================================================================== */
+
+/* ---- Toast Type Accent Tokens (Default Warm Olive Dark) ---- */
+:root {
+  --toast-success: #7ea86f;
+  --toast-danger: #e05a4f;
+  --toast-warning: #d9a043;
+  --toast-info: #a8b082;
+  --toast-bg: var(--bg-surface);
+  --toast-text: var(--text-primary);
+  --toast-text-muted: var(--text-secondary);
+}
+
 .toast-container {
   position: fixed;
-  bottom: calc(48px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
-  transform: translateX(-50%);
+  top: calc(20px + env(safe-area-inset-top, 0px));
+  right: calc(20px + env(safe-area-inset-right, 0px));
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-end;
+  gap: 10px;
   z-index: 9999;
   pointer-events: none;
   max-width: calc(100vw - 32px);
 }
 
 .toast {
-  background: #252821;
-  border: 1px solid rgba(205, 212, 170, 0.22);
-  border-radius: var(--radius-full);
-  padding: 9px 18px;
-  color: #f7f6f0;
+  --_toast-accent: var(--toast-info);
+  position: relative;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--_toast-accent) 14%, var(--toast-bg)) 0%,
+      var(--toast-bg) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--_toast-accent) 35%, transparent);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  color: var(--toast-text);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.35);
+  gap: 12px;
+  box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.18);
   pointer-events: auto;
-  animation: toastSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  white-space: nowrap;
-  max-width: 90vw;
+  animation: toastSlideDown 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  max-width: 420px;
   box-sizing: border-box;
 }
 
-[data-theme="light"] .toast {
-  background: #21231d;
-  border: 1px solid rgba(205, 212, 170, 0.25);
-  color: #f7f6f0;
-  box-shadow: 0 10px 32px -4px rgba(40, 44, 30, 0.35), 0 3px 10px rgba(0, 0, 0, 0.15);
+/* Type-specific accent assignment */
+.toast.toast-success { --_toast-accent: var(--toast-success); }
+.toast.toast-danger,
+.toast.toast-error   { --_toast-accent: var(--toast-danger); }
+.toast.toast-warning { --_toast-accent: var(--toast-warning); }
+.toast.toast-info    { --_toast-accent: var(--toast-info); }
+
+/* ---- Icon Badge (circular filled disc) ---- */
+.toast-icon-badge {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-full);
+  background: var(--_toast-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
 }
 
-@keyframes toastSlideUp {
+/* Ensure the inner SVG icon is white/contrasting on the badge */
+.toast-icon-badge svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* For dark accent badges where white works; for light badges, JS applies a dark class */
+.toast-icon-badge.badge-dark svg {
+  stroke: #1a1a1a;
+}
+
+/* ---- Text Content Block ---- */
+.toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.toast-title {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--toast-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toast-subtitle {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--toast-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Optional Action Button (pill) ---- */
+.toast-action {
+  flex-shrink: 0;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background: var(--_toast-accent);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  transition: opacity var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+  white-space: nowrap;
+}
+
+.toast-action:hover {
+  opacity: 0.88;
+  transform: scale(1.03);
+}
+
+.toast-action:active {
+  transform: scale(0.97);
+}
+
+.toast-action.action-dark {
+  color: #1a1a1a;
+}
+
+/* ---- Animations ---- */
+@keyframes toastSlideDown {
   from {
     opacity: 0;
-    transform: translateY(16px) scale(0.94);
+    transform: translateY(-16px) scale(0.95);
   }
   to {
     opacity: 1;
@@ -7762,41 +7894,50 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]):not([data-theme="c
 
 .toast.toast-dismissing {
   opacity: 0;
-  transform: translateY(8px) scale(0.96);
+  transform: translateY(-8px) scale(0.96);
   transition: opacity var(--dur-fast) var(--ease-in), transform var(--dur-fast) var(--ease-in);
 }
 
-.toast-icon {
-  flex-shrink: 0;
-  color: var(--olive-light);
+/* ============== Theme-Specific Toast Overrides ============== */
+
+/* Default Light (Warm Olive) */
+[data-theme="light"] {
+  --toast-success: #47683b;
+  --toast-danger: #c24136;
+  --toast-warning: #b88628;
+  --toast-info: #505537;
 }
 
-.toast.success .toast-icon,
-.toast.toast-success .toast-icon {
-  color: #9ecb8a;
+/* Cool Dark */
+[data-theme="cool-dark"] {
+  --toast-success: #4ade80;
+  --toast-danger: #ef5350;
+  --toast-warning: #fbbf24;
+  --toast-info: #6E93B5;
 }
 
-.toast.danger .toast-icon,
-.toast.toast-danger .toast-icon,
-.toast.error .toast-icon,
-.toast.toast-error .toast-icon {
-  color: #ff7668;
+/* Cool Light */
+[data-theme="cool-light"] {
+  --toast-success: #2e7d32;
+  --toast-danger: #d32f2f;
+  --toast-warning: #d97706;
+  --toast-info: #4A6C8C;
 }
 
-.toast.warning .toast-icon,
-.toast.toast-warning .toast-icon {
-  color: #f0b85a;
+/* Pure Black (OLED) */
+[data-theme="pure-black"] {
+  --toast-success: #22c55e;
+  --toast-danger: #ef4444;
+  --toast-warning: #f59e0b;
+  --toast-info: #a1a1aa;
 }
 
-.toast.info .toast-icon,
-.toast.toast-info .toast-icon {
-  color: #cdd4aa;
-}
-
-.toast-message {
-  color: #f7f6f0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Pure White */
+[data-theme="pure-white"] {
+  --toast-success: #16a34a;
+  --toast-danger: #dc2626;
+  --toast-warning: #d97706;
+  --toast-info: #475569;
 }
 
 
@@ -12951,6 +13092,9 @@ body.mobile-drawer-locked {
   --heat-level-4: #a1a1aa;
   --heat-border: rgba(255, 255, 255, 0.06);
 
+  /* Subject Time Breakdown Base Accent Token - Pure Black (OLED White) */
+  --breakdown-base: #ffffff;
+
   --border-card: 1px solid rgba(255, 255, 255, 0.12);
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
@@ -13020,6 +13164,9 @@ body.mobile-drawer-locked {
   --heat-level-3: #64748b;
   --heat-level-4: #334155;
   --heat-border: #e2e8f0;
+
+  /* Subject Time Breakdown Base Accent Token - Pure White (Slate Charcoal) */
+  --breakdown-base: #0f172a;
 
   --border-card: 1px solid #cbd5e1;
 
@@ -13147,6 +13294,9 @@ body.mobile-drawer-locked {
   --heat-level-4: #6E93B5;
   --heat-border: rgba(234, 240, 245, 0.05);
 
+  /* Subject Time Breakdown Base Accent Token - Cool Dark (Slate Blue) */
+  --breakdown-base: #6E93B5;
+
   --border-card: 1px solid rgba(234, 240, 245, 0.10);
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.30);
@@ -13216,6 +13366,9 @@ body.mobile-drawer-locked {
   --heat-level-3: #5F87AF;
   --heat-level-4: #385E85;
   --heat-border: rgba(26, 37, 48, 0.08);
+
+  /* Subject Time Breakdown Base Accent Token - Cool Light (Steel Blue) */
+  --breakdown-base: #4A6C8C;
 
   --border-card: 2px solid #ffffff;
 
@@ -13861,97 +14014,177 @@ body.mobile-drawer-locked {
   color: var(--olive-deep, #4A6C8C);
 }
 
-/* Profile List Rows Contrast (Subject Grade Standings & Recent Activity) */
+/* ==========================================================================
+   Profile List Rows (Subject Grade Standings & Recent Activity)
+   Subtly-tinted rounded background treatment across all 6 themes
+   ========================================================================== */
+.profile-activity-list,
+.profile-subject-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.profile-activity-list {
+  max-height: 282px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+}
+
+.profile-activity-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.profile-activity-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.profile-activity-list::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 4px;
+}
+
+.profile-activity-list::-webkit-scrollbar-thumb:hover {
+  background: var(--border-default);
+}
+
 .profile-activity-item,
 .profile-subject-row {
-  background: #ffffff;
-  border: 1px solid rgba(45, 50, 35, 0.10);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  background: rgba(45, 50, 35, 0.04);
+  border: none;
+  border-radius: var(--radius-lg, 12px);
+  padding: 8px 12px;
+  box-shadow: none;
+  transition: background-color var(--dur-fast, 0.15s) var(--ease-out, ease-out);
 }
 
 .profile-activity-item:hover,
 .profile-subject-row:hover {
-  background: #fdfcf9 !important;
-  border-color: rgba(45, 50, 35, 0.22) !important;
-  transform: translateY(-1px);
+  background: rgba(45, 50, 35, 0.075) !important;
+  border: none !important;
+  box-shadow: none !important;
+  transform: none;
 }
 
+.btn-del-activity-item {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--dur-fast, 0.15s) var(--ease-out, ease-out),
+              color var(--dur-fast, 0.15s) var(--ease-out, ease-out),
+              background-color var(--dur-fast, 0.15s) var(--ease-out, ease-out);
+}
+
+.profile-activity-item:hover .btn-del-activity-item,
+.btn-del-activity-item:focus-visible {
+  opacity: 0.65;
+}
+
+.btn-del-activity-item:hover {
+  opacity: 1 !important;
+  color: var(--danger, #e05a4f) !important;
+  background: rgba(224, 90, 79, 0.12);
+}
+
+/* 1. Default Light Theme */
 [data-theme="light"] .profile-activity-item,
 [data-theme="light"] .profile-subject-row {
-  background: #ffffff;
-  border: 1px solid rgba(45, 50, 35, 0.10);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  background: #eeeae0;
+  border: none;
+  box-shadow: none;
 }
 
 [data-theme="light"] .profile-activity-item:hover,
 [data-theme="light"] .profile-subject-row:hover {
-  background: #fdfcf9 !important;
-  border-color: rgba(45, 50, 35, 0.22) !important;
+  background: #e6e1d5 !important;
 }
 
+/* 2. Cool Light Theme */
 [data-theme="cool-light"] .profile-activity-item,
 [data-theme="cool-light"] .profile-subject-row {
-  background: #ffffff;
-  border: 1px solid rgba(74, 108, 140, 0.14);
-  box-shadow: 0 1px 3px rgba(26, 37, 48, 0.04);
+  background: #f2f5f9;
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme="cool-light"] .profile-activity-item span[style*="var(--text-secondary)"],
+[data-theme="cool-light"] .profile-subject-row span[style*="var(--text-muted)"] {
+  color: #526375 !important;
 }
 
 [data-theme="cool-light"] .profile-activity-item:hover,
 [data-theme="cool-light"] .profile-subject-row:hover {
-  background: #f4f7fb !important;
-  border-color: rgba(74, 108, 140, 0.28) !important;
+  background: #e7edf4 !important;
 }
 
+/* 3. Default Dark Theme */
 [data-theme="dark"] .profile-activity-item,
 [data-theme="dark"] .profile-subject-row {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(235, 230, 215, 0.08);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+  background: #474338;
+  border: none;
+  box-shadow: none;
 }
 
 [data-theme="dark"] .profile-activity-item:hover,
 [data-theme="dark"] .profile-subject-row:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-color: rgba(235, 230, 215, 0.16) !important;
+  background: #504C40 !important;
 }
 
+/* 4. Cool Dark Theme */
 [data-theme="cool-dark"] .profile-activity-item,
 [data-theme="cool-dark"] .profile-subject-row {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(234, 240, 245, 0.08);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+  background: #2b3543;
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme="cool-dark"] .profile-activity-item span[style*="var(--text-secondary)"],
+[data-theme="cool-dark"] .profile-subject-row span[style*="var(--text-muted)"] {
+  color: #9cb1c4 !important;
 }
 
 [data-theme="cool-dark"] .profile-activity-item:hover,
 [data-theme="cool-dark"] .profile-subject-row:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-color: rgba(110, 147, 181, 0.25) !important;
+  background: #334052 !important;
 }
 
+/* 5. Pure Black Theme */
 [data-theme="pure-black"] .profile-activity-item,
 [data-theme="pure-black"] .profile-subject-row {
-  background: #18181b;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: #121214;
+  border: none;
   box-shadow: none;
 }
 
 [data-theme="pure-black"] .profile-activity-item:hover,
 [data-theme="pure-black"] .profile-subject-row:hover {
-  background: #222226 !important;
-  border-color: rgba(255, 255, 255, 0.20) !important;
+  background: #1a1a1e !important;
 }
 
+/* 6. Pure White Theme */
 [data-theme="pure-white"] .profile-activity-item,
 [data-theme="pure-white"] .profile-subject-row {
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  border: none;
+  box-shadow: none;
+}
+
+[data-theme="pure-white"] .profile-activity-item span[style*="var(--text-secondary)"],
+[data-theme="pure-white"] .profile-subject-row span[style*="var(--text-muted)"] {
+  color: #475569 !important;
 }
 
 [data-theme="pure-white"] .profile-activity-item:hover,
 [data-theme="pure-white"] .profile-subject-row:hover {
   background: #f1f5f9 !important;
-  border-color: #cbd5e1 !important;
 }
 
 @media (max-width: 960px) {
@@ -13959,5 +14192,73 @@ body.mobile-drawer-locked {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ==========================================================================
+   Profile Subject Time Breakdown Doughnut Component
+   ========================================================================== */
+.subject-breakdown-card {
+  min-height: 240px;
+}
+
+.doughnut-segment {
+  cursor: pointer;
+  pointer-events: stroke;
+  transition: stroke-width var(--dur-fast, 0.15s) var(--ease-out, ease-out),
+              opacity var(--dur-fast, 0.15s) var(--ease-out, ease-out);
+}
+
+.doughnut-segment:hover {
+  stroke-width: 15;
+  opacity: 0.88;
+}
+
+.doughnut-legend::-webkit-scrollbar {
+  width: 4px;
+}
+
+.doughnut-legend::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 4px;
+}
+
+.doughnut-legend-row {
+  padding: 4px 6px;
+  border-radius: var(--radius-xs, 4px);
+  transition: background-color var(--dur-fast, 0.15s) var(--ease-out, ease-out);
+}
+
+.doughnut-legend-row:hover {
+  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.05));
+}
+
+[data-theme="pure-white"] .doughnut-legend-row:hover {
+  background: #f1f5f9;
+}
+
+.doughnut-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: transform var(--dur-fast, 0.15s) var(--ease-out, ease-out);
+}
+
+.doughnut-legend-row:hover .doughnut-legend-dot {
+  transform: scale(1.25);
+}
+
+@media (max-width: 540px) {
+  .subject-breakdown-body {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 16px !important;
+  }
+  .doughnut-legend {
+    width: 100% !important;
+    max-height: 180px !important;
+  }
+}
+
 
 

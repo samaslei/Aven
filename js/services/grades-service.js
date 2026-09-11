@@ -377,6 +377,51 @@ export function createGradesService(state) {
     }, 'Deleting assessment');
   }
 
+  function restoreGradeEntry(categoryId, entryData, originalIndex = null) {
+    const cat = (state.grades || []).find(g => g.id === categoryId);
+    if (!cat) return null;
+    if (!cat.entries) cat.entries = [];
+
+    // If entry already present, ignore
+    if (cat.entries.some(e => e.id === entryData.id)) {
+      return entryData;
+    }
+
+    const entry = {
+      id: entryData.id,
+      name: entryData.name ? entryData.name.trim() : 'New Assessment',
+      score: Number(entryData.score) || 0,
+      out_of: Number(entryData.out_of) || 100,
+      created_at: entryData.created_at || new Date().toISOString()
+    };
+    if (entryData.updated_at) entry.updated_at = entryData.updated_at;
+
+    if (originalIndex !== null && originalIndex >= 0 && originalIndex <= cat.entries.length) {
+      cat.entries.splice(originalIndex, 0, entry);
+    } else {
+      cat.entries.push(entry);
+    }
+
+    events.emit('grade_entry:saved', { categoryId, entry });
+    events.emit('store:changed', { type: 'grade' });
+
+    syncEngine.queue(async () => {
+      const user = await getCurrentUser();
+      if (!user) return;
+      return supabase.from('grade_entries').upsert({
+        id: entry.id,
+        user_id: user.id,
+        category_id: categoryId,
+        name: entry.name,
+        score: entry.score,
+        out_of: entry.out_of,
+        created_at: entry.created_at
+      }, { onConflict: 'id' });
+    }, 'Restoring assessment');
+
+    return entry;
+  }
+
   // ---------------------------------------------------------------------------
   // Subject Grade Configs
   // ---------------------------------------------------------------------------
@@ -442,6 +487,7 @@ export function createGradesService(state) {
     saveGradeEntry,
     updateGradeEntry,
     deleteGradeEntry,
+    restoreGradeEntry,
     getGradeConfigs,
     getSubjectGradeConfig,
     saveSubjectGradeConfig

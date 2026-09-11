@@ -370,6 +370,7 @@ class Store {
   getSessionById(id) { return this._sessionsService.getSessionById(id); }
   saveSession(data) { return this._sessionsService.saveSession(data); }
   deleteSession(id) { return this._sessionsService.deleteSession(id); }
+  restoreSession(data, originalIndex) { return this._sessionsService.restoreSession(data, originalIndex); }
   getSubjectTotalStudyMinutes(subjectId) { return this._sessionsService.getSubjectTotalStudyMinutes(subjectId); }
 
   // ---------------------------------------------------------------------------
@@ -378,6 +379,7 @@ class Store {
 
   getGrades(subjectId, term) { return this._gradesService.getGrades(subjectId, term); }
   getSubjectGradeCategories(subjectId, term) { return this._gradesService.getSubjectGradeCategories(subjectId, term); }
+  getGradeCategoryById(id) { return (this.state.grades || []).find(g => g.id === id) || null; }
   saveGradeCategory(data) { return this._gradesService.saveGradeCategory(data); }
   saveGradeCategoriesBulk(list, osId, oTerm) { return this._gradesService.saveGradeCategoriesBulk(list, osId, oTerm); }
   copyCategoriesBetweenTerms(sId, from, to, ow) { return this._gradesService.copyCategoriesBetweenTerms(sId, from, to, ow); }
@@ -386,6 +388,7 @@ class Store {
   saveGradeEntry(catId, data) { return this._gradesService.saveGradeEntry(catId, data); }
   updateGradeEntry(catId, entId, updates) { return this._gradesService.updateGradeEntry(catId, entId, updates); }
   deleteGradeEntry(catId, entId) { return this._gradesService.deleteGradeEntry(catId, entId); }
+  restoreGradeEntry(catId, data, originalIndex) { return this._gradesService.restoreGradeEntry(catId, data, originalIndex); }
   getGradeConfigs() { return this._gradesService.getGradeConfigs(); }
   getSubjectGradeConfig(subjectId) {
     const cfg = this._gradesService.getSubjectGradeConfig(subjectId);
@@ -523,7 +526,7 @@ class Store {
           id: e.id, name: e.name, score: e.score, out_of: e.out_of,
           percentage: e.out_of > 0 ? (e.score / e.out_of) * 100 : 0,
           created_at: e.updated_at || e.created_at || null,
-          categoryName: cat.category, term: cat.term,
+          categoryName: cat.category, term: cat.term, categoryId: cat.id,
           subjectId: sub.id, subjectName: sub.name,
           subjectCode: sub.code || sub.name, subjectColor: sub.color || '#505537'
         });

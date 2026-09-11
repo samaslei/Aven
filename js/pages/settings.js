@@ -32,10 +32,10 @@ export function renderSettingsView(container) {
         <div class="settings-card">
           <div class="theme-options-grid">
             <div class="theme-option-card ${(store.getTheme() || 'dark') === 'dark' ? 'active' : ''}" data-theme-id="dark">
-              <div class="theme-card-preview" style="background: #2a2820;">
-                <div class="theme-card-preview-sidebar" style="background: #222019; border-right: 1px solid rgba(255,255,255,0.06);"></div>
+              <div class="theme-card-preview" style="background: #201E18;">
+                <div class="theme-card-preview-sidebar" style="background: #1B1913; border-right: 1px solid rgba(255,255,255,0.06);"></div>
                 <div class="theme-card-preview-main">
-                  <div class="theme-card-preview-block" style="background: #3a3830; border: 1px solid rgba(255,255,255,0.08);"></div>
+                  <div class="theme-card-preview-block" style="background: #3F3B31; border: 1px solid rgba(255,255,255,0.08);"></div>
                   <div class="theme-card-preview-block" style="width: 50%; background: #a8b082;"></div>
                 </div>
               </div>

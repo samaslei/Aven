@@ -106,6 +106,55 @@ export function createSessionsService(state) {
     }, 'Deleting session');
   }
 
+  function restoreSession(sessionData, originalIndex = null) {
+    if (!sessionData || !sessionData.id) return null;
+    let sessions = state.sessions || [];
+
+    // If session already exists, return it
+    if (sessions.some(s => s.id === sessionData.id)) {
+      return sessionData;
+    }
+
+    const session = {
+      id: sessionData.id,
+      subject_id: sessionData.subject_id || null,
+      duration: Number(sessionData.duration) || 0,
+      date: sessionData.date || new Date().toISOString().split('T')[0],
+      notes: sessionData.notes || '',
+      created_at: sessionData.created_at || new Date().toISOString()
+    };
+
+    if (originalIndex !== null && originalIndex >= 0 && originalIndex <= sessions.length) {
+      sessions.splice(originalIndex, 0, session);
+    } else {
+      sessions.unshift(session);
+      sessions.sort((a, b) =>
+        new Date(b.date + ' ' + (b.created_at || '')) - new Date(a.date + ' ' + (a.created_at || ''))
+      );
+    }
+
+    state.sessions = sessions;
+
+    events.emit('session:saved', session);
+    events.emit('store:changed', { type: 'session' });
+
+    syncEngine.queue(async () => {
+      const user = await getCurrentUser();
+      if (!user) return;
+      return supabase.from('study_sessions').upsert({
+        id: session.id,
+        user_id: user.id,
+        subject_id: session.subject_id,
+        duration: session.duration,
+        date: session.date,
+        notes: session.notes,
+        created_at: session.created_at
+      }, { onConflict: 'id' });
+    }, 'Restoring session');
+
+    return session;
+  }
+
   function getSubjectTotalStudyMinutes(subjectId) {
     return getSessions(subjectId).reduce((acc, s) => acc + (s.duration || 0), 0);
   }
@@ -115,6 +164,7 @@ export function createSessionsService(state) {
     getSessionById,
     saveSession,
     deleteSession,
+    restoreSession,
     getSubjectTotalStudyMinutes
   };
 }

@@ -7,6 +7,8 @@ let tooltipEl = null;
 let currentTarget = null;
 let showTimeout = null;
 let hideTimeout = null;
+let lastMouseX = 0;
+let lastMouseY = 0;
 
 const TOOLTIP_SHOW_DELAY = 100; // Snappy micro-delay (ms)
 const TOOLTIP_OFFSET = 7; // Gap between trigger and tooltip caret (px)
@@ -28,6 +30,47 @@ function getTooltipElement() {
     document.body.appendChild(tooltipEl);
   }
   return tooltipEl;
+}
+
+/**
+ * Positions tooltip relative to cursor coordinates (clientX, clientY)
+ * Ensures it never covers the cursor and stays within viewport bounds.
+ */
+export function positionTooltipAtCursor(clientX, clientY) {
+  const el = getTooltipElement();
+  const tipRect = el.getBoundingClientRect();
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const padding = 8;
+
+  // Offset so the tooltip appears from the cursor without covering it.
+  // Standard mouse cursor pointer is ~12x20px pointing top-left.
+  // By placing tooltip slightly to the right (+12px) and above (-height - 10px),
+  // neither the cursor arrow tip nor body overlaps with the tooltip.
+  const offsetX = 12;
+  const offsetY = 10;
+
+  let left = clientX + offsetX;
+  let top = clientY - tipRect.height - offsetY;
+
+  // If too close to top edge of viewport, flip safely below the cursor pointer
+  if (top < padding) {
+    top = clientY + 22; // Safely below the 16-20px pointer arrow
+  }
+
+  // If too close to right edge of viewport, flip to the left of cursor
+  if (left + tipRect.width > vw - padding) {
+    left = clientX - tipRect.width - offsetX;
+  }
+
+  // Clamp strictly within viewport boundaries
+  left = Math.max(padding, Math.min(left, vw - tipRect.width - padding));
+  top = Math.max(padding, Math.min(top, vh - tipRect.height - padding));
+
+  el.setAttribute('data-pos', 'cursor');
+  el.style.top = `${Math.round(top)}px`;
+  el.style.left = `${Math.round(left)}px`;
 }
 
 /**
@@ -100,12 +143,19 @@ export function showTooltip(target, text, options = {}) {
 
   currentTarget = target;
   const pos = options.position || target.getAttribute('data-tooltip-pos') || 'top';
+  const followCursor = pos === 'cursor' || options.followCursor || target.hasAttribute('data-tooltip-follow');
 
   el.style.visibility = 'hidden';
   el.style.display = 'inline-flex';
   el.setAttribute('aria-hidden', 'false');
 
-  positionTooltip(target, pos);
+  if (followCursor) {
+    const cx = options.clientX !== undefined ? options.clientX : (options.x !== undefined ? options.x : lastMouseX);
+    const cy = options.clientY !== undefined ? options.clientY : (options.y !== undefined ? options.y : lastMouseY);
+    positionTooltipAtCursor(cx, cy);
+  } else {
+    positionTooltip(target, pos);
+  }
 
   el.style.visibility = 'visible';
 
@@ -146,7 +196,21 @@ export function hideTooltip(immediate = false) {
 export function initGlobalTooltips() {
   if (typeof window === 'undefined') return;
 
+  const handleMouseMove = (e) => {
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+
+    if (currentTarget && (currentTarget.getAttribute('data-tooltip-pos') === 'cursor' || currentTarget.hasAttribute('data-tooltip-follow'))) {
+      if (tooltipEl && tooltipEl.classList.contains('is-visible')) {
+        positionTooltipAtCursor(e.clientX, e.clientY);
+      }
+    }
+  };
+
   const handleTriggerEnter = (e) => {
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+
     const target = e.target.closest('[data-tooltip], [title]');
     if (!target) return;
 
@@ -171,15 +235,20 @@ export function initGlobalTooltips() {
 
     if (!tooltipText || !tooltipText.trim()) return;
 
-    // Fast warm-transition if another tooltip is already visible
+    const isCursorPos = target.getAttribute('data-tooltip-pos') === 'cursor' || target.hasAttribute('data-tooltip-follow');
+
+    // Fast warm-transition if another tooltip is already visible, or instant for cursor-follow
     const isAnotherActive = tooltipEl && tooltipEl.classList.contains('is-visible');
-    const delay = isAnotherActive ? 0 : TOOLTIP_SHOW_DELAY;
+    const delay = isCursorPos ? 0 : (isAnotherActive ? 0 : TOOLTIP_SHOW_DELAY);
 
     clearTimeout(showTimeout);
     clearTimeout(hideTimeout);
 
     showTimeout = setTimeout(() => {
-      showTooltip(target, tooltipText);
+      showTooltip(target, tooltipText, {
+        clientX: e.clientX,
+        clientY: e.clientY
+      });
     }, delay);
   };
 
@@ -190,6 +259,7 @@ export function initGlobalTooltips() {
     hideTooltip(false);
   };
 
+  document.addEventListener('mousemove', handleMouseMove, { capture: true, passive: true });
   document.addEventListener('mouseenter', handleTriggerEnter, true);
   document.addEventListener('mouseleave', handleTriggerLeave, true);
   document.addEventListener('focusin', handleTriggerEnter, true);

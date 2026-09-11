@@ -1436,12 +1436,29 @@ function attachGradesEvents(container) {
       });
     });
 
-    // Delete Entry
+    // Delete Entry with Undo
     panelRoot.querySelectorAll('.btn-del-entry').forEach(btn => {
       btn.addEventListener('click', () => {
-        store.deleteGradeEntry(btn.dataset.catId, btn.dataset.entId);
-        window.avenApp?.showToast('Entry deleted', 'info');
+        const catId = btn.dataset.catId;
+        const entId = btn.dataset.entId;
+        const cat = store.getGradeCategoryById ? store.getGradeCategoryById(catId) : (store.state.grades || []).find(g => g.id === catId);
+        const entryIndex = cat?.entries ? cat.entries.findIndex(e => e.id === entId) : -1;
+        const entrySnapshot = entryIndex !== -1 ? { ...cat.entries[entryIndex] } : null;
+
+        if (!entrySnapshot) return;
+
+        store.deleteGradeEntry(catId, entId);
         renderGradesView(container);
+
+        window.avenApp?.showToast('Grade entry deleted', 'info', {
+          duration: 5000,
+          actionLabel: 'Undo',
+          actionCallback: () => {
+            store.restoreGradeEntry(catId, entrySnapshot, entryIndex);
+            renderGradesView(container);
+            window.avenApp?.showToast('Grade entry restored', 'success');
+          }
+        });
       });
     });
 
