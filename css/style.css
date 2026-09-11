@@ -9798,6 +9798,76 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]) .sk-nav-pill.activ
   display: none !important;
 }
 
+/* Landing Page Full-Screen Loading Spinner (Centered ring in dark theme accent) */
+.landing-spinner-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--bg-app, #0B0D0E);
+  box-sizing: border-box;
+  animation: pageSpinnerFadeIn var(--dur-fast, 180ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+
+.landing-spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid rgba(138, 154, 91, 0.22);
+  border-top-color: var(--accent, #8A9A5B);
+  animation: spin 0.75s linear infinite;
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .landing-spinner,
+[data-theme="cool-light"] .landing-spinner,
+[data-theme="pure-white"] .landing-spinner {
+  border: 3px solid rgba(0, 0, 0, 0.12);
+  border-top-color: var(--accent, #505537);
+}
+
+/* Landing Page Navigation Button Inline Spinner */
+.landing-btn-spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.32);
+  border-top-color: #ffffff;
+  animation: spin 0.75s linear infinite;
+  box-sizing: border-box;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* Secondary button spinner with visible contrast against dark surface in dark mode */
+.btn-secondary .landing-btn-spinner,
+.landing-signin-btn .landing-btn-spinner,
+.landing-cta-signin .landing-btn-spinner,
+.landing-hero-secondary-cta .landing-btn-spinner {
+  border: 2px solid rgba(138, 154, 91, 0.30);
+  border-top-color: var(--accent, #8A9A5B);
+}
+
+[data-theme="light"] .btn-secondary .landing-btn-spinner,
+[data-theme="cool-light"] .btn-secondary .landing-btn-spinner,
+[data-theme="pure-white"] .btn-secondary .landing-btn-spinner {
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-top-color: var(--accent, #505537);
+}
+
+/* Button Loading & Disabled State */
+button.btn-loading,
+a.btn-loading {
+  pointer-events: none !important;
+  opacity: 0.85;
+  cursor: wait !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 .landing-wrapper {
   position: relative;
   min-height: 100vh;

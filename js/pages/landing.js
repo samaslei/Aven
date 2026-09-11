@@ -575,6 +575,52 @@ export class LandingPage {
     this.attachEventListeners();
   }
 
+  setButtonLoading(btn) {
+    if (!btn || btn.classList.contains('btn-loading')) return;
+    btn.dataset.originalHtml = btn.innerHTML;
+    const rect = btn.getBoundingClientRect();
+    if (rect.width > 0) {
+      btn.style.width = `${Math.ceil(rect.width)}px`;
+    }
+    btn.classList.add('btn-loading');
+    btn.setAttribute('aria-busy', 'true');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="landing-btn-spinner" role="status" aria-label="Loading"></span>`;
+  }
+
+  resetButtonLoading(btn) {
+    if (!btn || !btn.classList.contains('btn-loading')) return;
+    btn.classList.remove('btn-loading');
+    btn.removeAttribute('aria-busy');
+    btn.disabled = false;
+    btn.style.width = '';
+    if (btn.dataset.originalHtml) {
+      btn.innerHTML = btn.dataset.originalHtml;
+      delete btn.dataset.originalHtml;
+    }
+  }
+
+  resetAllButtonsLoading() {
+    this.container?.querySelectorAll('.btn-loading').forEach(btn => this.resetButtonLoading(btn));
+  }
+
+  handleNavigate(isSignUp, btn) {
+    if (btn) {
+      this.setButtonLoading(btn);
+    }
+    if (typeof this.onNavigateAuth === 'function') {
+      try {
+        const result = this.onNavigateAuth(isSignUp, btn);
+        if (result && typeof result.catch === 'function') {
+          result.catch(() => this.resetButtonLoading(btn));
+        }
+      } catch (err) {
+        this.resetButtonLoading(btn);
+        throw err;
+      }
+    }
+  }
+
   attachEventListeners() {
     // Navigation / CTA button handlers
     const navSignIn = document.getElementById('landing-nav-signin');
@@ -587,30 +633,30 @@ export class LandingPage {
     const themeToggleBtn = document.getElementById('landing-theme-btn');
 
     if (navSignIn) {
-      navSignIn.addEventListener('click', () => this.onNavigateAuth(false));
+      navSignIn.addEventListener('click', (e) => this.handleNavigate(false, e.currentTarget));
     }
     if (navGetStarted) {
-      navGetStarted.addEventListener('click', () => this.onNavigateAuth(true));
+      navGetStarted.addEventListener('click', (e) => this.handleNavigate(true, e.currentTarget));
     }
     if (heroGetStarted) {
-      heroGetStarted.addEventListener('click', () => this.onNavigateAuth(true));
+      heroGetStarted.addEventListener('click', (e) => this.handleNavigate(true, e.currentTarget));
     }
     if (ctaGetStarted) {
-      ctaGetStarted.addEventListener('click', () => this.onNavigateAuth(true));
+      ctaGetStarted.addEventListener('click', (e) => this.handleNavigate(true, e.currentTarget));
     }
     if (ctaSignIn) {
-      ctaSignIn.addEventListener('click', () => this.onNavigateAuth(false));
+      ctaSignIn.addEventListener('click', (e) => this.handleNavigate(false, e.currentTarget));
     }
     if (footerSignIn) {
       footerSignIn.addEventListener('click', (e) => {
         e.preventDefault();
-        this.onNavigateAuth(false);
+        this.handleNavigate(false, e.currentTarget);
       });
     }
     if (footerSignUp) {
       footerSignUp.addEventListener('click', (e) => {
         e.preventDefault();
-        this.onNavigateAuth(true);
+        this.handleNavigate(true, e.currentTarget);
       });
     }
 

@@ -279,47 +279,71 @@ class AvenApp {
     if (this.authScreen) this.authScreen.classList.add('hidden');
     if (this.landingScreen) {
       this.landingScreen.classList.remove('hidden');
-      if (!this.landingPage) {
-        const { LandingPage } = await import('./pages/landing.js');
-        this.landingPage = new LandingPage(
-          (isSignUp) => {
-            window.location.hash = isSignUp ? 'signup' : 'signin';
-            this.showAuthView(isSignUp);
-          },
-          (e) => {
-            const current = store.getTheme();
-            let next = 'light';
-            if (current === 'cool-dark') next = 'cool-light';
-            else if (current === 'cool-light') next = 'cool-dark';
-            else if (current === 'pure-black') next = 'pure-white';
-            else if (current === 'pure-white') next = 'pure-black';
-            else if (current === 'light') next = 'dark';
-            else next = 'light';
-            store.setTheme(next, e?.currentTarget || document.getElementById('landing-theme-btn'));
-          }
-        );
+
+      // Schedule spinner if initial load or resource fetching takes longer than ~150ms
+      let isReady = false;
+      const spinnerTimeout = setTimeout(() => {
+        if (!isReady && (!this.landingPage || !this.landingScreen.hasChildNodes() || this.landingScreen.innerHTML.trim() === '')) {
+          this.landingScreen.innerHTML = `
+            <div class="landing-spinner-wrap" role="status" aria-label="Loading landing page">
+              <div class="landing-spinner"></div>
+            </div>
+          `;
+        }
+      }, 150);
+
+      try {
+        if (!this.landingPage) {
+          const [{ LandingPage }] = await Promise.all([
+            import('./pages/landing.js'),
+            document.fonts ? document.fonts.ready : Promise.resolve()
+          ]);
+          this.landingPage = new LandingPage(
+            async (isSignUp) => {
+              window.location.hash = isSignUp ? 'signup' : 'signin';
+              await this.showAuthView(isSignUp);
+            },
+            (e) => {
+              const current = store.getTheme();
+              let next = 'light';
+              if (current === 'cool-dark') next = 'cool-light';
+              else if (current === 'cool-light') next = 'cool-dark';
+              else if (current === 'pure-black') next = 'pure-white';
+              else if (current === 'pure-white') next = 'pure-black';
+              else if (current === 'light') next = 'dark';
+              else next = 'light';
+              store.setTheme(next, e?.currentTarget || document.getElementById('landing-theme-btn'));
+            }
+          );
+        }
+        isReady = true;
+        clearTimeout(spinnerTimeout);
+        this.landingPage.render(this.landingScreen);
+      } catch (err) {
+        clearTimeout(spinnerTimeout);
+        console.error('Failed to load landing page:', err);
       }
-      this.landingPage.render(this.landingScreen);
     }
   }
 
   async showAuthView(isSignUp = false) {
+    // Keep landing screen visible while loading auth module so button spinner displays during async transition
+    if (!this.authController) {
+      const { AuthController } = await import('./pages/auth.js');
+      this.authController = new AuthController(
+        async (session) => {
+          this.setStartupStatus('Connecting to cloud...');
+          await this.handleAuthenticated(session, true);
+        },
+        () => {
+          window.location.hash = '';
+          this.showLandingView();
+        }
+      );
+    }
     if (this.landingScreen) this.landingScreen.classList.add('hidden');
     if (this.authScreen) {
       this.authScreen.classList.remove('hidden');
-      if (!this.authController) {
-        const { AuthController } = await import('./pages/auth.js');
-        this.authController = new AuthController(
-          async (session) => {
-            this.setStartupStatus('Connecting to cloud...');
-            await this.handleAuthenticated(session, true);
-          },
-          () => {
-            window.location.hash = '';
-            this.showLandingView();
-          }
-        );
-      }
       this.authController.renderAuthScreen(this.authScreen, isSignUp);
     }
   }
