@@ -79,6 +79,8 @@ class AvenApp {
     };
 
     this.currentPageCleanup = null;
+    this._navId = 0;
+    this._spinnerTimeout = null;
     this.init();
   }
 
@@ -248,6 +250,7 @@ class AvenApp {
 
   handleUnauthenticated() {
     this.currentUser = null;
+    this.hidePageSpinner();
     if (typeof this.currentPageCleanup === 'function') {
       try { this.currentPageCleanup(); } catch (e) {}
       this.currentPageCleanup = null;
@@ -378,6 +381,23 @@ class AvenApp {
     }
   }
 
+  showPageSpinner() {
+    if (!this.mainContainer) return;
+    this.mainContainer.classList.remove('view-exit');
+    this.mainContainer.innerHTML = `
+      <div class="page-transition-spinner-wrap" role="status" aria-label="Loading page">
+        <div class="page-transition-spinner"></div>
+      </div>
+    `;
+  }
+
+  hidePageSpinner() {
+    if (this._spinnerTimeout) {
+      clearTimeout(this._spinnerTimeout);
+      this._spinnerTimeout = null;
+    }
+  }
+
   async navigateTo(pageKey, targetSection = null) {
     if (pageKey === 'plans') pageKey = 'schedule';
     if (!this.pages[pageKey]) pageKey = 'subjects';
@@ -411,6 +431,10 @@ class AvenApp {
 
     // Confirm render will proceed before setting currentPage
     if (this.mainContainer && pageConfig.load) {
+      const navId = ++this._navId;
+      let isRenderComplete = false;
+      this.hidePageSpinner();
+
       this.currentPage = pageKey;
 
       // Update Header
@@ -424,26 +448,49 @@ class AvenApp {
       const isInitialRender = !this.mainContainer.hasChildNodes() || this.mainContainer.innerHTML.trim() === '';
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+      // Schedule spinner if load takes longer than ~150ms threshold
+      this._spinnerTimeout = setTimeout(() => {
+        if (this._navId === navId && !isRenderComplete && this.mainContainer) {
+          this.showPageSpinner();
+        }
+      }, 150);
+
       const doRender = async () => {
+        if (this._navId !== navId) return;
+
         if (typeof this.currentPageCleanup === 'function') {
           try {
             this.currentPageCleanup();
           } catch (e) {}
           this.currentPageCleanup = null;
         }
-        const renderer = await pageConfig.load();
-        pageConfig.renderer = renderer;
-        this.mainContainer.classList.remove('view-exit');
-        const cleanup = renderer(this.mainContainer);
-        if (typeof cleanup === 'function') {
-          this.currentPageCleanup = cleanup;
-        }
-        this.mainContainer.classList.remove('view-enter');
-        void this.mainContainer.offsetWidth; // Trigger reflow for clean re-animation
-        this.mainContainer.classList.add('view-enter');
-        this.mainContainer.addEventListener('animationend', () => {
+
+        try {
+          const renderer = await pageConfig.load();
+          if (this._navId !== navId) return;
+
+          isRenderComplete = true;
+          this.hidePageSpinner();
+
+          pageConfig.renderer = renderer;
+          this.mainContainer.classList.remove('view-exit');
+          const cleanup = renderer(this.mainContainer);
+          if (typeof cleanup === 'function') {
+            this.currentPageCleanup = cleanup;
+          }
           this.mainContainer.classList.remove('view-enter');
-        }, { once: true });
+          void this.mainContainer.offsetWidth; // Trigger reflow for clean re-animation
+          this.mainContainer.classList.add('view-enter');
+          this.mainContainer.addEventListener('animationend', () => {
+            this.mainContainer.classList.remove('view-enter');
+          }, { once: true });
+        } catch (err) {
+          console.error(`Failed to load page ${pageKey}:`, err);
+          if (this._navId !== navId) return;
+          isRenderComplete = true;
+          this.hidePageSpinner();
+          this.mainContainer.classList.remove('view-exit');
+        }
       };
 
       if (isInitialRender || prefersReducedMotion) {
@@ -451,7 +498,9 @@ class AvenApp {
       } else {
         this.mainContainer.classList.add('view-exit');
         setTimeout(async () => {
-          await doRender();
+          if (this._navId === navId) {
+            await doRender();
+          }
         }, 120);
       }
     } else {

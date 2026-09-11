@@ -7955,6 +7955,39 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]):not([data-theme="c
   transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out) !important;
 }
 
+/* Page Transition Loading Spinner (Centered ring in theme accent) */
+.page-transition-spinner-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  width: 100%;
+  padding: 48px 16px;
+  box-sizing: border-box;
+  animation: pageSpinnerFadeIn var(--dur-fast) var(--ease-out) forwards;
+}
+
+.page-transition-spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2.5px solid color-mix(in srgb, var(--accent, #8A9A5B) 18%, transparent);
+  border-top-color: var(--accent, #8A9A5B);
+  animation: spin 0.75s linear infinite;
+  box-sizing: border-box;
+}
+
+@keyframes pageSpinnerFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Theme Switch Circular Reveal View Transition */
 
 /* Both snapshots: no default UA animation, use normal compositing */
