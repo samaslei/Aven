@@ -48,23 +48,6 @@ export function renderSettingsView(container) {
               </div>
             </div>
 
-            <div class="theme-option-card ${store.getTheme() === 'pure-black' ? 'active' : ''}" data-theme-id="pure-black">
-              <div class="theme-card-preview" style="background: #000000;">
-                <div class="theme-card-preview-sidebar" style="background: #050505; border-right: 1px solid rgba(255,255,255,0.1);"></div>
-                <div class="theme-card-preview-main">
-                  <div class="theme-card-preview-block" style="background: #0d0d0d; border: 1px solid rgba(255,255,255,0.12);"></div>
-                  <div class="theme-card-preview-block" style="width: 50%; background: #ffffff;"></div>
-                </div>
-              </div>
-              <div class="theme-option-info">
-                <div>
-                  <div class="theme-option-title">Pure Black</div>
-                  <div class="theme-option-desc">Pitch black OLED & monochrome</div>
-                </div>
-                <span class="theme-check-badge">✓</span>
-              </div>
-            </div>
-
             <div class="theme-option-card ${store.getTheme() === 'light' ? 'active' : ''}" data-theme-id="light">
               <div class="theme-card-preview" style="background: #ede6d3;">
                 <div class="theme-card-preview-sidebar" style="background: #e9e4d4; border-right: 1px solid rgba(0,0,0,0.06);"></div>
@@ -77,6 +60,57 @@ export function renderSettingsView(container) {
                 <div>
                   <div class="theme-option-title">Warm Beige Light</div>
                   <div class="theme-option-desc">Soft warm beige & soft linen</div>
+                </div>
+                <span class="theme-check-badge">✓</span>
+              </div>
+            </div>
+
+            <div class="theme-option-card ${store.getTheme() === 'cool-dark' ? 'active' : ''}" data-theme-id="cool-dark">
+              <div class="theme-card-preview" style="background: #1B222B;">
+                <div class="theme-card-preview-sidebar" style="background: #151B22; border-right: 1px solid rgba(255,255,255,0.06);"></div>
+                <div class="theme-card-preview-main">
+                  <div class="theme-card-preview-block" style="background: #262F3B; border: 1px solid rgba(255,255,255,0.08);"></div>
+                  <div class="theme-card-preview-block" style="width: 50%; background: #6E93B5;"></div>
+                </div>
+              </div>
+              <div class="theme-option-info">
+                <div>
+                  <div class="theme-option-title">Cool Slate Dark</div>
+                  <div class="theme-option-desc">Deep slate navy & cool blue</div>
+                </div>
+                <span class="theme-check-badge">✓</span>
+              </div>
+            </div>
+
+            <div class="theme-option-card ${store.getTheme() === 'cool-light' ? 'active' : ''}" data-theme-id="cool-light">
+              <div class="theme-card-preview" style="background: #E4E8ED;">
+                <div class="theme-card-preview-sidebar" style="background: #DCE1E8; border-right: 1px solid rgba(0,0,0,0.06);"></div>
+                <div class="theme-card-preview-main">
+                  <div class="theme-card-preview-block" style="background: #FAFBFC; border: 1px solid #ffffff;"></div>
+                  <div class="theme-card-preview-block" style="width: 50%; background: #4A6C8C;"></div>
+                </div>
+              </div>
+              <div class="theme-option-info">
+                <div>
+                  <div class="theme-option-title">Cool Slate Light</div>
+                  <div class="theme-option-desc">Crisp cool slate & steel blue</div>
+                </div>
+                <span class="theme-check-badge">✓</span>
+              </div>
+            </div>
+
+            <div class="theme-option-card ${store.getTheme() === 'pure-black' ? 'active' : ''}" data-theme-id="pure-black">
+              <div class="theme-card-preview" style="background: #000000;">
+                <div class="theme-card-preview-sidebar" style="background: #050505; border-right: 1px solid rgba(255,255,255,0.1);"></div>
+                <div class="theme-card-preview-main">
+                  <div class="theme-card-preview-block" style="background: #0d0d0d; border: 1px solid rgba(255,255,255,0.12);"></div>
+                  <div class="theme-card-preview-block" style="width: 50%; background: #ffffff;"></div>
+                </div>
+              </div>
+              <div class="theme-option-info">
+                <div>
+                  <div class="theme-option-title">Pure Black</div>
+                  <div class="theme-option-desc">Pitch black OLED & monochrome</div>
                 </div>
                 <span class="theme-check-badge">✓</span>
               </div>

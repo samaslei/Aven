@@ -580,10 +580,9 @@ export function renderTrackerView(container) {
               ` : displaySessions.slice(0, 25).map(s => {
                 const sub = s.subject_id ? store.getSubjectById(s.subject_id) : null;
                 const currentTheme = store.getTheme();
-                const defaultFallbackColor = currentTheme === 'pure-black' ? '#ffffff' : (currentTheme === 'pure-white' ? '#0f172a' : '#8A9A5B');
+                const defaultFallbackColor = currentTheme === 'cool-light' ? '#4A6C8C' : (currentTheme === 'cool-dark' ? '#6E93B5' : (currentTheme === 'pure-black' ? '#ffffff' : (currentTheme === 'pure-white' ? '#0f172a' : '#8A9A5B')));
                 const subColor = (sub && sub.color) || defaultFallbackColor;
-                const pillText = sub ? (sub.code || sub.name) : 'General';
-                const subjectName = sub && sub.code ? sub.name : '';
+                const subjectName = sub ? (sub.name || sub.code || 'General Study') : 'General Study';
                 const hrs = Math.floor(s.duration / 60);
                 const mins = s.duration % 60;
                 const durText = hrs > 0 ? `${hrs}h ${mins > 0 ? `${mins}m` : ''}` : `${mins}m`;
@@ -591,12 +590,9 @@ export function renderTrackerView(container) {
                 return `
                   <tr>
                     <td class="history-td-subject">
-                      <div class="dist-legend-left" style="display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%;">
-                        <span class="dist-code-pill" style="background-color: ${subColor}1a; color: ${subColor}; border: 1.2px solid ${subColor}45;">
-                          ${pillText}
-                        </span>
-                        ${subjectName ? `<span class="dist-subject-name" title="${sub.name}">${subjectName}</span>` : ''}
-                      </div>
+                      <span class="history-subject-name" title="${subjectName}">
+                        ${subjectName}
+                      </span>
                     </td>
                     <td class="history-td-duration" style="font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary);">
                       ${durText}

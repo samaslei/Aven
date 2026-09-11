@@ -274,7 +274,13 @@ class AvenApp {
           },
           (e) => {
             const current = store.getTheme();
-            const next = current === 'dark' ? 'light' : 'dark';
+            let next = 'light';
+            if (current === 'cool-dark') next = 'cool-light';
+            else if (current === 'cool-light') next = 'cool-dark';
+            else if (current === 'pure-black') next = 'pure-white';
+            else if (current === 'pure-white') next = 'pure-black';
+            else if (current === 'light') next = 'dark';
+            else next = 'light';
             store.setTheme(next, e?.currentTarget || document.getElementById('landing-theme-btn'));
           }
         );
@@ -447,12 +453,15 @@ class AvenApp {
     document.getElementById('top-theme-btn')?.addEventListener('click', (e) => {
       const current = store.getTheme();
       let next = 'light';
-      if (current === 'pure-black') next = 'pure-white';
+      if (current === 'cool-dark') next = 'cool-light';
+      else if (current === 'cool-light') next = 'cool-dark';
+      else if (current === 'pure-black') next = 'pure-white';
       else if (current === 'pure-white') next = 'pure-black';
       else if (current === 'light') next = 'dark';
       else next = 'light';
       store.setTheme(next, e.currentTarget);
-      this.showToast(`Theme switched to ${next} mode`, 'info');
+      const label = next.replace('-', ' ');
+      this.showToast(`Theme switched to ${label} mode`, 'info');
     });
 
     // 3. Top settings button
