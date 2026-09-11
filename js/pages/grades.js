@@ -263,7 +263,7 @@ export function renderGradesView(container) {
           <!-- Browser-Style Tab Strip (Arc / Chrome Tabs) with Action Buttons -->
           <div class="browser-tab-strip">
             <div class="browser-tabs-group">
-              <div class="browser-tab ${activeTab === 'Midterm' ? 'active' : ''}" data-tab="Midterm">
+              <div class="browser-tab ${activeTab === 'Midterm' ? 'active' : ''}" data-tab="Midterm" style="z-index: ${activeTab === 'Midterm' ? '10' : '1'};">
                 <span class="tab-label-full">Midterm Term</span>
                 <span class="tab-label-short">Midterm</span>
                 <span class="browser-tab-badge" style="color: ${getStandingColor(gradeStats.midterm.percentage)}; font-weight: 600;">
@@ -271,7 +271,7 @@ export function renderGradesView(container) {
                 </span>
               </div>
 
-              <div class="browser-tab ${activeTab === 'Final' ? 'active' : ''}" data-tab="Final">
+              <div class="browser-tab ${activeTab === 'Final' ? 'active' : ''}" data-tab="Final" style="z-index: ${activeTab === 'Final' ? '10' : '1'};">
                 <span class="tab-label-full">Final Term</span>
                 <span class="tab-label-short">Final</span>
                 <span class="browser-tab-badge" style="color: ${getStandingColor(gradeStats.final.percentage)}; font-weight: 600;">
@@ -279,7 +279,7 @@ export function renderGradesView(container) {
                 </span>
               </div>
 
-              <div class="browser-tab ${activeTab === 'Overall' ? 'active' : ''}" data-tab="Overall">
+              <div class="browser-tab ${activeTab === 'Overall' ? 'active' : ''}" data-tab="Overall" style="z-index: ${activeTab === 'Overall' ? '10' : '1'};">
                 <span class="tab-label-full">Overall Composite</span>
                 <span class="tab-label-short">Overall</span>
                 <span class="browser-tab-badge" style="color: ${getStandingColor(gradeStats.overallPercentage)}; font-weight: 600;">
@@ -1840,6 +1840,7 @@ function attachGradesEvents(container) {
       tabStrip.querySelectorAll('.browser-tab').forEach(tabEl => {
         const isNowActive = tabEl.dataset.tab === newTab;
         tabEl.classList.toggle('active', isNowActive);
+        tabEl.style.zIndex = isNowActive ? '10' : '1';
       });
       const addCatBtn = tabStrip.querySelector('#btn-open-add-cat');
       if (addCatBtn) {
