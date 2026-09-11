@@ -15,11 +15,16 @@ export function renderSettingsView(container) {
   const scale = store.getGradingScale();
   const storageUsage = store.getStorageUsage();
 
-  const renderAvatarInner = (u, fallback = 'AR') => {
+  const renderAvatarInner = (u, fallback = 'U') => {
     if (u && u.avatar_url) {
       return `<img src="${u.avatar_url}" alt="${u.name || 'User'}" class="user-avatar-img">`;
     }
-    return (u && u.avatar) || fallback;
+    const cleanName = (u?.name || '').trim().toLowerCase() !== 'alex rivera' ? (u?.name || '').trim() : '';
+    const cleanEmail = (u?.email || '').trim().toLowerCase() !== 'student@university.edu' ? (u?.email || '').trim() : '';
+    const initials = cleanName
+      ? cleanName.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase()
+      : (cleanEmail ? cleanEmail.slice(0, 2).toUpperCase() : fallback);
+    return initials || fallback;
   };
 
   container.innerHTML = `
@@ -211,11 +216,11 @@ export function renderSettingsView(container) {
           <!-- Profile Gradient Hero Banner Block (Echoing Sidebar Gradient Profile Block) -->
           <div class="settings-profile-hero">
             <div class="settings-profile-avatar" id="settings-avatar-preview" style="${user.avatar_url ? '' : `background-color: ${user.avatar_color || '#6366f1'};`}">
-              ${renderAvatarInner(user, 'AR')}
+              ${renderAvatarInner(user, 'U')}
             </div>
             <div class="settings-profile-info">
-              <strong class="settings-profile-name" id="settings-hero-name">${user.name || 'Student'}</strong>
-              <span class="settings-profile-email" id="settings-hero-email">${user.email || 'student@university.edu'}</span>
+              <strong class="settings-profile-name" id="settings-hero-name">${(user.name && user.name.toLowerCase() !== 'alex rivera') ? user.name : (user.email ? user.email.split('@')[0] : 'Student')}</strong>
+              <span class="settings-profile-email" id="settings-hero-email">${(user.email && user.email.toLowerCase() !== 'student@university.edu') ? user.email : ''}</span>
               <span class="settings-profile-badge" id="settings-hero-badge">${user.year_level || '1st Year'}${user.program ? ` · ${user.program}` : ''}</span>
             </div>
           </div>
@@ -247,7 +252,7 @@ export function renderSettingsView(container) {
               <strong class="setting-title">Display Name</strong>
             </div>
             <div class="setting-control">
-              <input type="text" id="setting-user-name" class="form-input auto-save-input" value="${user.name || ''}" placeholder="Alex Rivera" style="width: 220px; font-size: 13px;">
+              <input type="text" id="setting-user-name" class="form-input auto-save-input" value="${(user.name && user.name.toLowerCase() !== 'alex rivera') ? user.name : ''}" placeholder="Enter your display name" style="width: 220px; font-size: 13px;">
             </div>
           </div>
 
@@ -257,7 +262,7 @@ export function renderSettingsView(container) {
               <strong class="setting-title">Email Address</strong>
             </div>
             <div class="setting-control">
-              <input type="email" id="setting-user-email" class="form-input auto-save-input" value="${user.email || ''}" placeholder="alex.rivera@university.edu" style="width: 220px; font-size: 13px;">
+              <input type="email" id="setting-user-email" class="form-input auto-save-input" value="${(user.email && user.email.toLowerCase() !== 'student@university.edu') ? user.email : ''}" placeholder="you@university.edu" style="width: 220px; font-size: 13px;">
             </div>
           </div>
 
@@ -575,8 +580,8 @@ function attachSettingsEvents(container) {
     const heroName = container.querySelector('#settings-hero-name');
     const heroEmail = container.querySelector('#settings-hero-email');
     const heroBadge = container.querySelector('#settings-hero-badge');
-    if (heroName) heroName.textContent = updated.name || 'Student';
-    if (heroEmail) heroEmail.textContent = updated.email || 'student@university.edu';
+    if (heroName) heroName.textContent = updated.name || (updated.email ? updated.email.split('@')[0] : 'Student');
+    if (heroEmail) heroEmail.textContent = updated.email || '';
     if (heroBadge) heroBadge.textContent = `${updated.year_level || '1st Year'}${updated.program ? ` · ${updated.program}` : ''}`;
     
     showInlineSaved(accountBadge);

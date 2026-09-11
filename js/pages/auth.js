@@ -70,7 +70,7 @@ export class AuthController {
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                <input type="text" id="auth-display-name" class="form-input" placeholder="e.g. Alex Rivera" autocomplete="name" />
+                <input type="text" id="auth-display-name" class="form-input" placeholder="Enter your name" autocomplete="name" />
               </div>
             </div>
 
@@ -81,7 +81,7 @@ export class AuthController {
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                   <polyline points="22,6 12,13 2,6"></polyline>
                 </svg>
-                <input type="email" id="auth-email" class="form-input" placeholder="student@university.edu" required autocomplete="email" />
+                <input type="email" id="auth-email" class="form-input" placeholder="you@university.edu" required autocomplete="email" />
               </div>
             </div>
 

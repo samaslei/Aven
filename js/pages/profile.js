@@ -648,18 +648,115 @@ export function renderProfileView(container) {
   const subjectBreakdown = getCachedSubjectTimeBreakdown(sessions, activeSubjects, currentTheme);
   const recentActivities = getMergedRecentActivity(8);
 
+  const isLoaded = store.isProfileLoaded() || Boolean(user.is_loaded);
+  const rawName = (user.name || '').trim();
+  const cleanName = (rawName.toLowerCase() !== 'alex rivera') ? rawName : '';
+  const email = ((user.email || '').trim().toLowerCase() !== 'student@university.edu') ? (user.email || '').trim() : '';
+  const displayName = cleanName || (email ? email.split('@')[0] : '');
+
+  const program = (user.program || '').trim().toLowerCase() !== 'bs computer science' || isLoaded
+    ? ((user.program || '').trim().toLowerCase() !== 'bs computer science' ? (user.program || '').trim() : '')
+    : '';
+
+  const institution = (user.institution || '').trim().toLowerCase() !== 'university of the philippines' || isLoaded
+    ? ((user.institution || '').trim().toLowerCase() !== 'university of the philippines' ? (user.institution || '').trim() : '')
+    : '';
+
   // Format "Member since [Month Year]"
-  let memberSinceText = 'Student';
-  try {
-    const createdDate = user.created_at ? new Date(user.created_at) : new Date();
-    if (!isNaN(createdDate.getTime())) {
-      memberSinceText = `Member since ${createdDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+  let memberSinceText = '';
+  if (user.created_at) {
+    try {
+      const createdDate = new Date(user.created_at);
+      if (!isNaN(createdDate.getTime())) {
+        memberSinceText = `Member since ${createdDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+      }
+    } catch (e) {
+      memberSinceText = '';
     }
-  } catch (e) {
-    memberSinceText = 'Member since 2024';
   }
 
-  const programYearText = `${user.year_level || '1st Year'}${user.program ? ` · ${user.program}` : ''}`;
+  const initials = displayName
+    ? displayName.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase()
+    : (email ? email.slice(0, 2).toUpperCase() : 'U');
+
+  let avatarInner = '';
+  if (user.avatar_url) {
+    avatarInner = `<img src="${user.avatar_url}" alt="${displayName || 'User'}" class="user-avatar-img" style="width: 100%; height: 100%; object-fit: cover;">`;
+  } else if (displayName || email) {
+    avatarInner = `<span style="font-size: 26px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px;">${user.avatar || initials}</span>`;
+  } else {
+    avatarInner = `<span class="sk-block" style="width: 100%; height: 100%; border-radius: 50%; display: block;"></span>`;
+  }
+
+  let nameHtml = '';
+  if (displayName) {
+    nameHtml = `<h2 style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 0; letter-spacing: -0.02em;">${displayName}</h2>`;
+  } else if (!isLoaded) {
+    nameHtml = `<span class="sk-block" style="width: 140px; height: 24px; border-radius: 4px; display: inline-block;"></span>`;
+  } else {
+    nameHtml = `<h2 style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 0; letter-spacing: -0.02em;">Student</h2>`;
+  }
+
+  let emailHtml = '';
+  if (email) {
+    emailHtml = `<span style="font-size: 13.5px; color: var(--text-secondary);">${email}</span>`;
+  } else if (!isLoaded) {
+    emailHtml = `<span class="sk-block" style="width: 180px; height: 13px; border-radius: 3px; display: inline-block; opacity: 0.7;"></span>`;
+  } else {
+    emailHtml = '';
+  }
+
+  let programPillHtml = '';
+  if (!isLoaded && !program) {
+    programPillHtml = `<span class="profile-meta-pill"><span class="sk-block" style="width: 120px; height: 12px; border-radius: 3px; display: inline-block;"></span></span>`;
+  } else if (program) {
+    programPillHtml = `
+      <span class="profile-meta-pill">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+          <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+        </svg>
+        ${user.year_level || '1st Year'} · ${program}
+      </span>`;
+  } else {
+    programPillHtml = `
+      <a href="#settings" class="profile-meta-pill profile-empty-prompt" style="text-decoration: none; color: var(--text-secondary); border-style: dashed; cursor: pointer;" title="Add your academic program in Settings">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>${user.year_level || '1st Year'} · Add your program</span>
+      </a>`;
+  }
+
+  let institutionPillHtml = '';
+  if (institution) {
+    institutionPillHtml = `
+      <span class="profile-meta-pill">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 21h18M3 10h18M5 10v11M19 10v11M9 10v11M15 10v11M12 2l9 6H3l9-6z"></path>
+        </svg>
+        ${institution}
+      </span>`;
+  } else if (!isLoaded) {
+    institutionPillHtml = `<span class="profile-meta-pill"><span class="sk-block" style="width: 110px; height: 12px; border-radius: 3px; display: inline-block;"></span></span>`;
+  }
+
+  let memberSincePillHtml = '';
+  if (memberSinceText) {
+    memberSincePillHtml = `
+      <span class="profile-meta-pill">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        ${memberSinceText}
+      </span>`;
+  } else if (!isLoaded) {
+    memberSincePillHtml = `<span class="profile-meta-pill"><span class="sk-block" style="width: 130px; height: 12px; border-radius: 3px; display: inline-block;"></span></span>`;
+  }
 
   container.innerHTML = `
     <div class="profile-page-view" style="display: flex; flex-direction: column; gap: 20px;">
@@ -671,39 +768,19 @@ export function renderProfileView(container) {
           <div style="display: flex; align-items: center; gap: 20px; min-width: 0;">
             <!-- Avatar Circle -->
             <div class="profile-avatar-wrapper" style="width: 76px; height: 76px; border-radius: 50%; overflow: hidden; flex-shrink: 0; box-shadow: 0 4px 14px rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: center; background-color: ${user.avatar_url ? 'transparent' : (user.avatar_color && !['#6366f1', '#3b82f6', '#a855f7'].includes(user.avatar_color.toLowerCase()) ? user.avatar_color : 'var(--olive-deep, #505537)')};">
-              ${user.avatar_url 
-                ? `<img src="${user.avatar_url}" alt="${user.name || 'User'}" class="user-avatar-img" style="width: 100%; height: 100%; object-fit: cover;">`
-                : `<span style="font-size: 26px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px;">${user.avatar || 'ST'}</span>`
-              }
+              ${avatarInner}
             </div>
 
             <!-- Identity Info -->
             <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <h2 style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 0; letter-spacing: -0.02em;">
-                  ${user.name || 'Student'}
-                </h2>
+                ${nameHtml}
               </div>
-              <span style="font-size: 13.5px; color: var(--text-secondary);">
-                ${user.email || 'student@university.edu'}
-              </span>
+              ${emailHtml}
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
-                <span class="profile-meta-pill">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-                    <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-                  </svg>
-                  ${programYearText}
-                </span>
-                <span class="profile-meta-pill">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                  </svg>
-                  ${memberSinceText}
-                </span>
+                ${programPillHtml}
+                ${institutionPillHtml}
+                ${memberSincePillHtml}
               </div>
             </div>
           </div>
