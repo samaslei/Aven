@@ -1031,12 +1031,12 @@ class AvenApp {
     return formatRelativeTimeUtil(timestamp);
   }
 
-  showToast(message, type = 'info', options = {}) {
+  showToast(message, type = 'info', options = {}, extraOpts = {}) {
     if (!this.toastContainer) return;
 
     let opts = options;
     if (typeof opts === 'number') {
-      opts = { duration: opts, ...(typeof arguments[3] === 'object' && arguments[3] ? arguments[3] : {}) };
+      opts = { duration: opts, ...(typeof extraOpts === 'object' && extraOpts ? extraOpts : {}) };
     } else if (typeof opts !== 'object' || opts === null) {
       opts = {};
     }
