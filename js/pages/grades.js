@@ -90,7 +90,23 @@ export function setSelectedGradesSubjectId(subjectId) {
   }
 }
 
+let syncStatusListenerCleanup = null;
+let exportPopoverClickListener = null;
+
+export function cleanupGradesView() {
+  if (syncStatusListenerCleanup) {
+    syncStatusListenerCleanup();
+    syncStatusListenerCleanup = null;
+  }
+  if (exportPopoverClickListener) {
+    document.removeEventListener('click', exportPopoverClickListener);
+    exportPopoverClickListener = null;
+  }
+}
+
 export function renderGradesView(container) {
+  cleanupGradesView();
+
   const activeSubjects = store.getSubjects(false);
 
   // Check URL query parameters for pre-selected subject
@@ -291,7 +307,7 @@ export function renderGradesView(container) {
             <div class="browser-tab-actions">
               <!-- Export to Excel Dropdown Menu -->
               <div style="position: relative;">
-                <button class="btn btn-secondary btn-sm btn-grades-export-toggle btn-responsive-action" title="Export grade report to Excel (.xlsx)" aria-label="Export">
+                <button class="btn btn-primary btn-sm btn-grades-export-toggle btn-responsive-action" title="Export grade report to Excel (.xlsx)" aria-label="Export">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -1837,13 +1853,25 @@ function attachGradesEvents(container) {
           }
         });
       });
+    });
 
-      document.addEventListener('click', (e) => {
-        if (popover && !popover.contains(e.target) && !btn.contains(e.target)) {
+    if (exportPopoverClickListener) {
+      document.removeEventListener('click', exportPopoverClickListener);
+      exportPopoverClickListener = null;
+    }
+    exportPopoverClickListener = (e) => {
+      if (!container || !container.isConnected) {
+        cleanupGradesView();
+        return;
+      }
+      panelRoot.querySelectorAll('.grades-export-popover.open').forEach(popover => {
+        const btn = popover.parentElement?.querySelector('.btn-grades-export-toggle');
+        if (!popover.contains(e.target) && (!btn || !btn.contains(e.target))) {
           popover.classList.remove('open');
         }
       });
-    });
+    };
+    document.addEventListener('click', exportPopoverClickListener);
   };
 
   // Fluid Folder Tab Switching with in-place Morph and Instant, Flicker-Free Content Update
@@ -1901,12 +1929,20 @@ function attachGradesEvents(container) {
   const syncIndicator = container.querySelector('#grades-sync-indicator');
   if (syncIndicator) {
     const handleSyncStatus = (syncState) => {
+      const currentHash = (window.location.hash || '').replace(/^#/, '').split('?')[0];
+      const isGradesActive = currentHash === 'grades' || (window.avenApp && window.avenApp.currentPage === 'grades');
+      if (!isGradesActive || !container || !container.isConnected) {
+        cleanupGradesView();
+        return;
+      }
       const ind = container.querySelector('#grades-sync-indicator');
       if (!ind) return;
       ind.className = `sync-status-indicator sync-${syncState.status}`;
       ind.innerHTML = renderSyncIndicatorHtml(syncState);
     };
 
-    events.on('sync:status', handleSyncStatus);
+    syncStatusListenerCleanup = events.on('sync:status', handleSyncStatus);
   }
+
+  return cleanupGradesView;
 }

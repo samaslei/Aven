@@ -156,8 +156,13 @@ export function initCustomDropdown(wrap, onChange) {
 
   // Search input typing
   if (searchInput) {
+    let searchDebounce = null;
     searchInput.addEventListener('input', (e) => {
-      filterOptions(e.target.value);
+      clearTimeout(searchDebounce);
+      const val = e.target.value;
+      searchDebounce = setTimeout(() => {
+        filterOptions(val);
+      }, 150);
     });
 
     searchInput.addEventListener('keydown', (e) => {

@@ -43,7 +43,8 @@ class AvenApp {
       subjects: {
         title: 'Subjects',
         subtitle: 'Track your enrolled courses, study progress, and academic standing at a glance.',
-        load: () => import('./pages/subjects.js').then(m => m.renderSubjectsView)
+        load: () => import('./pages/subjects.js').then(m => m.renderSubjectsView),
+        cleanup: () => import('./pages/subjects.js').then(m => m.cleanupSubjectsView?.())
       },
       tracker: {
         title: 'Tracker',
@@ -53,17 +54,20 @@ class AvenApp {
       grades: {
         title: 'Grades',
         subtitle: 'Calculate weighted grades by category, and see exactly what you need on the final.',
-        load: () => import('./pages/grades.js').then(m => m.renderGradesView)
+        load: () => import('./pages/grades.js').then(m => m.renderGradesView),
+        cleanup: () => import('./pages/grades.js').then(m => m.cleanupGradesView?.())
       },
       schedule: {
         title: 'Schedule',
         subtitle: 'Upload and view your syllabi, schedules, and study guides in one place.',
-        load: () => import('./pages/plans.js').then(m => m.renderPlansView)
+        load: () => import('./pages/plans.js').then(m => m.renderPlansView),
+        cleanup: () => import('./pages/plans.js').then(m => m.cleanupPlansView?.())
       },
       plans: {
         title: 'Schedule',
         subtitle: 'Upload and view your syllabi, schedules, and study guides in one place.',
-        load: () => import('./pages/plans.js').then(m => m.renderPlansView)
+        load: () => import('./pages/plans.js').then(m => m.renderPlansView),
+        cleanup: () => import('./pages/plans.js').then(m => m.cleanupPlansView?.())
       },
       settings: {
         title: 'Settings',

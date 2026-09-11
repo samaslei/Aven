@@ -615,7 +615,7 @@ function attachSettingsEvents(container) {
       updateAvatarDisplays(updated);
       showInlineSaved(accountBadge);
     } catch (err) {
-      console.log('Avatar crop cancelled or failed:', err);
+      // User cancelled modal or crop operation
     } finally {
       if (btnUploadAvatar) btnUploadAvatar.disabled = false;
       const cur = store.getUserProfile();

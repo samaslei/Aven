@@ -8,8 +8,23 @@ import { store, events, YEAR_LEVELS, SEMESTERS, DEFAULT_COLOR_SWATCHES, getStand
 
 let currentFilter = 'active'; // 'active' | 'archived' | 'all'
 let currentYearFilter = 'all';
+let currentSearchQuery = '';
 let deleteTargetSubjectId = null;
 let archiveTargetSubjectId = null;
+
+let activeToolbarPopoversCleanup = null;
+let activeRowActionPopoversCleanup = null;
+
+export function cleanupSubjectsView() {
+  if (activeToolbarPopoversCleanup) {
+    document.removeEventListener('click', activeToolbarPopoversCleanup);
+    activeToolbarPopoversCleanup = null;
+  }
+  if (activeRowActionPopoversCleanup) {
+    document.removeEventListener('click', activeRowActionPopoversCleanup);
+    activeRowActionPopoversCleanup = null;
+  }
+}
 
 export function sortSubjectsList(subjects, sortKey) {
   const list = [...subjects];
@@ -91,10 +106,19 @@ function getDisplayedSubjects() {
   if (currentYearFilter !== 'all') {
     displayed = displayed.filter(s => s.year_level === currentYearFilter);
   }
+  if (currentSearchQuery.trim()) {
+    const q = currentSearchQuery.trim().toLowerCase();
+    displayed = displayed.filter(s =>
+      (s.name && s.name.toLowerCase().includes(q)) ||
+      (s.code && s.code.toLowerCase().includes(q)) ||
+      (s.instructor && s.instructor.toLowerCase().includes(q))
+    );
+  }
   return sortSubjectsList(displayed, store.getSubjectsSort());
 }
 
 export function renderSubjectsView(container) {
+  cleanupSubjectsView();
 
   const activeSubjects = store.getSubjects(false);
   const allSubjects = store.getSubjects(true);
@@ -256,6 +280,21 @@ export function renderSubjectsView(container) {
       </div>
 
       <div class="controls-actions-group" style="display: flex; align-items: center; gap: 8px;">
+        <!-- Subject Search Input with Debounce -->
+        <div class="subject-search-wrapper" style="position: relative; display: flex; align-items: center;">
+          <input type="text"
+                 id="subject-search-input"
+                 class="toolbar-search-input"
+                 placeholder="Search subjects..."
+                 value="${currentSearchQuery.replace(/"/g, '&quot;')}"
+                 aria-label="Search subjects"
+                 style="height: 28px; border-radius: var(--radius-full); padding: 0 10px 0 26px; font-size: 12px; background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-primary); outline: none; width: 135px; transition: width 0.2s ease, border-color 0.2s ease;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 8px; pointer-events: none; opacity: 0.5;">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+
         <!-- Grid / List View Switcher Buttons -->
         <div class="segmented-control" id="view-mode-toggle" data-active="${viewMode}">
           <button class="seg-btn ${viewMode === 'grid' ? 'active' : ''}" data-view="grid" title="Grid View" aria-label="Grid View">
@@ -545,6 +584,7 @@ export function renderSubjectsView(container) {
   `;
 
   attachSubjectsEvents(container);
+  return cleanupSubjectsView;
 }
 
 function renderArchivedGroupedView(subjects, viewMode) {
@@ -820,6 +860,30 @@ function attachSubjectsEvents(container) {
     });
   });
 
+  // Subject Search Input with 180ms Debounce
+  const searchInput = container.querySelector('#subject-search-input');
+  if (searchInput) {
+    let searchDebounce = null;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        currentSearchQuery = e.target.value;
+        const wrapper = container.querySelector('#subjects-cards-wrapper');
+        if (wrapper) {
+          const displayed = getDisplayedSubjects();
+          const mode = store.getSubjectsViewMode();
+          wrapper.innerHTML = displayed.length === 0 ? `
+            <div style="padding: 48px 24px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border: none; border-radius: var(--radius-lg); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.08);">
+              <p style="font-size: 15px; font-weight: 500; margin-bottom: 8px;">No subjects found</p>
+              <p style="font-size: 13px;">${currentSearchQuery ? 'No subjects matched your search.' : (currentFilter === 'archived' ? 'No archived subjects in your repository.' : 'Create your first academic subject or adjust filters above to get started.')}</p>
+            </div>
+          ` : (currentFilter === 'archived' ? renderArchivedGroupedView(displayed, mode) : (mode === 'list' ? renderSubjectsListView(displayed) : renderSubjectsGridView(displayed)));
+          attachCardActionEvents(wrapper);
+        }
+      }, 180);
+    });
+  }
+
   // 1. Notion-Inspired Year level filter popover menu
   const yearBtn = container.querySelector('#btn-subject-year-filter');
   const yearMenu = container.querySelector('#subject-year-filter-menu');
@@ -863,15 +927,24 @@ function attachSubjectsEvents(container) {
     });
   }
 
-  // Close toolbar popovers on outside click
+  // Close toolbar popovers on outside click (singleton guarded)
+  if (activeToolbarPopoversCleanup) {
+    document.removeEventListener('click', activeToolbarPopoversCleanup);
+    activeToolbarPopoversCleanup = null;
+  }
   const closeToolbarPopovers = (e) => {
-    container.querySelectorAll('.toolbar-popover').forEach(p => {
+    if (!container || !container.isConnected) {
+      cleanupSubjectsView();
+      return;
+    }
+    container.querySelectorAll('.toolbar-popover.open').forEach(p => {
       if (!p.contains(e.target) && !e.target.closest('.toolbar-icon-btn')) {
         p.classList.remove('open');
       }
     });
   };
   document.addEventListener('click', closeToolbarPopovers);
+  activeToolbarPopoversCleanup = closeToolbarPopovers;
 
   // Modals
   const createModal = container.querySelector('#subject-modal');
@@ -1041,15 +1114,24 @@ function attachSubjectsEvents(container) {
     });
   };
 
-  // Close row actions popovers on outside click
+  // Close row actions popovers on outside click (singleton guarded)
+  if (activeRowActionPopoversCleanup) {
+    document.removeEventListener('click', activeRowActionPopoversCleanup);
+    activeRowActionPopoversCleanup = null;
+  }
   const closeRowActionPopovers = (e) => {
-    container.querySelectorAll('.row-actions-popover').forEach(p => {
+    if (!container || !container.isConnected) {
+      cleanupSubjectsView();
+      return;
+    }
+    container.querySelectorAll('.row-actions-popover.open').forEach(p => {
       if (!p.contains(e.target) && !e.target.closest('.subject-row-actions-btn')) {
         p.classList.remove('open');
       }
     });
   };
   document.addEventListener('click', closeRowActionPopovers);
+  activeRowActionPopoversCleanup = closeRowActionPopovers;
 
   // Grid / List View Mode Toggle (Prompt 64: In-place animated sliding)
   const viewToggle = container.querySelector('#view-mode-toggle');

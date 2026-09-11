@@ -129,7 +129,7 @@ function renderPomodoroBodyHtml(activeSubjects = store.getSubjects(false)) {
 
     <!-- Timer Controls Row -->
     <div class="pomo-controls-row">
-      <button type="button" class="btn ${pomoIsRunning ? 'btn-secondary pomo-btn-pause' : 'btn-primary pomo-btn-start'}" id="btn-pomo-toggle" aria-label="${pomoIsRunning ? 'Pause' : (elapsedSecs > 0 ? 'Resume' : 'Start')}">
+      <button type="button" class="btn btn-primary ${pomoIsRunning ? 'pomo-btn-pause' : 'pomo-btn-start'}" id="btn-pomo-toggle" aria-label="${pomoIsRunning ? 'Pause' : (elapsedSecs > 0 ? 'Resume' : 'Start')}">
         ${pomoIsRunning ? `
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="4" width="4" height="16" rx="1"></rect>
@@ -1067,7 +1067,7 @@ function attachTrackerEvents(container) {
         <div class="pip-time-display" id="pip-time-display">${timeStr}</div>
 
         <div class="pip-controls">
-          <button type="button" class="btn ${pomoIsRunning ? 'btn-secondary' : 'btn-primary'}" id="btn-pip-toggle" style="flex: 1.2;">
+          <button type="button" class="btn btn-primary" id="btn-pip-toggle" style="flex: 1.2;">
             ${pomoIsRunning ? 'Pause' : (elapsedSecs > 0 ? 'Resume' : 'Start')}
           </button>
           <button type="button" class="btn btn-secondary" id="btn-pip-reset" style="flex: 0.9;">

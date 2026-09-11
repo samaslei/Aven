@@ -13,6 +13,37 @@ import { store, events } from '../core/store.js';
 let selectedPlanId = null;
 let isFullscreenActive = false;
 let activePlanMessageListener = null;
+let activePlanKeyDownListener = null;
+let autosaveDebounceTimer = null;
+let pendingPlanSave = null;
+
+export function flushPendingPlanSave() {
+  if (autosaveDebounceTimer && pendingPlanSave) {
+    clearTimeout(autosaveDebounceTimer);
+    autosaveDebounceTimer = null;
+    const toSave = pendingPlanSave;
+    pendingPlanSave = null;
+    try {
+      store.saveStudyPlan(toSave.subject_id, toSave.title, toSave.html, toSave.id, true);
+    } catch (e) {}
+  }
+}
+
+export function cleanupPlansView() {
+  flushPendingPlanSave();
+  if (activePlanMessageListener) {
+    window.removeEventListener('message', activePlanMessageListener);
+    activePlanMessageListener = null;
+  }
+  if (activePlanKeyDownListener) {
+    document.removeEventListener('keydown', activePlanKeyDownListener);
+    activePlanKeyDownListener = null;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', flushPendingPlanSave);
+}
 
 // Listen for cross-page subject plan selection
 events.on('plans:select-subject', (subjectId) => {
@@ -30,6 +61,8 @@ export function setSelectedStudyPlanBySubjectId(subjectId) {
 }
 
 export function renderPlansView(container) {
+  cleanupPlansView();
+
   const activeSubjects = store.getSubjects(false);
   const allPlans = store.getStudyPlans().sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
@@ -326,6 +359,7 @@ export function renderPlansView(container) {
   }
 
   attachPlansEvents(container);
+  return cleanupPlansView;
 }
 
 /**
@@ -627,15 +661,20 @@ function attachPlansEvents(container) {
 
   fullscreenBtn?.addEventListener('click', toggleFullscreen);
 
-  // Esc key exits browser-level fullscreen overlay
+  // Esc key exits browser-level fullscreen overlay (singleton guarded)
+  if (activePlanKeyDownListener) {
+    document.removeEventListener('keydown', activePlanKeyDownListener);
+    activePlanKeyDownListener = null;
+  }
   const handleKeyDown = (evt) => {
     if (evt.key === 'Escape' && viewerWrapper?.classList.contains('is-fullscreen')) {
       updateFullscreenUI(false);
     }
   };
   document.addEventListener('keydown', handleKeyDown);
+  activePlanKeyDownListener = handleKeyDown;
 
-  // Listen for auto-save state snapshots from sandboxed iframe (deduplicated)
+  // Listen for auto-save state snapshots from sandboxed iframe (deduplicated & debounced)
   if (activePlanMessageListener) {
     window.removeEventListener('message', activePlanMessageListener);
     activePlanMessageListener = null;
@@ -652,20 +691,40 @@ function attachPlansEvents(container) {
     const statusTextEl = container.querySelector('#plan-autosave-text');
     const updatedTimeEl = container.querySelector('#plan-updated-time-display');
 
-    if (statusTextEl) statusTextEl.textContent = 'Saving...';
+    if (statusTextEl) statusTextEl.textContent = 'Unsaved changes...';
 
-    // Save updated HTML to store and Supabase with isAutoSave=true (preventing full view teardown)
-    const updatedPlan = store.saveStudyPlan(plan.subject_id, plan.title, html, plan.id, true);
+    // Track pending save so unmount or page exit flushes immediately
+    pendingPlanSave = {
+      subject_id: plan.subject_id,
+      title: plan.title,
+      html: html,
+      id: plan.id
+    };
 
-    if (statusTextEl) statusTextEl.textContent = 'Saved';
-    if (updatedTimeEl && updatedPlan) {
-      updatedTimeEl.textContent = `Updated ${new Date(updatedPlan.updated_at).toLocaleString()}`;
+    if (autosaveDebounceTimer) {
+      clearTimeout(autosaveDebounceTimer);
     }
-    setTimeout(() => {
-      if (statusTextEl && statusTextEl.textContent === 'Saved') {
-        statusTextEl.textContent = 'Synced';
+
+    // Debounce save by 850ms so rapid keystrokes coalesce into a single Supabase write
+    autosaveDebounceTimer = setTimeout(() => {
+      autosaveDebounceTimer = null;
+      if (!pendingPlanSave) return;
+      const toSave = pendingPlanSave;
+      pendingPlanSave = null;
+
+      if (statusTextEl) statusTextEl.textContent = 'Saving...';
+      const updatedPlan = store.saveStudyPlan(toSave.subject_id, toSave.title, toSave.html, toSave.id, true);
+
+      if (statusTextEl) statusTextEl.textContent = 'Saved';
+      if (updatedTimeEl && updatedPlan) {
+        updatedTimeEl.textContent = `Updated ${new Date(updatedPlan.updated_at).toLocaleString()}`;
       }
-    }, 2500);
+      setTimeout(() => {
+        if (statusTextEl && statusTextEl.textContent === 'Saved') {
+          statusTextEl.textContent = 'Synced';
+        }
+      }, 2000);
+    }, 850);
   };
 
   window.addEventListener('message', activePlanMessageListener);

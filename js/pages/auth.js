@@ -35,9 +35,7 @@ export class AuthController {
 
           <div class="auth-header">
             <div class="brand auth-brand">
-              <img src="favicon.svg" alt="Aven Logo" class="brand-icon">
-              <span class="brand-text">Aven</span>
-              <span class="brand-tag">Cloud</span>
+              <img src="favicon.svg" alt="Aven Logo" class="brand-icon" width="56" height="56">
             </div>
             <h2 class="auth-title" id="auth-title">${this.isSignUp ? 'Create your Aven Account' : 'Welcome to Aven'}</h2>
             <p class="auth-subtitle" id="auth-subtitle">${this.isSignUp ? 'Start tracking courses, study streaks, and weighted grades in the cloud.' : 'Sign in to sync your subjects, study sessions, and grades across all devices.'}</p>
