@@ -84,29 +84,29 @@
 }
 
 :root {
-  /* Color Palette - Dark Theme (Deep Charcoal & Warm Sage) */
-  --bg-app: #141512;
-  --bg-sidebar: #10110e;
-  --bg-surface: #1e201b;
-  --bg-surface-elevated: #262822;
-  --bg-surface-hover: #2c2e27;
-  --bg-input: #181915;
+  /* Color Palette - Dark Theme (Warm Olive & Deep Earth) */
+  --bg-app: #2a2820;
+  --bg-sidebar: #222019;
+  --bg-surface: #3a3830;
+  --bg-surface-elevated: #444238;
+  --bg-surface-hover: #4c4a3e;
+  --bg-input: #302e26;
   
-  --border-subtle: rgba(235, 230, 215, 0.05);
-  --border-default: rgba(235, 230, 215, 0.09);
-  --border-strong: rgba(235, 230, 215, 0.15);
+  --border-subtle: rgba(245, 242, 232, 0.08);
+  --border-default: rgba(245, 242, 232, 0.14);
+  --border-strong: rgba(245, 242, 232, 0.22);
   --border-focus: #a8b082;
 
-  --text-primary: #f3f2eb;
-  --text-secondary: #a7a99b;
-  --text-muted: #717467;
-  --text-inverse: #141512;
+  --text-primary: #f5f2e8;
+  --text-secondary: #b5b3a4;
+  --text-muted: #949182;
+  --text-inverse: #2a2820;
 
   /* Primary Active Pill & High Contrast */
-  --accent: #ede9dc;
-  --accent-hover: #ded9ca;
-  --accent-surface: rgba(168, 176, 130, 0.14);
-  --accent-border: rgba(168, 176, 130, 0.28);
+  --accent: #f5f2e8;
+  --accent-hover: #ede9dc;
+  --accent-surface: rgba(168, 176, 130, 0.16);
+  --accent-border: rgba(168, 176, 130, 0.30);
 
   /* Olive / Sage Domain Colors */
   --olive-deep: #70784d;
@@ -139,12 +139,12 @@
   --glass-specular: none;
 
   /* LeetCode Heatmap Palette (Dark Olive) */
-  --heat-empty: #21231d;
+  --heat-empty: #2d2b23;
   --heat-level-1: #3b4324;
   --heat-level-2: #586337;
   --heat-level-3: #7c8a4d;
   --heat-level-4: #a8b868;
-  --heat-border: rgba(235, 230, 215, 0.04);
+  --heat-border: rgba(245, 242, 232, 0.05);
 
   /* Shadows & Radius */
   --radius-xs: 4px;
@@ -154,7 +154,7 @@
   --radius-xl: 18px;
   --radius-full: 9999px;
 
-  --border-card: 1px solid rgba(255, 255, 255, 0.12);
+  --border-card: 1px solid rgba(245, 242, 232, 0.10);
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.28);
   --shadow-md: 0 3px 8px -1px rgba(0, 0, 0, 0.35);
@@ -223,11 +223,38 @@
 }
 
 /* ==========================================================================
+   Refined Dark Mode (Warm Olive & Deep Earth Identity)
+   ========================================================================== */
+[data-theme="dark"] {
+  --bg-app: #2a2820;
+  --bg-sidebar: #222019;
+  --bg-surface: #3a3830;
+  --bg-surface-elevated: #444238;
+  --bg-surface-hover: #4c4a3e;
+  --bg-input: #302e26;
+  
+  --border-subtle: rgba(245, 242, 232, 0.08);
+  --border-default: rgba(245, 242, 232, 0.14);
+  --border-strong: rgba(245, 242, 232, 0.22);
+  --border-focus: #a8b082;
+
+  --text-primary: #f5f2e8;
+  --text-secondary: #b5b3a4;
+  --text-muted: #949182;
+  --text-inverse: #2a2820;
+
+  --accent: #f5f2e8;
+  --accent-hover: #ede9dc;
+  --accent-surface: rgba(168, 176, 130, 0.16);
+  --accent-border: rgba(168, 176, 130, 0.30);
+}
+
+/* ==========================================================================
    Refined Light Mode (High Contrast & Apple Glassmorphism)
    ========================================================================== */
 [data-theme="light"] {
-  /* Warm Sage/Khaki Canvas & Soft Warm Linen Card Surfaces */
-  --bg-app: #c5bfa8;                     /* Deep, warm earthy sage canvas */
+  /* Warm Soft Beige Canvas & Soft Warm Linen Card Surfaces */
+  --bg-app: #ede6d3;                     /* Soft, less saturated warm beige canvas */
   --bg-sidebar: #e9e4d4;                 /* Soft distinct cream-sage navigation rail */
   --bg-surface: #f5f3ec;                  /* Soft warm linen card surface */
   --bg-surface-elevated: #fbf9f4;        /* Elevated overlay surface */
@@ -13340,7 +13367,7 @@ body.mobile-drawer-locked {
 }
 
 [data-theme="dark"] .profile-trend-dot.is-current {
-  background: #1e201b;
+  background: var(--bg-surface);
   box-shadow: 0 2px 6px rgba(168, 176, 130, 0.35);
 }
 
@@ -13356,7 +13383,7 @@ body.mobile-drawer-locked {
 }
 
 [data-theme="dark"] .profile-trend-point-anchor:hover .profile-trend-dot {
-  background: #141512;
+  background: var(--bg-app);
   box-shadow: 0 0 0 4px rgba(168, 176, 130, 0.25);
 }
 

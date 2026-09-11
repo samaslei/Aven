@@ -32,17 +32,17 @@ export function renderSettingsView(container) {
         <div class="settings-card">
           <div class="theme-options-grid">
             <div class="theme-option-card ${(store.getTheme() || 'dark') === 'dark' ? 'active' : ''}" data-theme-id="dark">
-              <div class="theme-card-preview" style="background: #141512;">
-                <div class="theme-card-preview-sidebar" style="background: #10110e; border-right: 1px solid rgba(255,255,255,0.06);"></div>
+              <div class="theme-card-preview" style="background: #2a2820;">
+                <div class="theme-card-preview-sidebar" style="background: #222019; border-right: 1px solid rgba(255,255,255,0.06);"></div>
                 <div class="theme-card-preview-main">
-                  <div class="theme-card-preview-block" style="background: #1e201b; border: 1px solid rgba(255,255,255,0.08);"></div>
+                  <div class="theme-card-preview-block" style="background: #3a3830; border: 1px solid rgba(255,255,255,0.08);"></div>
                   <div class="theme-card-preview-block" style="width: 50%; background: #a8b082;"></div>
                 </div>
               </div>
               <div class="theme-option-info">
                 <div>
-                  <div class="theme-option-title">Deep Sage Dark</div>
-                  <div class="theme-option-desc">Earthy charcoal & sage olive</div>
+                  <div class="theme-option-title">Warm Olive Dark</div>
+                  <div class="theme-option-desc">Warm dark earth & sage olive</div>
                 </div>
                 <span class="theme-check-badge">✓</span>
               </div>
@@ -66,7 +66,7 @@ export function renderSettingsView(container) {
             </div>
 
             <div class="theme-option-card ${store.getTheme() === 'light' ? 'active' : ''}" data-theme-id="light">
-              <div class="theme-card-preview" style="background: #c5bfa8;">
+              <div class="theme-card-preview" style="background: #ede6d3;">
                 <div class="theme-card-preview-sidebar" style="background: #e9e4d4; border-right: 1px solid rgba(0,0,0,0.06);"></div>
                 <div class="theme-card-preview-main">
                   <div class="theme-card-preview-block" style="background: #f5f3ec; border: 1px solid #ffffff;"></div>
@@ -75,8 +75,8 @@ export function renderSettingsView(container) {
               </div>
               <div class="theme-option-info">
                 <div>
-                  <div class="theme-option-title">Warm Sage Light</div>
-                  <div class="theme-option-desc">Tactile earthy khaki & soft linen</div>
+                  <div class="theme-option-title">Warm Beige Light</div>
+                  <div class="theme-option-desc">Soft warm beige & soft linen</div>
                 </div>
                 <span class="theme-check-badge">✓</span>
               </div>
