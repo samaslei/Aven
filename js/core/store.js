@@ -476,6 +476,7 @@ class Store {
   getStudyPlanById(id) { return this._plansService.getStudyPlanById(id); }
   getStudyPlanBySubject(subjectId) { return this._plansService.getStudyPlanBySubject(subjectId); }
   saveStudyPlan(a, b, c, d, e) { return this._plansService.saveStudyPlan(a, b, c, d, e); }
+  updatePlanSubject(planId, subjectId) { return this._plansService.updatePlanSubject(planId, subjectId); }
   deleteStudyPlan(id) { return this._plansService.deleteStudyPlan(id); }
   loadStudyPlanContent(id) { return this._plansService.loadStudyPlanContent(id); }
 

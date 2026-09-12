@@ -6970,6 +6970,124 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]):not([data-theme="c
   gap: 12px;
 }
 
+/* Plan Badge and Link/Unlink Selector Controls */
+.plan-unlinked-badge {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1.5px 6.5px;
+  border-radius: var(--radius-xs);
+  background: rgba(100, 116, 139, 0.08);
+  border: 1px dashed rgba(100, 116, 139, 0.35);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+[data-theme="dark"] .plan-unlinked-badge,
+[data-theme="pure-black"] .plan-unlinked-badge {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.plan-subject-tag {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1.5px 6.5px;
+  border-radius: var(--radius-xs);
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plan-card-link-picker-wrap {
+  display: inline-flex;
+  align-items: center;
+  max-width: 140px;
+  flex-shrink: 0;
+}
+
+.plan-quick-subject-select {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  max-width: 135px;
+  text-overflow: ellipsis;
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.plan-quick-subject-select:hover {
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.plan-quick-subject-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-surface);
+}
+
+.plan-viewer-link-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  padding: 3px 8px;
+  border-radius: var(--radius-md);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.plan-viewer-link-box:hover {
+  border-color: var(--border-default);
+}
+
+.plan-viewer-link-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: default;
+  user-select: none;
+}
+
+.plan-viewer-subject-select {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  max-width: 180px;
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.plan-viewer-subject-select:hover {
+  border-color: var(--border-subtle);
+}
+
+.plan-viewer-subject-select:focus {
+  border-color: var(--accent);
+}
+
 /* Settings Profile Hero Banner (Echoing Sidebar Gradient Block) */
 .settings-profile-hero {
   padding: 22px 24px;

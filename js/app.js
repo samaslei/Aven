@@ -62,13 +62,13 @@ class AvenApp {
         cleanup: () => import('./pages/grades.js').then(m => m.cleanupGradesView?.())
       },
       schedule: {
-        title: 'Schedule',
+        title: 'Study Plan',
         subtitle: 'Upload and view your syllabi, schedules, and study guides in one place.',
         load: () => import('./pages/plans.js').then(m => m.renderPlansView),
         cleanup: () => import('./pages/plans.js').then(m => m.cleanupPlansView?.())
       },
       plans: {
-        title: 'Schedule',
+        title: 'Study Plan',
         subtitle: 'Upload and view your syllabi, schedules, and study guides in one place.',
         load: () => import('./pages/plans.js').then(m => m.renderPlansView),
         cleanup: () => import('./pages/plans.js').then(m => m.cleanupPlansView?.())

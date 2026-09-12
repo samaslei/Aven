@@ -48,9 +48,24 @@ export function createPlansService(state) {
 
     if (planId) {
       existingIdx = plans.findIndex(p => p.id === planId);
-    } else if (subjectId) {
-      // 1-plan-per-subject replacement rule for subject-tied plans
-      existingIdx = plans.findIndex(p => p.subject_id === subjectId);
+    }
+
+    // If linking to a subject, decouple any other plan that currently had this subject
+    if (subjectId) {
+      plans.forEach(p => {
+        if ((existingIdx === -1 || p.id !== plans[existingIdx]?.id) && p.subject_id === subjectId) {
+          p.subject_id = null;
+          p.updated_at = new Date().toISOString();
+          syncEngine.queue(async () => {
+            const user = await getCurrentUser();
+            if (!user) return;
+            return supabase.from('study_plans').update({
+              subject_id: null,
+              updated_at: p.updated_at
+            }).eq('id', p.id).eq('user_id', user.id);
+          }, 'Unlinking previous plan for subject');
+        }
+      });
     }
 
     const plan = {
@@ -132,11 +147,56 @@ export function createPlansService(state) {
     return plan.html_content;
   }
 
+  function updatePlanSubject(planId, subjectId) {
+    if (!planId) return null;
+    const plans = state.plans || [];
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return null;
+
+    const newSubjectId = subjectId || null;
+
+    // If linking to a subject, unlink any other plan that currently has this subject_id
+    if (newSubjectId) {
+      plans.forEach(p => {
+        if (p.id !== planId && p.subject_id === newSubjectId) {
+          p.subject_id = null;
+          p.updated_at = new Date().toISOString();
+          syncEngine.queue(async () => {
+            const user = await getCurrentUser();
+            if (!user) return;
+            return supabase.from('study_plans').update({
+              subject_id: null,
+              updated_at: p.updated_at
+            }).eq('id', p.id).eq('user_id', user.id);
+          }, 'Unlinking previous plan for subject');
+        }
+      });
+    }
+
+    plan.subject_id = newSubjectId;
+    plan.updated_at = new Date().toISOString();
+
+    events.emit('plan:saved', plan);
+    events.emit('store:changed', { type: 'plan' });
+
+    syncEngine.queue(async () => {
+      const user = await getCurrentUser();
+      if (!user) return;
+      return supabase.from('study_plans').update({
+        subject_id: plan.subject_id,
+        updated_at: plan.updated_at
+      }).eq('id', plan.id).eq('user_id', user.id);
+    }, 'Updating plan subject link');
+
+    return plan;
+  }
+
   return {
     getStudyPlans,
     getStudyPlanById,
     getStudyPlanBySubject,
     saveStudyPlan,
+    updatePlanSubject,
     deleteStudyPlan,
     loadStudyPlanContent
   };

@@ -54,10 +54,22 @@ events.on('plans:select-subject', (subjectId) => {
   }
 });
 
+events.on('plans:select-plan', (planId) => {
+  if (planId && store.getStudyPlanById(planId)) {
+    selectedPlanId = planId;
+  }
+});
+
 export function setSelectedStudyPlanBySubjectId(subjectId) {
   const plan = store.getStudyPlanBySubject(subjectId);
   if (plan) {
     selectedPlanId = plan.id;
+  }
+}
+
+export function setSelectedStudyPlanId(planId) {
+  if (planId && store.getStudyPlanById(planId)) {
+    selectedPlanId = planId;
   }
 }
 
@@ -67,7 +79,7 @@ export function renderPlansView(container) {
   const activeSubjects = store.getSubjects(false);
   const allPlans = store.getStudyPlans().sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
-  // Check URL query parameters for pre-selected subject
+  // Check URL query parameters for pre-selected subject or plan
   if (window.location.hash.includes('subjectId=')) {
     const hashQuery = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '';
     const params = new URLSearchParams(hashQuery);
@@ -77,15 +89,14 @@ export function renderPlansView(container) {
       if (p) selectedPlanId = p.id;
     }
   }
-
-  // Standalone general plans (no subject_id)
-  const standalonePlans = allPlans.filter(p => !p.subject_id);
-
-  // Subject-tied plans
-  const subjectPlans = allPlans.filter(p => !!p.subject_id).map(p => {
-    const sub = store.getSubjectById(p.subject_id);
-    return { plan: p, subject: sub };
-  }).filter(item => item.subject !== null);
+  if (window.location.hash.includes('planId=')) {
+    const hashQuery = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '';
+    const params = new URLSearchParams(hashQuery);
+    const pId = params.get('planId');
+    if (pId && store.getStudyPlanById(pId)) {
+      selectedPlanId = pId;
+    }
+  }
 
   // Auto-select most recently updated plan if none selected or if previously selected was deleted
   if ((!selectedPlanId || !store.getStudyPlanById(selectedPlanId)) && allPlans.length > 0) {
@@ -95,11 +106,11 @@ export function renderPlansView(container) {
   const currentPlan = selectedPlanId ? store.getStudyPlanById(selectedPlanId) : null;
   const currentSubject = (currentPlan && currentPlan.subject_id) ? store.getSubjectById(currentPlan.subject_id) : null;
 
-  const totalPlansCount = standalonePlans.length + subjectPlans.length;
+  const totalPlansCount = allPlans.length;
 
   container.innerHTML = `
     <div class="plans-layout">
-      <!-- Left Sidebar: General Plans & Course Syllabi -->
+      <!-- Left Sidebar: Flat List of All Study Plans -->
       <div class="plans-sidebar">
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px;">
           <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
@@ -116,68 +127,63 @@ export function renderPlansView(container) {
 
         ${totalPlansCount === 0 ? `
           <div style="padding: 32px 12px; text-align: center; color: var(--text-muted); font-size: 13px;">
-            No study plans uploaded yet. Click "Upload" to add a general roadmap or course syllabus.
+            No study plans uploaded yet. Click "Upload" to add a roadmap or course study plan.
           </div>
         ` : `
-          <!-- 1. GENERAL / STANDALONE PLANS SECTION -->
-          ${standalonePlans.length > 0 ? `
-            <div class="plans-sidebar-section">
-              <div class="plans-sidebar-section-header">
-                <span>General Plans</span>
-                <span class="tag" style="font-size: 10px; padding: 1px 6px;">${standalonePlans.length}</span>
-              </div>
-              ${standalonePlans.map(p => {
-                const isSelected = p.id === selectedPlanId;
-                const updatedDate = formatDateHuman(p.updated_at);
-                return `
-                  <div class="plan-subject-item ${isSelected ? 'active' : ''}" data-plan-id="${p.id}">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <span style="display: flex; align-items: center; color: var(--accent); flex-shrink: 0;">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-                        </svg>
-                      </span>
-                      <strong style="font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        ${p.title}
-                      </strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
-                      <span>Standalone Plan</span>
-                      <span>${updatedDate}</span>
-                    </div>
+          <!-- Flat list of all study plans (independent of subject) -->
+          <div class="plans-list-flat" style="display: flex; flex-direction: column; gap: 6px;">
+            ${allPlans.map(p => {
+              const isSelected = p.id === selectedPlanId;
+              const linkedSub = p.subject_id ? store.getSubjectById(p.subject_id) : null;
+              const updatedDate = formatDateHuman(p.updated_at);
+              const safeTitle = (p.title || 'Untitled Plan').replace(/"/g, '&quot;');
+              return `
+                <div class="plan-subject-item ${isSelected ? 'active' : ''}" data-plan-id="${p.id}">
+                  <div class="plan-item-header-row" style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                    <span class="plan-item-type-icon" style="color: var(--accent); flex-shrink: 0; display: flex; align-items: center;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                      </svg>
+                    </span>
+                    <strong class="plan-item-title" style="font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;" title="${safeTitle}">
+                      ${p.title || 'Untitled Plan'}
+                    </strong>
                   </div>
-                `;
-              }).join('')}
-            </div>
-          ` : ''}
 
-          <!-- 2. COURSE SYLLABI SECTION -->
-          ${subjectPlans.length > 0 ? `
-            <div class="plans-sidebar-section">
-              <div class="plans-sidebar-section-header">
-                <span>Course Syllabi</span>
-                <span class="tag" style="font-size: 10px; padding: 1px 6px;">${subjectPlans.length}</span>
-              </div>
-              ${subjectPlans.map(({ plan, subject }) => {
-                const isSelected = plan.id === selectedPlanId;
-                const updatedDate = formatDateHuman(plan.updated_at);
-                return `
-                  <div class="plan-subject-item ${isSelected ? 'active' : ''}" data-plan-id="${plan.id}">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <strong style="font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        ${subject.code ? `[${subject.code}] ` : ''}${subject.name}
-                      </strong>
+                  <div class="plan-item-meta-row" style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 4px;">
+                    <div class="plan-item-subject-status" style="display: flex; align-items: center; min-width: 0; flex-shrink: 0;">
+                      ${linkedSub ? `
+                        <span class="subject-code-badge plan-subject-tag" title="Linked to ${linkedSub.name}" style="${linkedSub.color ? `--tag-color: ${linkedSub.color};` : ''}">
+                          ${linkedSub.code || linkedSub.name}
+                        </span>
+                      ` : `
+                        <span class="plan-unlinked-badge" title="Not linked to any subject">
+                          Unlinked
+                        </span>
+                      `}
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
-                      <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">${plan.title}</span>
-                      <span>${updatedDate}</span>
+
+                    <!-- Quick link/unlink picker on card -->
+                    <div class="plan-card-link-picker-wrap" onclick="event.stopPropagation()">
+                      <select class="plan-quick-subject-select" data-plan-id="${p.id}" title="Assign or change subject link" aria-label="Link subject">
+                        <option value="">None (Unlink)</option>
+                        ${activeSubjects.map(s => `
+                          <option value="${s.id}" ${p.subject_id === s.id ? 'selected' : ''}>
+                            ${s.code ? `${s.code} — ` : ''}${s.name}
+                          </option>
+                        `).join('')}
+                      </select>
                     </div>
                   </div>
-                `;
-              }).join('')}
-            </div>
-          ` : ''}
+
+                  <div class="plan-item-date-row" style="display: flex; justify-content: flex-end; font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                    <span>Updated ${updatedDate}</span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
         `}
       </div>
 
@@ -202,27 +208,29 @@ export function renderPlansView(container) {
           </div>
         ` : `
           <div class="plan-viewer-header">
-            <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-              ${currentSubject ? `
-                <span style="display: flex; align-items: center; color: var(--accent); flex-shrink: 0;">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                  </svg>
-                </span>
-              ` : `
-                <span style="display: flex; align-items: center; color: var(--accent); flex-shrink: 0;">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-                  </svg>
-                </span>
-              `}
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+              <span style="display: flex; align-items: center; color: var(--accent); flex-shrink: 0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+              </span>
               <div style="min-width: 0;">
-                <strong style="font-size: 14px; color: var(--text-primary); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                  ${currentSubject ? `${currentSubject.name} — ${currentPlan.title}` : `General — ${currentPlan.title}`}
-                </strong>
-                <div style="font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <strong style="font-size: 15px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;" title="${currentPlan.title}">
+                    ${currentPlan.title}
+                  </strong>
+                  ${currentSubject ? `
+                    <span class="subject-code-badge plan-subject-tag" style="${currentSubject.color ? `--tag-color: ${currentSubject.color};` : ''}" title="Linked to ${currentSubject.name}">
+                      ${currentSubject.code || currentSubject.name}
+                    </span>
+                  ` : `
+                    <span class="plan-unlinked-badge" title="Not linked to any subject">
+                      Unlinked
+                    </span>
+                  `}
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; margin-top: 2px;">
                   <span id="plan-updated-time-display">Updated ${new Date(currentPlan.updated_at).toLocaleString()}</span>
                   <span class="plan-autosave-indicator" id="plan-autosave-status" style="display: inline-flex; align-items: center; gap: 3.5px; font-size: 10.5px; color: var(--text-muted); opacity: 0.85;">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -232,41 +240,62 @@ export function renderPlansView(container) {
               </div>
             </div>
 
-            <div class="plans-viewer-actions" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-              <button class="btn btn-ghost btn-sm btn-plan-action" id="btn-fullscreen-plan" title="Toggle Fullscreen View (Esc to exit)" aria-label="Toggle Fullscreen">
-                <svg class="fs-icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                </svg>
-                <svg class="fs-icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
-                  <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-                </svg>
-                <span class="btn-text fs-label-text">Fullscreen</span>
-              </button>
+            <div class="plans-viewer-controls" style="display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap;">
+              <!-- Header Subject Link Picker -->
+              <div class="plan-viewer-link-box" title="Assign or change subject link">
+                <label for="plan-viewer-subject-select" class="plan-viewer-link-label">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                  </svg>
+                  <span>Subject:</span>
+                </label>
+                <select id="plan-viewer-subject-select" class="plan-viewer-subject-select" data-plan-id="${currentPlan.id}">
+                  <option value="">None (Unlinked)</option>
+                  ${activeSubjects.map(s => `
+                    <option value="${s.id}" ${currentPlan.subject_id === s.id ? 'selected' : ''}>
+                      ${s.code ? `${s.code} — ` : ''}${s.name}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
 
-              <button class="btn btn-ghost btn-sm btn-plan-action" id="btn-download-plan" title="Export/Download HTML File" aria-label="Export HTML">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span class="btn-text">Export HTML</span>
-              </button>
+              <div class="plans-viewer-actions" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                <button class="btn btn-ghost btn-sm btn-plan-action" id="btn-fullscreen-plan" title="Toggle Fullscreen View (Esc to exit)" aria-label="Toggle Fullscreen">
+                  <svg class="fs-icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                  </svg>
+                  <svg class="fs-icon-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+                  </svg>
+                  <span class="btn-text fs-label-text">Fullscreen</span>
+                </button>
 
-              <button class="btn btn-ghost btn-sm btn-plan-action" id="btn-replace-plan" title="Replace / Update Study Plan" aria-label="Replace Plan">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
-                <span class="btn-text">Replace</span>
-              </button>
+                <button class="btn btn-ghost btn-sm btn-plan-action" id="btn-download-plan" title="Export/Download HTML File" aria-label="Export HTML">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span class="btn-text">Export HTML</span>
+                </button>
 
-              <button class="btn btn-ghost btn-sm btn-plan-action" id="btn-delete-plan" style="color: var(--danger);" title="Delete Study Plan" aria-label="Delete Plan">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-                <span class="btn-text">Delete</span>
-              </button>
+                <button class="btn btn-ghost btn-sm btn-plan-action" id="btn-replace-plan" title="Replace / Update Study Plan" aria-label="Replace Plan">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  <span class="btn-text">Replace</span>
+                </button>
+
+                <button class="btn btn-ghost btn-sm btn-plan-action" id="btn-delete-plan" style="color: var(--danger);" title="Delete Study Plan" aria-label="Delete Plan">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  <span class="btn-text">Delete</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -296,12 +325,12 @@ export function renderPlansView(container) {
             <div class="form-group">
               <label class="form-label" for="plan-target-subject">Link to Subject (Optional)</label>
               <select id="plan-target-subject" class="form-select">
-                <option value="">General (Not tied to a subject)</option>
+                <option value="">None (Unlinked)</option>
                 ${activeSubjects.map(s => `
                   <option value="${s.id}">${s.code ? `${s.code} — ` : ''}${s.name}</option>
                 `).join('')}
               </select>
-              <span class="form-help">Subject-linked study plans replace any existing plan for that subject (one active plan per course).</span>
+              <span class="form-help">Optional: Link to an active course, or keep unlinked as a standalone study plan.</span>
             </div>
 
             <div class="form-group">
@@ -528,6 +557,30 @@ function attachPlansEvents(container) {
     });
   });
 
+  // Handle manual link/unlink changes (both on plan cards and inside the viewer header)
+  container.querySelectorAll('.plan-quick-subject-select, #plan-viewer-subject-select').forEach(sel => {
+    sel.addEventListener('click', (e) => e.stopPropagation());
+    sel.addEventListener('mousedown', (e) => e.stopPropagation());
+    sel.addEventListener('change', (e) => {
+      e.stopPropagation();
+      const pId = sel.dataset.planId;
+      const subId = sel.value || null;
+      if (!pId) return;
+
+      store.updatePlanSubject(pId, subId);
+      selectedPlanId = pId;
+
+      const sub = subId ? store.getSubjectById(subId) : null;
+      if (sub) {
+        window.avenApp?.showToast(`Plan linked to ${sub.code || sub.name}`, 'success');
+      } else {
+        window.avenApp?.showToast('Plan unlinked from subject', 'info');
+      }
+
+      renderPlansView(container);
+    });
+  });
+
   // Modal handlers
   const planModal = container.querySelector('#plan-upload-modal');
   const planForm = container.querySelector('#plan-upload-form');
@@ -564,6 +617,7 @@ function attachPlansEvents(container) {
     } else {
       if (modalTitle) modalTitle.textContent = 'Upload Interactive HTML Study Plan';
       if (editIdInput) editIdInput.value = '';
+      if (subjectSelect) subjectSelect.value = '';
       if (htmlTextarea) htmlTextarea.disabled = false;
     }
     planModal.classList.add('open');

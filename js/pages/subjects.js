@@ -733,7 +733,7 @@ function renderSubjectCard(sub) {
         <div class="subject-metric-col">
           <span class="subject-metric-lbl">Plan</span>
           ${plan ? `
-            <button type="button" class="subject-metric-val subject-plan-link" data-subject-id="${sub.id}" title="View ${sub.name} Study Plan">
+            <button type="button" class="subject-metric-val subject-plan-link" data-subject-id="${sub.id}" data-plan-id="${plan.id}" title="View ${sub.name} Study Plan">
               Attached
             </button>
           ` : `
@@ -808,7 +808,7 @@ function renderSubjectListRow(sub) {
       </td>
       <td>
         ${plan ? `
-          <button type="button" class="subject-plan-pill ready subject-plan-link" data-subject-id="${sub.id}" title="View ${sub.name} Study Plan">
+          <button type="button" class="subject-plan-pill ready subject-plan-link" data-subject-id="${sub.id}" data-plan-id="${plan.id}" title="View ${sub.name} Study Plan">
             ● Attached
           </button>
         ` : `
@@ -1094,19 +1094,22 @@ function attachSubjectsEvents(container) {
       });
     });
 
-    // Click on Subject Plan Link (Navigates to Study Plans with subject pre-selected)
+    // Click on Subject Plan Link (Navigates to Study Plans with subject or plan pre-selected)
     rootEl.querySelectorAll('.subject-plan-link').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
+        const planId = btn.dataset.planId;
         const subjectId = btn.dataset.subjectId;
-        if (subjectId) {
+        if (planId) {
+          events.emit('plans:select-plan', planId);
+        } else if (subjectId) {
           events.emit('plans:select-subject', subjectId);
-          if (window.avenApp && typeof window.avenApp.navigateTo === 'function') {
-            window.avenApp.navigateTo('plans');
-          } else {
-            window.location.hash = 'plans';
-          }
+        }
+        if (window.avenApp && typeof window.avenApp.navigateTo === 'function') {
+          window.avenApp.navigateTo('plans');
+        } else {
+          window.location.hash = 'plans';
         }
       });
     });
