@@ -15,6 +15,8 @@ let selectedPlanId = null;
 let isFullscreenActive = false;
 let activePlanMessageListener = null;
 let activePlanKeyDownListener = null;
+let activeSyncStatusListener = null;
+let activeSyncConnListener = null;
 let autosaveDebounceTimer = null;
 let pendingPlanSave = null;
 
@@ -39,6 +41,14 @@ export function cleanupPlansView() {
   if (activePlanKeyDownListener) {
     document.removeEventListener('keydown', activePlanKeyDownListener);
     activePlanKeyDownListener = null;
+  }
+  if (activeSyncStatusListener) {
+    events.off('sync:status', activeSyncStatusListener);
+    activeSyncStatusListener = null;
+  }
+  if (activeSyncConnListener) {
+    events.off('sync:connection', activeSyncConnListener);
+    activeSyncConnListener = null;
   }
 }
 
@@ -101,6 +111,16 @@ export function renderPlansView(container) {
   // Auto-select most recently updated plan if none selected or if previously selected was deleted
   if ((!selectedPlanId || !store.getStudyPlanById(selectedPlanId)) && allPlans.length > 0) {
     selectedPlanId = allPlans[0].id;
+  }
+
+  // Auto-retry syncing any pending plans if sync is currently in error status
+  const currentConn = store.getConnectionStatus();
+  if (currentConn.status === 'error') {
+    if (selectedPlanId) {
+      store.retryPlanSync(selectedPlanId);
+    } else {
+      store.syncAllPlansToCloud();
+    }
   }
 
   const currentPlan = selectedPlanId ? store.getStudyPlanById(selectedPlanId) : null;
@@ -814,4 +834,49 @@ function attachPlansEvents(container) {
   };
 
   window.addEventListener('message', activePlanMessageListener);
+
+  // Sync state tracking and retry control
+  const updateSyncIndicator = (syncState) => {
+    const statusTextEl = container.querySelector('#plan-autosave-text');
+    const statusBoxEl = container.querySelector('#plan-autosave-status');
+    if (!statusTextEl || !statusBoxEl) return;
+
+    if (syncState.status === 'error') {
+      statusTextEl.textContent = 'Sync failed — Click to retry';
+      statusBoxEl.style.color = 'var(--danger)';
+      statusBoxEl.style.cursor = 'pointer';
+      statusBoxEl.title = syncState.error || 'Cloud sync failed. Click to retry syncing this plan.';
+    } else if (syncState.status === 'saving') {
+      statusTextEl.textContent = 'Syncing...';
+      statusBoxEl.style.color = 'var(--text-muted)';
+      statusBoxEl.style.cursor = 'default';
+      statusBoxEl.title = 'Writing changes to Supabase Cloud...';
+    } else if (syncState.status === 'synced') {
+      statusTextEl.textContent = 'Synced';
+      statusBoxEl.style.color = 'var(--text-muted)';
+      statusBoxEl.style.cursor = 'default';
+      statusBoxEl.title = 'Plan is synchronized with Supabase Cloud.';
+    } else if (syncState.status === 'offline') {
+      statusTextEl.textContent = 'Offline';
+      statusBoxEl.style.color = 'var(--text-muted)';
+      statusBoxEl.style.cursor = 'default';
+      statusBoxEl.title = 'Offline mode. Changes saved locally.';
+    }
+  };
+
+  updateSyncIndicator(store.getConnectionStatus());
+
+  activeSyncStatusListener = (state) => updateSyncIndicator(state);
+  activeSyncConnListener = (conn) => updateSyncIndicator(conn);
+  events.on('sync:status', activeSyncStatusListener);
+  events.on('sync:connection', activeSyncConnListener);
+
+  container.querySelector('#plan-autosave-status')?.addEventListener('click', () => {
+    if (selectedPlanId) {
+      window.avenApp?.showToast('Retrying cloud sync for study plan...', 'info');
+      store.retryPlanSync(selectedPlanId);
+    } else {
+      store.syncAllPlansToCloud();
+    }
+  });
 }

@@ -191,6 +191,31 @@ export function createPlansService(state) {
     return plan;
   }
 
+  function retryPlanSync(planId) {
+    const plan = (state.plans || []).find(p => p.id === planId);
+    if (!plan) return;
+
+    syncEngine.queue(async () => {
+      const user = await getCurrentUser();
+      if (!user) return;
+      return supabase.from('study_plans').upsert({
+        id: plan.id,
+        user_id: user.id,
+        subject_id: plan.subject_id,
+        title: plan.title,
+        html_content: plan.html_content || '',
+        updated_at: plan.updated_at
+      }, { onConflict: 'id' });
+    }, `Syncing study plan "${plan.title}"`);
+  }
+
+  function syncAllPlansToCloud() {
+    const plans = state.plans || [];
+    plans.forEach(p => {
+      retryPlanSync(p.id);
+    });
+  }
+
   return {
     getStudyPlans,
     getStudyPlanById,
@@ -198,6 +223,8 @@ export function createPlansService(state) {
     saveStudyPlan,
     updatePlanSubject,
     deleteStudyPlan,
-    loadStudyPlanContent
+    loadStudyPlanContent,
+    retryPlanSync,
+    syncAllPlansToCloud
   };
 }

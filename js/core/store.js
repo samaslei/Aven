@@ -338,7 +338,15 @@ class Store {
       if (subjectsRes?.data) this.state.subjects = subjectsRes.data;
       if (configsRes?.data) this.state.grade_configs = configsRes.data;
       if (sessionsRes?.data) this.state.sessions = sessionsRes.data;
-      if (plansRes?.data) this.state.plans = plansRes.data;
+      if (plansRes?.data) {
+        const cloudPlans = plansRes.data;
+        const cloudIds = new Set(cloudPlans.map(p => p.id));
+        const unsyncedPlans = (this.state.plans || []).filter(p => !cloudIds.has(p.id));
+        this.state.plans = [...cloudPlans, ...unsyncedPlans];
+        if (unsyncedPlans.length > 0) {
+          unsyncedPlans.forEach(p => this._plansService.retryPlanSync(p.id));
+        }
+      }
       if (allTimeDurationRes?.data) {
         this.state.allTimeStudyMinutes = allTimeDurationRes.data.reduce((sum, s) => sum + (s.duration || 0), 0);
       }
@@ -479,6 +487,8 @@ class Store {
   updatePlanSubject(planId, subjectId) { return this._plansService.updatePlanSubject(planId, subjectId); }
   deleteStudyPlan(id) { return this._plansService.deleteStudyPlan(id); }
   loadStudyPlanContent(id) { return this._plansService.loadStudyPlanContent(id); }
+  retryPlanSync(id) { return this._plansService.retryPlanSync(id); }
+  syncAllPlansToCloud() { return this._plansService.syncAllPlansToCloud(); }
 
   // ---------------------------------------------------------------------------
   // Delegated API — Profile
