@@ -11,6 +11,7 @@
 import { store, events } from '../core/store.js';
 import { formatDateHuman } from '../utils/date-utils.js';
 import { extractStorageData, sanitizeStorageSnapshot } from '../services/plans-service.js';
+import { escapeHtml } from '../utils/html-utils.js';
 
 let selectedPlanId = null;
 let isFullscreenActive = false;
@@ -168,7 +169,7 @@ export function renderPlansView(container) {
               const isSelected = p.id === selectedPlanId;
               const linkedSub = p.subject_id ? store.getSubjectById(p.subject_id) : null;
               const updatedDate = formatDateHuman(p.updated_at);
-              const safeTitle = (p.title || 'Untitled Plan').replace(/"/g, '&quot;');
+              const safeTitle = escapeHtml(p.title || 'Untitled Plan');
               return `
                 <div class="plan-subject-item ${isSelected ? 'active' : ''}" data-plan-id="${p.id}">
                   <div class="plan-item-header-row" style="display: flex; align-items: center; gap: 8px; min-width: 0;">
@@ -179,15 +180,15 @@ export function renderPlansView(container) {
                       </svg>
                     </span>
                     <strong class="plan-item-title" style="font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;" title="${safeTitle}">
-                      ${p.title || 'Untitled Plan'}
+                      ${safeTitle}
                     </strong>
                   </div>
 
                   <div class="plan-item-meta-row" style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 4px;">
                     <div class="plan-item-subject-status" style="display: flex; align-items: center; min-width: 0; flex-shrink: 0;">
                       ${linkedSub ? `
-                        <span class="subject-code-badge plan-subject-tag" title="Linked to ${linkedSub.name}" style="${linkedSub.color ? `--tag-color: ${linkedSub.color};` : ''}">
-                          ${linkedSub.code || linkedSub.name}
+                        <span class="subject-code-badge plan-subject-tag" title="Linked to ${escapeHtml(linkedSub.name)}" style="${linkedSub.color ? `--tag-color: ${linkedSub.color};` : ''}">
+                          ${escapeHtml(linkedSub.code || linkedSub.name)}
                         </span>
                       ` : `
                         <span class="plan-unlinked-badge" title="Not linked to any subject">
@@ -202,7 +203,7 @@ export function renderPlansView(container) {
                         <option value="">None (Unlink)</option>
                         ${activeSubjects.map(s => `
                           <option value="${s.id}" ${p.subject_id === s.id ? 'selected' : ''}>
-                            ${s.code ? `${s.code} — ` : ''}${s.name}
+                            ${escapeHtml(s.code ? `${s.code} — ` : '')}${escapeHtml(s.name)}
                           </option>
                         `).join('')}
                       </select>
@@ -249,12 +250,12 @@ export function renderPlansView(container) {
               </span>
               <div style="min-width: 0;">
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <strong style="font-size: 15px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;" title="${currentPlan.title}">
-                    ${currentPlan.title}
+                  <strong style="font-size: 15px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;" title="${escapeHtml(currentPlan.title)}">
+                    ${escapeHtml(currentPlan.title)}
                   </strong>
                   ${currentSubject ? `
-                    <span class="subject-code-badge plan-subject-tag" style="${currentSubject.color ? `--tag-color: ${currentSubject.color};` : ''}" title="Linked to ${currentSubject.name}">
-                      ${currentSubject.code || currentSubject.name}
+                    <span class="subject-code-badge plan-subject-tag" style="${currentSubject.color ? `--tag-color: ${currentSubject.color};` : ''}" title="Linked to ${escapeHtml(currentSubject.name)}">
+                      ${escapeHtml(currentSubject.code || currentSubject.name)}
                     </span>
                   ` : `
                     <span class="plan-unlinked-badge" title="Not linked to any subject">
@@ -286,7 +287,7 @@ export function renderPlansView(container) {
                   <option value="">None (Unlinked)</option>
                   ${activeSubjects.map(s => `
                     <option value="${s.id}" ${currentPlan.subject_id === s.id ? 'selected' : ''}>
-                      ${s.code ? `${s.code} — ` : ''}${s.name}
+                      ${escapeHtml(s.code ? `${s.code} — ` : '')}${escapeHtml(s.name)}
                     </option>
                   `).join('')}
                 </select>
@@ -359,7 +360,7 @@ export function renderPlansView(container) {
               <select id="plan-target-subject" class="form-select">
                 <option value="">None (Unlinked)</option>
                 ${activeSubjects.map(s => `
-                  <option value="${s.id}">${s.code ? `${s.code} — ` : ''}${s.name}</option>
+                  <option value="${s.id}">${escapeHtml(s.code ? `${s.code} — ` : '')}${escapeHtml(s.name)}</option>
                 `).join('')}
               </select>
               <span class="form-help">Optional: Link to an active course, or keep unlinked as a standalone study plan.</span>

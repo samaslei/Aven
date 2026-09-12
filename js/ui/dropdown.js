@@ -3,6 +3,8 @@
  * Features: Search-as-you-type, keyboard navigation, popover styling, theme-aware.
  */
 
+import { escapeHtml } from '../utils/html-utils.js';
+
 /**
  * Builds HTML for a custom searchable subject dropdown.
  * @param {Object} options
@@ -39,15 +41,16 @@ export function renderCustomSubjectDropdown({
 
   const optionsHtml = items.map(item => {
     const isSelected = item.id === (selectedId || '');
+    const safeName = escapeHtml(item.name);
 
     return `
       <div class="custom-dropdown-option ${isSelected ? 'selected' : ''}"
            data-value="${item.id}"
-           data-name="${item.name}"
+           data-name="${safeName}"
            role="option"
            aria-selected="${isSelected}">
         <div class="custom-dd-option-left">
-          <span class="custom-dd-option-name" title="${item.name}">${item.name}</span>
+          <span class="custom-dd-option-name" title="${safeName}">${safeName}</span>
         </div>
         ${isSelected ? `
           <svg class="custom-dd-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -64,7 +67,7 @@ export function renderCustomSubjectDropdown({
       
       <button type="button" class="custom-dropdown-trigger" id="${id}-trigger" aria-haspopup="listbox" aria-expanded="false">
         <div class="custom-dropdown-trigger-content">
-          <span class="custom-dropdown-trigger-text">${triggerText}</span>
+          <span class="custom-dropdown-trigger-text">${escapeHtml(triggerText)}</span>
         </div>
         <svg class="custom-dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <polyline points="6 9 12 15 18 9"></polyline>
@@ -77,7 +80,7 @@ export function renderCustomSubjectDropdown({
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="text" id="${id}-search-input" name="${id}-search" class="custom-dropdown-search-input" placeholder="${searchPlaceholder}" aria-label="${searchPlaceholder}" autocomplete="off">
+          <input type="text" id="${id}-search-input" name="${id}-search" class="custom-dropdown-search-input" placeholder="${escapeHtml(searchPlaceholder)}" aria-label="${escapeHtml(searchPlaceholder)}" autocomplete="off">
         </div>
 
         <div class="custom-dropdown-options-list" tabindex="-1">
@@ -277,7 +280,7 @@ export function renderSubjectSelectOptions(subjects = [], selectedId = '', inclu
   }
   subjects.forEach(s => {
     const isSelected = s.id === selectedId ? 'selected' : '';
-    html += `<option value="${s.id}" ${isSelected}>${s.name}</option>`;
+    html += `<option value="${escapeHtml(s.id)}" ${isSelected}>${escapeHtml(s.name)}</option>`;
   });
   return html;
 }

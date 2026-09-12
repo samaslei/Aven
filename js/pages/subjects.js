@@ -5,6 +5,7 @@
  */
 
 import { store, events, YEAR_LEVELS, SEMESTERS, DEFAULT_COLOR_SWATCHES, getStandingColor } from '../core/store.js';
+import { escapeHtml } from '../utils/html-utils.js';
 
 let currentFilter = 'active'; // 'active' | 'archived' | 'all'
 let currentYearFilter = 'all';
@@ -284,7 +285,7 @@ export function renderSubjectsView(container) {
                  id="subject-search-input"
                  class="toolbar-search-input"
                  placeholder="Search subjects..."
-                 value="${currentSearchQuery.replace(/"/g, '&quot;')}"
+                 value="${escapeHtml(currentSearchQuery)}"
                  aria-label="Search subjects"
                  style="height: 28px; border-radius: var(--radius-full); padding: 0 10px 0 26px; font-size: 12px; background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-primary); outline: none; width: 135px; transition: width 0.2s ease, border-color 0.2s ease;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 8px; pointer-events: none; opacity: 0.5;">
@@ -518,14 +519,14 @@ export function renderSubjectsView(container) {
           <div class="bulk-subjects-list">
             ${activeSubjects.map(sub => `
               <label class="bulk-subject-item" for="bulk-sub-${sub.id}">
-                <input type="checkbox" id="bulk-sub-${sub.id}" name="bulk-sub-checkbox" class="bulk-sub-checkbox" value="${sub.id}" checked aria-label="${sub.name}">
+                <input type="checkbox" id="bulk-sub-${sub.id}" name="bulk-sub-checkbox" class="bulk-sub-checkbox" value="${sub.id}" checked aria-label="${escapeHtml(sub.name)}">
                 
                 <div style="flex: 1; min-width: 0;">
                   <div style="display: flex; align-items: center; gap: 6px;">
-                    ${sub.code ? `<span class="subject-code-badge" style="font-size: 10.5px; padding: 1px 5px;">${sub.code}</span>` : ''}
-                    <strong style="font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${sub.name}</strong>
+                    ${sub.code ? `<span class="subject-code-badge" style="font-size: 10.5px; padding: 1px 5px;">${escapeHtml(sub.code)}</span>` : ''}
+                    <strong style="font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(sub.name)}</strong>
                   </div>
-                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${sub.year_level} &middot; ${sub.semester}</div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${escapeHtml(sub.year_level)} &middot; ${escapeHtml(sub.semester)}</div>
                 </div>
               </label>
             `).join('')}
@@ -607,7 +608,7 @@ function renderArchivedGroupedView(subjects, viewMode) {
                 <line x1="8" y1="2" x2="8" y2="6"></line>
                 <line x1="3" y1="10" x2="21" y2="10"></line>
               </svg>
-              <h4 class="archived-term-title">${termKey}</h4>
+              <h4 class="archived-term-title">${escapeHtml(termKey)}</h4>
             </div>
             <span class="archive-term-badge">${groups[termKey].length} ${groups[termKey].length === 1 ? 'course' : 'courses'}</span>
           </div>
@@ -672,7 +673,8 @@ function getArchiveReasonBadge(sub) {
   if (reason.toLowerCase().includes('semester')) {
     return `<span class="tag-status-success" title="Semester completed">Semester Ended</span>`;
   }
-  return `<span class="tag-status-archived" title="${reason}">${reason}</span>`;
+  const safeReason = escapeHtml(reason);
+  return `<span class="tag-status-archived" title="${safeReason}">${safeReason}</span>`;
 }
 
 function renderSubjectCard(sub) {
@@ -689,6 +691,10 @@ function renderSubjectCard(sub) {
   // Extract 2 initials for the circular subject badge
   const initials = (sub.code || sub.name || 'CS').substring(0, 2).toUpperCase();
 
+  const safeName = escapeHtml(sub.name);
+  const safeCode = escapeHtml(sub.code);
+  const safeInstructor = escapeHtml(sub.instructor);
+
   return `
     <div class="subject-card ${sub.archived ? 'archived' : ''}" data-id="${sub.id}">
       <div class="subject-card-header-row">
@@ -701,22 +707,22 @@ function renderSubjectCard(sub) {
         </div>
 
         <div class="subject-title-area">
-          <span class="subject-code-tag" style="${!sub.code ? 'visibility: hidden;' : ''}">${sub.code || '&nbsp;'}</span>
-          <h4 class="subject-card-name subject-grades-link" data-subject-id="${sub.id}" title="View ${sub.name} Grades">${sub.name}</h4>
+          <span class="subject-code-tag" style="${!sub.code ? 'visibility: hidden;' : ''}">${safeCode || '&nbsp;'}</span>
+          <h4 class="subject-card-name subject-grades-link" data-subject-id="${sub.id}" title="View ${safeName} Grades">${safeName}</h4>
           ${sub.instructor ? `
             <span class="subject-card-instructor">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
-              ${sub.instructor}
+              ${safeInstructor}
             </span>
           ` : '<span class="subject-card-instructor is-empty" aria-hidden="true">&nbsp;</span>'}
         </div>
       </div>
 
       <div class="subject-meta-pills">
-        <span class="subject-pill-tag">${sub.year_level} · ${semAbbr}</span>
+        <span class="subject-pill-tag">${escapeHtml(sub.year_level)} · ${escapeHtml(semAbbr)}</span>
         ${getArchiveReasonBadge(sub)}
       </div>
 
@@ -733,7 +739,7 @@ function renderSubjectCard(sub) {
         <div class="subject-metric-col">
           <span class="subject-metric-lbl">Plan</span>
           ${plan ? `
-            <button type="button" class="subject-metric-val subject-plan-link" data-subject-id="${sub.id}" data-plan-id="${plan.id}" title="View ${sub.name} Study Plan">
+            <button type="button" class="subject-metric-val subject-plan-link" data-subject-id="${sub.id}" data-plan-id="${plan.id}" title="View ${safeName} Study Plan">
               Attached
             </button>
           ` : `
@@ -765,6 +771,10 @@ function renderSubjectListRow(sub) {
     .replace('1st Semester', '1st Sem')
     .replace('2nd Semester', '2nd Sem');
 
+  const safeName = escapeHtml(sub.name);
+  const safeCode = escapeHtml(sub.code);
+  const safeInstructor = escapeHtml(sub.instructor);
+
   return `
     <tr class="subject-list-row ${sub.archived ? 'archived' : ''}" data-id="${sub.id}" style="--sub-color: ${sub.color || '#6366f1'};">
       <td class="subject-list-name-cell">
@@ -772,8 +782,8 @@ function renderSubjectListRow(sub) {
           
           <div class="subject-list-title-block">
             <div class="subject-list-header-line">
-              ${sub.code ? `<span class="subject-list-code">${sub.code}</span>` : ''}
-              <span class="subject-list-name subject-grades-link" data-subject-id="${sub.id}" title="View ${sub.name} Grades">${sub.name}</span>
+              ${sub.code ? `<span class="subject-list-code">${safeCode}</span>` : ''}
+              <span class="subject-list-name subject-grades-link" data-subject-id="${sub.id}" title="View ${safeName} Grades">${safeName}</span>
             </div>
             ${sub.instructor ? `
               <span class="subject-list-instructor">
@@ -781,7 +791,7 @@ function renderSubjectListRow(sub) {
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                ${sub.instructor}
+                ${safeInstructor}
               </span>
             ` : ''}
           </div>
@@ -790,9 +800,9 @@ function renderSubjectListRow(sub) {
       <td>
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <span class="subject-term-badge">
-            <span>${sub.year_level}</span>
+            <span>${escapeHtml(sub.year_level)}</span>
             <span class="term-dot">·</span>
-            <span>${semAbbr}</span>
+            <span>${escapeHtml(semAbbr)}</span>
           </span>
           ${getArchiveReasonBadge(sub)}
         </div>
@@ -808,7 +818,7 @@ function renderSubjectListRow(sub) {
       </td>
       <td>
         ${plan ? `
-          <button type="button" class="subject-plan-pill ready subject-plan-link" data-subject-id="${sub.id}" data-plan-id="${plan.id}" title="View ${sub.name} Study Plan">
+          <button type="button" class="subject-plan-pill ready subject-plan-link" data-subject-id="${sub.id}" data-plan-id="${plan.id}" title="View ${safeName} Study Plan">
             ● Attached
           </button>
         ` : `
@@ -1003,7 +1013,7 @@ function attachSubjectsEvents(container) {
     if (detailsDiv) {
       detailsDiv.innerHTML = `
         <div style="margin-top: 4px; font-weight: normal;">
-          Subject to delete: <strong>${sub.name} (${sub.code || 'No Code'})</strong><br>
+          Subject to delete: <strong>${escapeHtml(sub.name)} (${escapeHtml(sub.code || 'No Code')})</strong><br>
           Cascading impact:
           <ul style="margin: 4px 0 0 18px;">
             <li><strong>${stats.sessionCount}</strong> logged study sessions</li>

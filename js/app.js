@@ -8,6 +8,7 @@ import { supabase, getCurrentSession, signOut, onAuthStateChange } from './core/
 import { renderStartupSkeleton } from './ui/skeleton.js';
 import { initGlobalTooltips } from './core/tooltip.js';
 import { formatRelativeTime as formatRelativeTimeUtil } from './utils/date-utils.js';
+import { escapeHtml } from './utils/html-utils.js';
 
 function extractAuthUrlParams() {
   if (typeof window === 'undefined') return {};
@@ -460,7 +461,7 @@ class AvenApp {
 
     if (avatarEl) {
       if (user.avatar_url) {
-        avatarEl.innerHTML = `<img src="${user.avatar_url}" alt="${derivedName || 'User'}" class="user-avatar-img">`;
+        avatarEl.innerHTML = `<img src="${escapeHtml(user.avatar_url)}" alt="${escapeHtml(derivedName || 'User')}" class="user-avatar-img">`;
         avatarEl.style.backgroundColor = 'transparent';
       } else if (derivedName || email) {
         const initials = derivedName
@@ -1076,13 +1077,13 @@ class AvenApp {
 
     // Text content
     html += `<div class="toast-content">
-      <span class="toast-title">${message}</span>
-      ${subtitle ? `<span class="toast-subtitle">${subtitle}</span>` : ''}
+      <span class="toast-title">${escapeHtml(message)}</span>
+      ${subtitle ? `<span class="toast-subtitle">${escapeHtml(subtitle)}</span>` : ''}
     </div>`;
 
     // Optional action button
     if (actionLabel && actionCallback) {
-      html += `<button class="toast-action${needsDark ? ' action-dark' : ''}">${actionLabel}</button>`;
+      html += `<button class="toast-action${needsDark ? ' action-dark' : ''}">${escapeHtml(actionLabel)}</button>`;
     }
 
     toast.innerHTML = html;

@@ -9,6 +9,7 @@ import { store, events, GRADE_CATEGORIES, PHILIPPINE_GRADE_SCALE, getPhilippineG
 import { exportSubjectGradesToExcel, exportAllSubjectsGradesToExcel } from '../utils/export-excel.js';
 import { formatRelativeTime } from '../utils/date-utils.js';
 import { calculateCategoryPoints } from '../domain/grade-calculator.js';
+import { escapeHtml } from '../utils/html-utils.js';
 
 export const GRADE_CATEGORY_TEMPLATES = [
   {
@@ -299,11 +300,13 @@ export function renderGradesView(container) {
               const pct = subStats.overallPercentage;
               const standingColor = getStandingColor(pct);
               const isSelected = sub.id === selectedSubjectId;
+              const safeSubName = escapeHtml(sub.name);
+              const safeSubCode = escapeHtml(sub.code || sub.name);
               return `
-                <div class="subjects-overview-row ${isSelected ? 'active' : ''}" data-subject-id="${sub.id}" title="Select ${sub.name}">
+                <div class="subjects-overview-row ${isSelected ? 'active' : ''}" data-subject-id="${sub.id}" title="Select ${safeSubName}">
                   <div class="overview-left">
                     <span class="overview-dot" style="background: ${pct !== null ? standingColor : 'var(--text-muted)'};"></span>
-                    <span class="overview-code">${sub.code || sub.name}</span>
+                    <span class="overview-code">${safeSubCode}</span>
                   </div>
                   <div class="overview-right">
                     <span class="overview-pct" style="color: ${pct !== null ? standingColor : 'var(--text-muted)'};">
@@ -328,14 +331,16 @@ export function renderGradesView(container) {
               const relTime = formatRelativeTime(e.created_at) || 'Recent';
               const entPct = e.out_of > 0 ? (e.score / e.out_of) * 100 : 0;
               const standingColor = getStandingColor(entPct);
+              const safeSubCode = escapeHtml(e.subjectCode);
+              const safeEntName = escapeHtml(e.name);
               return `
-                <div class="recent-entry-row" data-subject-id="${e.subjectId}" title="Select ${e.subjectCode}">
+                <div class="recent-entry-row" data-subject-id="${e.subjectId}" title="Select ${safeSubCode}">
                   <span class="recent-entry-accent-bar" style="background: ${standingColor};"></span>
                   <div class="recent-entry-info">
                     <div class="recent-entry-title-line">
-                      <span class="recent-entry-name">${e.name}</span>
+                      <span class="recent-entry-name">${safeEntName}</span>
                       <span class="recent-entry-divider">·</span>
-                      <span class="recent-entry-code">${e.subjectCode}</span>
+                      <span class="recent-entry-code">${safeSubCode}</span>
                     </div>
                     <div class="recent-entry-time">${relTime}</div>
                   </div>
@@ -411,7 +416,7 @@ export function renderGradesView(container) {
                   </div>
                   <button class="popover-item btn-export-current-subject" data-subject-id="${selectedSubject.id}">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--success); flex-shrink: 0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                    <span>${selectedSubject.code || 'Current Subject'} (.xlsx)</span>
+                    <span>${escapeHtml(selectedSubject.code || 'Current Subject')} (.xlsx)</span>
                   </button>
                   <button class="popover-item btn-export-all-subjects">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent); flex-shrink: 0;"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
@@ -673,7 +678,7 @@ function renderTermTabContent(subject, term, gradeStats) {
     <div class="term-breakdown-container">
       <div class="term-header-row">
         <div class="term-header-left">
-          <h3 style="font-size: 18px; font-weight: 700; letter-spacing: -0.02em;">${subject.name} — ${term} Breakdown</h3>
+          <h3 style="font-size: 18px; font-weight: 700; letter-spacing: -0.02em;">${escapeHtml(subject.name)} — ${term} Breakdown</h3>
         </div>
 
         <div class="term-header-right" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end;">
@@ -736,7 +741,7 @@ function renderTermTabContent(subject, term, gradeStats) {
           </div>
         ` : categories.map(cat => {
           const entries = cat.entries || [];
-          const safeCatName = (cat.category || '').replace(/"/g, '&quot;');
+          const safeCatName = escapeHtml(cat.category || '');
           const isExpanded = categoryExpandedState[cat.id] !== undefined ? categoryExpandedState[cat.id] : true;
 
           const { totalScore, totalOutOf, percentage: rawPct, weightedPoints: rawWeightedPts } = calculateCategoryPoints(entries, cat.weight);
@@ -767,7 +772,7 @@ function renderTermTabContent(subject, term, gradeStats) {
                   </div>
                   <div class="cat-title-stack">
                     <div class="cat-title-row">
-                      <h4 class="cat-breakdown-name" title="${safeCatName}">${cat.category}</h4>
+                      <h4 class="cat-breakdown-name" title="${safeCatName}">${safeCatName}</h4>
                       ${renderWeightIndicator(cat.weight, cat.id)}
                     </div>
                     ${entries.length > 0 ? `
@@ -809,13 +814,13 @@ function renderTermTabContent(subject, term, gradeStats) {
                   <div class="cat-entries-stack">
                     ${entries.map(ent => {
                       const entPct = ent.out_of > 0 ? ((ent.score / ent.out_of) * 100).toFixed(1) : '0.0';
-                      const safeName = (ent.name || '').replace(/"/g, '&quot;');
+                      const safeName = escapeHtml(ent.name || '');
                       const standingClass = getStandingClass(entPct);
                       return `
                         <div class="grade-entry-card-row" data-cat-id="${cat.id}" data-ent-id="${ent.id}">
                           <div class="entry-card-left">
                             <div class="editable-cell editable-name" data-field="name" data-cat-id="${cat.id}" data-ent-id="${ent.id}" data-value="${safeName}" title="Click to edit assessment name">
-                              <span class="cell-value-text entry-name-text">${ent.name}</span>
+                              <span class="cell-value-text entry-name-text">${safeName}</span>
                               <svg class="edit-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -903,7 +908,7 @@ function renderOverallTabContent(subject, gradeStats) {
   return `
     <div class="overall-breakdown-container">
       <div>
-        <h3 style="font-size: 18px; font-weight: 700;">${subject.name} — Overall Standing & Target Solver</h3>
+        <h3 style="font-size: 18px; font-weight: 700;">${escapeHtml(subject.name)} — Overall Standing & Target Solver</h3>
         <p style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">
           Combine Midterm and Final terms with customized weighting.
         </p>
@@ -1077,7 +1082,7 @@ function attachGradesEvents(container) {
     if (!rowsContainer) return;
     rowsContainer.innerHTML = editableTemplateCategories.map((c, idx) => `
       <div class="template-category-row" data-idx="${idx}">
-        <input type="text" id="tpl-cat-name-${idx}" name="tpl-cat-name-${idx}" class="form-input template-row-name-input" value="${c.name}" placeholder="Category Name" data-idx="${idx}" aria-label="Category Name">
+        <input type="text" id="tpl-cat-name-${idx}" name="tpl-cat-name-${idx}" class="form-input template-row-name-input" value="${escapeHtml(c.name)}" placeholder="Category Name" data-idx="${idx}" aria-label="Category Name">
         <div class="template-row-weight-wrap">
           <input type="number" id="tpl-cat-weight-${idx}" name="tpl-cat-weight-${idx}" class="form-input template-row-weight-input" min="1" max="100" value="${c.weight}" data-idx="${idx}" aria-label="Category Weight Percentage">
           <span style="font-size: 12px; color: var(--text-muted);">%</span>
@@ -1178,7 +1183,7 @@ function attachGradesEvents(container) {
         if (valMsg) {
           valMsg.style.display = 'block';
           valMsg.style.color = 'var(--danger)';
-          valMsg.innerHTML = `⚠️ A category named <strong>"${rawName}"</strong> already exists in ${activeTab}. Duplicate names are not permitted.`;
+          valMsg.innerHTML = `⚠️ A category named <strong>"${escapeHtml(rawName)}"</strong> already exists in ${activeTab}. Duplicate names are not permitted.`;
         }
         if (submitBtn) submitBtn.disabled = true;
       } else if (projectedTotal > 100 && enteredWeight > 0) {

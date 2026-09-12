@@ -8,6 +8,7 @@ import { calculateMilestoneData, aggregateRecentStudyHistory, calculateWeeklyStu
 import { playAlarmSound, playTickSound, playDualToneChime } from '../utils/audio.js';
 import { formatMinutesAndSeconds, getTodayISO, formatDurationLabel } from '../utils/date-utils.js';
 import { renderCustomSubjectDropdown, initCustomDropdown, renderSubjectSelectOptions } from '../ui/dropdown.js';
+import { escapeHtml } from '../utils/html-utils.js';
 
 let selectedSubjectId = '';
 let heatmapYear = new Date().getFullYear(); // Year-view navigation state
@@ -360,7 +361,7 @@ export function renderTrackerView(container) {
             </div>
           ` : subjectProgress.slice(0, 5).map(s => `
             <div class="subject-progress-row">
-              <span class="subject-progress-code" title="${s.name}">${s.code}</span>
+              <span class="subject-progress-code" title="${escapeHtml(s.name)}">${escapeHtml(s.code)}</span>
               <div class="subject-progress-track">
                 <div class="subject-progress-fill" style="width: ${s.progressPct}%;"></div>
               </div>
@@ -584,8 +585,10 @@ export function renderTrackerView(container) {
                 const currentTheme = store.getTheme();
                 const defaultFallbackColor = currentTheme === 'cool-light' ? '#4A6C8C' : (currentTheme === 'cool-dark' ? '#6E93B5' : (currentTheme === 'pure-black' ? '#ffffff' : (currentTheme === 'pure-white' ? '#0f172a' : '#8A9A5B')));
                 const subColor = (sub && sub.color) || defaultFallbackColor;
-                const subjectName = sub ? (sub.name || sub.code || 'General Study') : 'General Study';
+                const rawSubjectName = sub ? (sub.name || sub.code || 'General Study') : 'General Study';
+                const subjectName = escapeHtml(rawSubjectName);
                 const durText = formatDurationLabel(s.duration);
+                const safeNotes = escapeHtml(s.notes || '');
 
                 return `
                   <tr>
@@ -598,10 +601,10 @@ export function renderTrackerView(container) {
                       ${durText}
                     </td>
                     <td class="history-td-date" style="color: var(--text-secondary); font-size: 12px;">
-                      ${s.date}
+                      ${escapeHtml(s.date)}
                     </td>
-                    <td class="history-td-notes" title="${s.notes || ''}" style="color: var(--text-muted); font-size: 12px;">
-                      ${s.notes || '—'}
+                    <td class="history-td-notes" title="${safeNotes}" style="color: var(--text-muted); font-size: 12px;">
+                      ${safeNotes || '—'}
                     </td>
                     <td class="history-td-action" style="text-align: right;">
                       <button class="btn btn-ghost btn-sm btn-del-session" data-ids="${(s.ids || [s.id]).join(',')}" data-id="${s.id}" style="color: var(--danger); padding: 2px 6px; font-size: 11px;">
@@ -873,8 +876,8 @@ function attachTrackerEvents(container) {
           <div style="margin-top: 4px; border-top: 1px solid var(--border-subtle); padding-top: 4px;">
             ${subjects.map(s => `
               <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; margin-top: 2px;">
-                <span style="width: 6px; height: 6px; border-radius: 50%; background: ${s.color};"></span>
-                <span>${s.subjectCode || s.subjectName}: <strong>${s.duration}m</strong></span>
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: ${escapeHtml(s.color)};"></span>
+                <span>${escapeHtml(s.subjectCode || s.subjectName)}: <strong>${escapeHtml(s.duration)}m</strong></span>
               </div>
             `).join('')}
           </div>
@@ -882,7 +885,7 @@ function attachTrackerEvents(container) {
       }
 
       tooltip.innerHTML = `
-        <div style="font-weight: 600; color: var(--text-primary);">${date}</div>
+        <div style="font-weight: 600; color: var(--text-primary);">${escapeHtml(date)}</div>
         <div style="color: var(--text-secondary);">${mins > 0 ? `${mins} minutes studied` : 'No study activity'}</div>
         ${subListHtml}
       `;

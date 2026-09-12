@@ -6,6 +6,7 @@
 import { store, events, getStandingColor } from '../core/store.js';
 import { formatRelativeTime, formatDurationLabel } from '../utils/date-utils.js';
 import { showTooltip, hideTooltip, positionTooltipAtCursor } from '../core/tooltip.js';
+import { escapeHtml } from '../utils/html-utils.js';
 
 // Helper to determine standing badge for overall GWA
 function getOverallStandingBadge(rawAvgPct) {
@@ -479,7 +480,7 @@ function renderSubjectTimeBreakdownCard(breakdown) {
     const dashArray = `${dashLength.toFixed(2)} ${(C - dashLength).toFixed(2)}`;
     const offset = -(accumulatedPercent * C);
     accumulatedPercent += fraction;
-    const subjectName = (item.name || item.code || '').replace(/"/g, '&quot;');
+    const subjectName = escapeHtml(item.name || item.code || '');
 
     return `
       <circle
@@ -531,13 +532,13 @@ function renderSubjectTimeBreakdownCard(breakdown) {
         <!-- Legend List -->
         <div class="doughnut-legend" style="display: flex; flex-direction: column; gap: 7px; flex: 1; min-width: 0; max-height: 140px; overflow-y: auto;">
           ${items.map(item => {
-            const subjectName = (item.name || item.code || '').replace(/"/g, '&quot;');
+            const subjectName = escapeHtml(item.name || item.code || '');
             return `
             <div class="doughnut-legend-row" data-subject-id="${item.id}" data-tooltip="${subjectName}" data-tooltip-pos="top" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; min-width: 0; cursor: pointer;">
               <div style="display: flex; align-items: center; gap: 7px; min-width: 0;">
                 <span class="doughnut-legend-dot" style="background-color: ${item.color};"></span>
                 <span style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                  ${item.code}
+                  ${escapeHtml(item.code)}
                 </span>
               </div>
               <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
@@ -681,16 +682,16 @@ export function renderProfileView(container) {
 
   let avatarInner = '';
   if (user.avatar_url) {
-    avatarInner = `<img src="${user.avatar_url}" alt="${displayName || 'User'}" class="user-avatar-img" style="width: 100%; height: 100%; object-fit: cover;">`;
+    avatarInner = `<img src="${escapeHtml(user.avatar_url)}" alt="${escapeHtml(displayName || 'User')}" class="user-avatar-img" style="width: 100%; height: 100%; object-fit: cover;">`;
   } else if (displayName || email) {
-    avatarInner = `<span style="font-size: 26px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px;">${user.avatar || initials}</span>`;
+    avatarInner = `<span style="font-size: 26px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px;">${escapeHtml(user.avatar || initials)}</span>`;
   } else {
     avatarInner = `<span class="sk-block" style="width: 100%; height: 100%; border-radius: 50%; display: block;"></span>`;
   }
 
   let nameHtml = '';
   if (displayName) {
-    nameHtml = `<h2 style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 0; letter-spacing: -0.02em;">${displayName}</h2>`;
+    nameHtml = `<h2 style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 0; letter-spacing: -0.02em;">${escapeHtml(displayName)}</h2>`;
   } else if (!isLoaded) {
     nameHtml = `<span class="sk-block" style="width: 140px; height: 24px; border-radius: 4px; display: inline-block;"></span>`;
   } else {
@@ -699,7 +700,7 @@ export function renderProfileView(container) {
 
   let emailHtml = '';
   if (email) {
-    emailHtml = `<span style="font-size: 13.5px; color: var(--text-secondary);">${email}</span>`;
+    emailHtml = `<span style="font-size: 13.5px; color: var(--text-secondary);">${escapeHtml(email)}</span>`;
   } else if (!isLoaded) {
     emailHtml = `<span class="sk-block" style="width: 180px; height: 13px; border-radius: 3px; display: inline-block; opacity: 0.7;"></span>`;
   } else {
@@ -716,7 +717,7 @@ export function renderProfileView(container) {
           <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
           <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
         </svg>
-        ${user.year_level || '1st Year'} · ${program}
+        ${escapeHtml(user.year_level || '1st Year')} · ${escapeHtml(program)}
       </span>`;
   } else {
     programPillHtml = `
@@ -725,7 +726,7 @@ export function renderProfileView(container) {
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
-        <span>${user.year_level || '1st Year'} · Add your program</span>
+        <span>${escapeHtml(user.year_level || '1st Year')} · Add your program</span>
       </a>`;
   }
 
@@ -736,7 +737,7 @@ export function renderProfileView(container) {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 21h18M3 10h18M5 10v11M19 10v11M9 10v11M15 10v11M12 2l9 6H3l9-6z"></path>
         </svg>
-        ${institution}
+        ${escapeHtml(institution)}
       </span>`;
   } else if (!isLoaded) {
     institutionPillHtml = `<span class="profile-meta-pill"><span class="sk-block" style="width: 110px; height: 12px; border-radius: 3px; display: inline-block;"></span></span>`;
@@ -752,7 +753,7 @@ export function renderProfileView(container) {
           <line x1="8" y1="2" x2="8" y2="6"></line>
           <line x1="3" y1="10" x2="21" y2="10"></line>
         </svg>
-        ${memberSinceText}
+        ${escapeHtml(memberSinceText)}
       </span>`;
   } else if (!isLoaded) {
     memberSincePillHtml = `<span class="profile-meta-pill"><span class="sk-block" style="width: 130px; height: 12px; border-radius: 3px; display: inline-block;"></span></span>`;
@@ -937,10 +938,10 @@ export function renderProfileView(container) {
                     <!-- Activity Details -->
                     <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
                       <span style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        ${act.title}
+                        ${escapeHtml(act.title)}
                       </span>
                       <span style="font-size: 11.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        ${act.subtext}
+                        ${escapeHtml(act.subtext)}
                       </span>
                     </div>
                   </div>
@@ -993,9 +994,9 @@ export function renderProfileView(container) {
                 <div class="profile-subject-row" data-subject-id="${sub.id}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-radius: var(--radius-lg, 12px); cursor: pointer; transition: var(--transition);">
                   <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
                     <span style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                      ${sub.code || sub.name}
+                      ${escapeHtml(sub.code || sub.name)}
                     </span>
-                    ${sub.code ? `<span style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${sub.name}</span>` : ''}
+                    ${sub.code ? `<span style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(sub.name)}</span>` : ''}
                   </div>
 
                   <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">

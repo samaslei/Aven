@@ -7,6 +7,7 @@
 import { store, events, YEAR_LEVELS, DEFAULT_COLOR_SWATCHES } from '../core/store.js';
 import { exportAllSubjectsGradesToExcel } from '../utils/export-excel.js';
 import { openCropModal } from '../ui/crop-modal.js';
+import { escapeHtml } from '../utils/html-utils.js';
 
 
 export function renderSettingsView(container) {
@@ -17,14 +18,14 @@ export function renderSettingsView(container) {
 
   const renderAvatarInner = (u, fallback = 'U') => {
     if (u && u.avatar_url) {
-      return `<img src="${u.avatar_url}" alt="${u.name || 'User'}" class="user-avatar-img">`;
+      return `<img src="${escapeHtml(u.avatar_url)}" alt="${escapeHtml(u.name || 'User')}" class="user-avatar-img">`;
     }
     const cleanName = (u?.name || '').trim().toLowerCase() !== 'alex rivera' ? (u?.name || '').trim() : '';
     const cleanEmail = (u?.email || '').trim().toLowerCase() !== 'student@university.edu' ? (u?.email || '').trim() : '';
     const initials = cleanName
       ? cleanName.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase()
       : (cleanEmail ? cleanEmail.slice(0, 2).toUpperCase() : fallback);
-    return initials || fallback;
+    return escapeHtml(initials || fallback);
   };
 
   container.innerHTML = `
@@ -219,9 +220,9 @@ export function renderSettingsView(container) {
               ${renderAvatarInner(user, 'U')}
             </div>
             <div class="settings-profile-info">
-              <strong class="settings-profile-name" id="settings-hero-name">${(user.name && user.name.toLowerCase() !== 'alex rivera') ? user.name : (user.email ? user.email.split('@')[0] : 'Student')}</strong>
-              <span class="settings-profile-email" id="settings-hero-email">${(user.email && user.email.toLowerCase() !== 'student@university.edu') ? user.email : ''}</span>
-              <span class="settings-profile-badge" id="settings-hero-badge">${user.year_level || '1st Year'}${user.program ? ` · ${user.program}` : ''}</span>
+              <strong class="settings-profile-name" id="settings-hero-name">${escapeHtml((user.name && user.name.toLowerCase() !== 'alex rivera') ? user.name : (user.email ? user.email.split('@')[0] : 'Student'))}</strong>
+              <span class="settings-profile-email" id="settings-hero-email">${escapeHtml((user.email && user.email.toLowerCase() !== 'student@university.edu') ? user.email : '')}</span>
+              <span class="settings-profile-badge" id="settings-hero-badge">${escapeHtml(user.year_level || '1st Year')}${user.program ? ` · ${escapeHtml(user.program)}` : ''}</span>
             </div>
           </div>
 
@@ -252,7 +253,7 @@ export function renderSettingsView(container) {
               <strong class="setting-title">Display Name</strong>
             </div>
             <div class="setting-control">
-              <input type="text" id="setting-user-name" class="form-input auto-save-input" value="${(user.name && user.name.toLowerCase() !== 'alex rivera') ? user.name : ''}" placeholder="Enter your display name" style="width: 220px; font-size: 13px;">
+              <input type="text" id="setting-user-name" class="form-input auto-save-input" value="${escapeHtml((user.name && user.name.toLowerCase() !== 'alex rivera') ? user.name : '')}" placeholder="Enter your display name" style="width: 220px; font-size: 13px;">
             </div>
           </div>
 
@@ -262,7 +263,7 @@ export function renderSettingsView(container) {
               <strong class="setting-title">Email Address</strong>
             </div>
             <div class="setting-control">
-              <input type="email" id="setting-user-email" class="form-input auto-save-input" value="${(user.email && user.email.toLowerCase() !== 'student@university.edu') ? user.email : ''}" placeholder="you@university.edu" style="width: 220px; font-size: 13px;">
+              <input type="email" id="setting-user-email" class="form-input auto-save-input" value="${escapeHtml((user.email && user.email.toLowerCase() !== 'student@university.edu') ? user.email : '')}" placeholder="you@university.edu" style="width: 220px; font-size: 13px;">
             </div>
           </div>
 
@@ -286,7 +287,7 @@ export function renderSettingsView(container) {
               <strong class="setting-title">Program / Major</strong>
             </div>
             <div class="setting-control">
-              <input type="text" id="setting-user-program" class="form-input auto-save-input" value="${user.program || ''}" placeholder="e.g. BS Computer Science" style="width: 220px; font-size: 13px;">
+              <input type="text" id="setting-user-program" class="form-input auto-save-input" value="${escapeHtml(user.program || '')}" placeholder="e.g. BS Computer Science" style="width: 220px; font-size: 13px;">
             </div>
           </div>
 
@@ -542,8 +543,8 @@ function attachSettingsEvents(container) {
   const updateAvatarDisplays = (profile) => {
     const hasPhoto = Boolean(profile.avatar_url);
     const content = hasPhoto 
-      ? `<img src="${profile.avatar_url}" alt="${profile.name || 'User'}" class="user-avatar-img">`
-      : (profile.avatar || 'AR');
+      ? `<img src="${escapeHtml(profile.avatar_url)}" alt="${escapeHtml(profile.name || 'User')}" class="user-avatar-img">`
+      : escapeHtml(profile.avatar || 'AR');
     const bgColor = hasPhoto ? 'transparent' : (profile.avatar_color || '#6366f1');
 
     if (avatarPreview) {
