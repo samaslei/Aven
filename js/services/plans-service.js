@@ -9,6 +9,63 @@ import { syncEngine } from '../core/sync-engine.js';
 import { generateId } from '../core/id.js';
 
 /**
+ * Sanitizes and caps the size of a virtual storage snapshot.
+ * Prevents malicious or runaway scripts from saving unbounded data.
+ */
+export function sanitizeStorageSnapshot(snapshot, maxBytes = 524288) {
+  if (!snapshot || typeof snapshot !== 'object') return {};
+  const clean = {};
+  let totalBytes = 0;
+  for (const k of Object.keys(snapshot)) {
+    const strKey = String(k).slice(0, 256);
+    const strVal = String(snapshot[k]);
+    const itemBytes = (strKey.length + strVal.length) * 2;
+    if (totalBytes + itemBytes > maxBytes) {
+      console.warn('Storage snapshot exceeded 512KB cap. Truncating remaining keys.');
+      break;
+    }
+    totalBytes += itemBytes;
+    clean[strKey] = strVal;
+  }
+  return clean;
+}
+
+/**
+ * Extracts embedded virtual storage JSON from HTML content.
+ */
+export function extractStorageData(html) {
+  if (!html || typeof html !== 'string') return {};
+  const match = html.match(/<script id="aven-plan-storage-data" type="application\/json">([\s\S]*?)<\/script>/i);
+  if (match && match[1]) {
+    try {
+      return JSON.parse(match[1]) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+  return {};
+}
+
+/**
+ * Embeds or updates the virtual storage JSON tag inside HTML content.
+ */
+export function embedStorageDataInHtml(html, storageData) {
+  if (!html || typeof html !== 'string') return html;
+  const jsonStr = JSON.stringify(storageData || {});
+  const tag = `<script id="aven-plan-storage-data" type="application/json">${jsonStr}</script>`;
+
+  if (html.includes('id="aven-plan-storage-data"')) {
+    return html.replace(/<script id="aven-plan-storage-data" type="application\/json">[\s\S]*?<\/script>/i, tag);
+  }
+
+  const headMatch = html.match(/<head\b[^>]*>/i);
+  if (headMatch) {
+    return html.replace(headMatch[0], `${headMatch[0]}\n${tag}`);
+  }
+  return `${tag}\n${html}`;
+}
+
+/**
  * @param {object} state - The central reactive state object
  */
 export function createPlansService(state) {
@@ -68,11 +125,17 @@ export function createPlansService(state) {
       });
     }
 
+    const existingPlan = existingIdx !== -1 ? plans[existingIdx] : null;
+    const storageData = (typeof subjectIdOrObj === 'object' && subjectIdOrObj?.storage_data) ||
+      existingPlan?.storage_data ||
+      extractStorageData(content || '');
+
     const plan = {
-      id: existingIdx !== -1 ? plans[existingIdx].id : generateId('plan'),
+      id: existingPlan ? existingPlan.id : generateId('plan'),
       subject_id: subjectId,
       title: planTitle ? planTitle.trim() : 'Study Plan',
       html_content: content || '',
+      storage_data: storageData,
       updated_at: new Date().toISOString()
     };
 
@@ -136,6 +199,7 @@ export function createPlansService(state) {
 
       if (!error && data) {
         plan.html_content = data.html_content || '';
+        plan.storage_data = extractStorageData(plan.html_content);
       } else {
         plan.html_content = plan.html_content || '';
       }
@@ -145,6 +209,36 @@ export function createPlansService(state) {
     }
 
     return plan.html_content;
+  }
+
+  function savePlanStorage(planId, storageSnapshot) {
+    if (!planId) return null;
+    const plans = state.plans || [];
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return null;
+
+    const sanitized = sanitizeStorageSnapshot(storageSnapshot);
+    plan.storage_data = sanitized;
+    plan.html_content = embedStorageDataInHtml(plan.html_content || '', sanitized);
+    plan.updated_at = new Date().toISOString();
+
+    events.emit('plan:saved', plan);
+    events.emit('store:changed', { type: 'plan_autosave' });
+
+    syncEngine.queue(async () => {
+      const user = await getCurrentUser();
+      if (!user) return;
+      return supabase.from('study_plans').upsert({
+        id: plan.id,
+        user_id: user.id,
+        subject_id: plan.subject_id,
+        title: plan.title,
+        html_content: plan.html_content,
+        updated_at: plan.updated_at
+      }, { onConflict: 'id' });
+    }, `Autosaving storage for "${plan.title}"`);
+
+    return plan;
   }
 
   function updatePlanSubject(planId, subjectId) {
@@ -221,6 +315,7 @@ export function createPlansService(state) {
     getStudyPlanById,
     getStudyPlanBySubject,
     saveStudyPlan,
+    savePlanStorage,
     updatePlanSubject,
     deleteStudyPlan,
     loadStudyPlanContent,

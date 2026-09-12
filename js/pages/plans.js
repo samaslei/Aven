@@ -10,6 +10,7 @@
 
 import { store, events } from '../core/store.js';
 import { formatDateHuman } from '../utils/date-utils.js';
+import { extractStorageData, sanitizeStorageSnapshot } from '../services/plans-service.js';
 
 let selectedPlanId = null;
 let isFullscreenActive = false;
@@ -19,6 +20,8 @@ let activeSyncStatusListener = null;
 let activeSyncConnListener = null;
 let autosaveDebounceTimer = null;
 let pendingPlanSave = null;
+let autosaveStorageDebounceTimer = null;
+let pendingPlanStorageSave = null;
 
 export function flushPendingPlanSave() {
   if (autosaveDebounceTimer && pendingPlanSave) {
@@ -28,6 +31,15 @@ export function flushPendingPlanSave() {
     pendingPlanSave = null;
     try {
       store.saveStudyPlan(toSave.subject_id, toSave.title, toSave.html, toSave.id, true);
+    } catch (e) {}
+  }
+  if (autosaveStorageDebounceTimer && pendingPlanStorageSave) {
+    clearTimeout(autosaveStorageDebounceTimer);
+    autosaveStorageDebounceTimer = null;
+    const toSaveStorage = pendingPlanStorageSave;
+    pendingPlanStorageSave = null;
+    try {
+      store.savePlanStorage(toSaveStorage.planId, toSaveStorage.storageSnapshot);
     } catch (e) {}
   }
 }
@@ -405,14 +417,17 @@ export function renderPlansView(container) {
   // Safely assign iframe.srcdoc as a direct DOM property to avoid HTML attribute escaping bugs and preserve scripts byte-for-byte
   const iframe = container.querySelector('#sandboxed-plan-iframe');
   if (iframe && currentPlan) {
+    const initialStorage = currentPlan.storage_data || extractStorageData(currentPlan.html_content);
     if (currentPlan.html_content !== undefined && currentPlan.html_content !== null) {
-      iframe.srcdoc = prepareSandboxedHtml(currentPlan.html_content, currentPlan.id);
+      iframe.srcdoc = prepareSandboxedHtml(currentPlan.html_content, currentPlan.id, initialStorage);
     } else {
       iframe.srcdoc = `<!DOCTYPE html><html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; color: #64748b; font-size: 13px; background: transparent;"><div style="display: flex; align-items: center; gap: 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span>Loading study plan...</span></div><style>@keyframes spin { 100% { transform: rotate(360deg); } }</style></body></html>`;
       const requestedId = currentPlan.id;
       store.loadStudyPlanContent(requestedId).then(content => {
         if (selectedPlanId === requestedId && iframe.isConnected) {
-          iframe.srcdoc = prepareSandboxedHtml(content, requestedId);
+          const freshPlan = store.getStudyPlanById(requestedId);
+          const freshStorage = freshPlan?.storage_data || extractStorageData(content);
+          iframe.srcdoc = prepareSandboxedHtml(content, requestedId, freshStorage);
         }
       });
     }
@@ -424,12 +439,191 @@ export function renderPlansView(container) {
 
 /**
  * Prepares the sandboxed HTML document:
- * 1. Resets default browser margins on html/body.
- * 2. Adds consistent outer padding (28px 32px) so content never sits flush against viewport edges.
- * 3. Injects a lightweight postMessage bridge to auto-save interactive state changes (checkboxes, inputs).
+ * 1. Injects a virtual localStorage / sessionStorage in-memory shim first in <head>,
+ *    seeding prior values so template scripts succeed without SecurityError in opaque sandbox.
+ * 2. Injects reset CSS to prevent false scrollbars and enforce consistent viewport padding.
+ * 3. Injects a lightweight postMessage bridge to auto-save interactive state changes (DOM inputs & storage).
  */
-function prepareSandboxedHtml(rawHtml, planId = '') {
+function prepareSandboxedHtml(rawHtml, planId = '', initialStorage = null) {
   if (!rawHtml) return '<p style="font-family: sans-serif; padding: 28px 32px; color: #64748b;">Empty study plan content.</p>';
+
+  const initialData = sanitizeStorageSnapshot(initialStorage || extractStorageData(rawHtml));
+
+  const storageShimJs = `
+<script id="aven-storage-shim">
+(function() {
+  var planId = ${JSON.stringify(planId || '')};
+  var initialStorageData = ${JSON.stringify(initialData)};
+
+  function createStorageShim(initialData, isSession) {
+    var data = {};
+    if (initialData && typeof initialData === 'object') {
+      for (var k in initialData) {
+        if (Object.prototype.hasOwnProperty.call(initialData, k)) {
+          data[String(k)] = String(initialData[k]);
+        }
+      }
+    }
+
+    var debounceTimer = null;
+
+    function getSnapshot() {
+      var snapshot = {};
+      for (var key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          snapshot[key] = data[key];
+        }
+      }
+      return snapshot;
+    }
+
+    function notifyParent() {
+      if (isSession) return;
+      try {
+        if (!planId) return;
+        window.parent.postMessage({
+          type: 'aven-plan-storage-update',
+          planId: planId,
+          storageSnapshot: getSnapshot()
+        }, '*');
+      } catch (e) {}
+    }
+
+    function scheduleNotify() {
+      if (isSession) return;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(notifyParent, 350);
+    }
+
+    if (!isSession) {
+      window.addEventListener('beforeunload', notifyParent);
+      window.addEventListener('pagehide', notifyParent);
+      document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+          notifyParent();
+        }
+      });
+    }
+
+    var base = {
+      getItem: function(key) {
+        var strKey = String(key);
+        return Object.prototype.hasOwnProperty.call(data, strKey) ? data[strKey] : null;
+      },
+      setItem: function(key, val) {
+        var strKey = String(key);
+        var strVal = String(val);
+        data[strKey] = strVal;
+        scheduleNotify();
+      },
+      removeItem: function(key) {
+        var strKey = String(key);
+        if (Object.prototype.hasOwnProperty.call(data, strKey)) {
+          delete data[strKey];
+          scheduleNotify();
+        }
+      },
+      clear: function() {
+        data = {};
+        scheduleNotify();
+      },
+      key: function(index) {
+        var keys = Object.keys(data);
+        var idx = Number(index);
+        return (idx >= 0 && idx < keys.length) ? keys[idx] : null;
+      },
+      get length() {
+        return Object.keys(data).length;
+      },
+      getSnapshot: getSnapshot,
+      flush: notifyParent
+    };
+
+    var proxy = new Proxy(base, {
+      get: function(target, prop, receiver) {
+        if (prop in target || typeof prop === 'symbol') {
+          var val = target[prop];
+          return typeof val === 'function' ? val.bind(target) : val;
+        }
+        return target.getItem(prop);
+      },
+      set: function(target, prop, val, receiver) {
+        if (prop in target) {
+          target[prop] = val;
+          return true;
+        }
+        target.setItem(prop, val);
+        return true;
+      },
+      deleteProperty: function(target, prop) {
+        if (prop in target) {
+          delete target[prop];
+          return true;
+        }
+        target.removeItem(prop);
+        return true;
+      },
+      has: function(target, prop) {
+        return (prop in target) || (target.getItem(prop) !== null);
+      },
+      ownKeys: function(target) {
+        var keys = Object.keys(data);
+        var baseProps = ['getItem', 'setItem', 'removeItem', 'clear', 'key', 'length'];
+        for (var b = 0; b < baseProps.length; b++) {
+          if (keys.indexOf(baseProps[b]) === -1) keys.push(baseProps[b]);
+        }
+        return keys;
+      },
+      getOwnPropertyDescriptor: function(target, prop) {
+        if (prop in target) {
+          return Object.getOwnPropertyDescriptor(target, prop);
+        }
+        if (Object.prototype.hasOwnProperty.call(data, prop)) {
+          return {
+            value: data[prop],
+            writable: true,
+            enumerable: true,
+            configurable: true
+          };
+        }
+        return undefined;
+      }
+    });
+
+    return proxy;
+  }
+
+  try {
+    var vLocal = createStorageShim(initialStorageData, false);
+    var vSession = createStorageShim({}, true);
+
+    try {
+      Object.defineProperty(window, 'localStorage', {
+        value: vLocal,
+        writable: true,
+        configurable: true,
+        enumerable: true
+      });
+    } catch (e1) {
+      window.localStorage = vLocal;
+    }
+
+    try {
+      Object.defineProperty(window, 'sessionStorage', {
+        value: vSession,
+        writable: true,
+        configurable: true,
+        enumerable: true
+      });
+    } catch (e2) {
+      window.sessionStorage = vSession;
+    }
+  } catch (err) {
+    console.warn('[Aven] Virtual storage shim initialization error:', err);
+  }
+})();
+</script>
+`;
 
   const resetCss = `
 <style id="aven-iframe-reset">
@@ -517,6 +711,31 @@ function prepareSandboxedHtml(rawHtml, planId = '') {
     if (injectedReset) injectedReset.remove();
     var injectedScript = clone.querySelector('#aven-autosave-bridge');
     if (injectedScript) injectedScript.remove();
+    var injectedShim = clone.querySelector('#aven-storage-shim');
+    if (injectedShim) injectedShim.remove();
+
+    // Preserve latest virtual storage data inside a structured JSON script tag
+    try {
+      if (window.localStorage && typeof window.localStorage.getSnapshot === 'function') {
+        var snap = window.localStorage.getSnapshot();
+        var jsonStr = JSON.stringify(snap);
+        var existingTag = clone.querySelector('#aven-plan-storage-data');
+        if (existingTag) {
+          existingTag.textContent = jsonStr;
+        } else {
+          var sTag = document.createElement('script');
+          sTag.id = 'aven-plan-storage-data';
+          sTag.type = 'application/json';
+          sTag.textContent = jsonStr;
+          var head = clone.querySelector('head');
+          if (head) {
+            head.appendChild(sTag);
+          } else {
+            clone.appendChild(sTag);
+          }
+        }
+      }
+    } catch (e) {}
 
     var doctype = (document.doctype ? '<!DOCTYPE ' + document.doctype.name + '>' : '<!DOCTYPE html>') + '\\n';
     return doctype + clone.outerHTML;
@@ -555,17 +774,22 @@ function prepareSandboxedHtml(rawHtml, planId = '') {
 </script>
 `;
 
-  const injectedCode = `${resetCss}${autoSaveJs}`;
-
-  if (rawHtml.includes('</head>')) {
-    return rawHtml.replace('</head>', `${injectedCode}</head>`);
-  } else if (rawHtml.includes('<head>')) {
-    return rawHtml.replace('<head>', `<head>${injectedCode}`);
-  } else if (rawHtml.includes('<body>')) {
-    return rawHtml.replace('<body>', `<body>${injectedCode}`);
-  } else {
-    return `<!DOCTYPE html><html><head><meta charset="utf-8">${injectedCode}</head><body>${rawHtml}</body></html>`;
+  const headMatch = rawHtml.match(/<head\b[^>]*>/i);
+  if (headMatch) {
+    // Inject storage shim first right after <head> so it precedes any template scripts
+    return rawHtml.replace(headMatch[0], `${headMatch[0]}\n${storageShimJs}\n${resetCss}\n${autoSaveJs}`);
+  } else if (rawHtml.includes('<html')) {
+    const htmlMatch = rawHtml.match(/<html\b[^>]*>/i);
+    if (htmlMatch) {
+      return rawHtml.replace(htmlMatch[0], `${htmlMatch[0]}\n<head>${storageShimJs}\n${resetCss}\n${autoSaveJs}</head>`);
+    }
+  } else if (rawHtml.includes('<body')) {
+    const bodyMatch = rawHtml.match(/<body\b[^>]*>/i);
+    if (bodyMatch) {
+      return rawHtml.replace(bodyMatch[0], `<head>${storageShimJs}\n${resetCss}\n${autoSaveJs}</head>\n${bodyMatch[0]}`);
+    }
   }
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">${storageShimJs}\n${resetCss}\n${autoSaveJs}</head><body>${rawHtml}</body></html>`;
 }
 
 function attachPlansEvents(container) {
@@ -787,7 +1011,56 @@ function attachPlansEvents(container) {
   }
 
   activePlanMessageListener = (event) => {
-    if (!event.data || event.data.type !== 'aven-plan-update') return;
+    if (!event.data) return;
+
+    // Handle storage updates from virtual storage shim
+    if (event.data.type === 'aven-plan-storage-update') {
+      const { planId, storageSnapshot } = event.data;
+      if (!planId || !storageSnapshot) return;
+
+      const plan = store.getStudyPlanById(planId);
+      if (!plan) return;
+
+      const sanitizedSnapshot = sanitizeStorageSnapshot(storageSnapshot);
+      plan.storage_data = sanitizedSnapshot;
+
+      const statusTextEl = container.querySelector('#plan-autosave-text');
+      const updatedTimeEl = container.querySelector('#plan-updated-time-display');
+
+      if (statusTextEl) statusTextEl.textContent = 'Unsaved changes...';
+
+      pendingPlanStorageSave = {
+        planId: plan.id,
+        storageSnapshot: sanitizedSnapshot
+      };
+
+      if (autosaveStorageDebounceTimer) {
+        clearTimeout(autosaveStorageDebounceTimer);
+      }
+
+      autosaveStorageDebounceTimer = setTimeout(() => {
+        autosaveStorageDebounceTimer = null;
+        if (!pendingPlanStorageSave) return;
+        const toSave = pendingPlanStorageSave;
+        pendingPlanStorageSave = null;
+
+        if (statusTextEl) statusTextEl.textContent = 'Saving...';
+        const updatedPlan = store.savePlanStorage(toSave.planId, toSave.storageSnapshot);
+
+        if (statusTextEl) statusTextEl.textContent = 'Saved';
+        if (updatedTimeEl && updatedPlan) {
+          updatedTimeEl.textContent = `Updated ${new Date(updatedPlan.updated_at).toLocaleString()}`;
+        }
+        setTimeout(() => {
+          if (statusTextEl && statusTextEl.textContent === 'Saved') {
+            statusTextEl.textContent = 'Synced';
+          }
+        }, 2000);
+      }, 700);
+      return;
+    }
+
+    if (event.data.type !== 'aven-plan-update') return;
     const { planId, html } = event.data;
     if (!planId || !html) return;
 
