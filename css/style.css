@@ -4626,10 +4626,6 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]):not([data-theme="c
 }
 
 @media (max-width: 768px) {
-  .category-breakdown-list {
-    grid-template-columns: 1fr;
-  }
-
   .grades-summary-panel {
     gap: 14px !important;
   }
@@ -5474,7 +5470,7 @@ html:not([data-theme="light"]):not([data-theme="pure-white"]):not([data-theme="c
   break-inside: avoid;
   -webkit-column-break-inside: avoid;
   page-break-inside: avoid;
-  margin-bottom: 14px;
+  margin-bottom: 0;
   transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
   min-width: 0;
   box-sizing: border-box;
@@ -11471,20 +11467,13 @@ a.btn-loading {
 }
 
 /* ==========================================================================
-   Grades Breakdown Layout (Masonry Multi-Column Flow)
+   Grades Breakdown Layout (JS Masonry Shortest-Column Packing)
    ========================================================================== */
 .category-breakdown-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
+  position: relative;
+  display: block;
   width: 100%;
   box-sizing: border-box;
-}
-
-@media (min-width: 768px) {
-  .category-breakdown-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* Tailwind-style grid & flex utilities */
@@ -12009,11 +11998,10 @@ a.btn-loading {
     white-space: nowrap !important;
   }
 
-  /* 5. Grades Breakdown Container (Single Column on Mobile) */
+  /* 5. Grades Breakdown Container (JS Masonry on Mobile) */
   .category-breakdown-list {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
+    position: relative !important;
+    display: block !important;
     width: 100% !important;
     box-sizing: border-box !important;
   }

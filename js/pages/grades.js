@@ -93,6 +93,73 @@ export function setSelectedGradesSubjectId(subjectId) {
 
 let syncStatusListenerCleanup = null;
 let exportPopoverClickListener = null;
+let gradesResizeListener = null;
+let masonryResizeObserver = null;
+let activeGradesContainer = null;
+
+export function layoutMasonryCards(container) {
+  const root = container || activeGradesContainer;
+  if (!root) return;
+
+  const categoryList = root.classList?.contains('category-breakdown-list')
+    ? root
+    : root.querySelector('.category-breakdown-list');
+  if (!categoryList) return;
+
+  const cards = Array.from(categoryList.querySelectorAll('.category-breakdown-section'));
+  if (cards.length === 0) {
+    categoryList.style.height = '';
+    return;
+  }
+
+  const containerWidth = categoryList.getBoundingClientRect().width || categoryList.clientWidth;
+  if (containerWidth <= 0) return;
+
+  const GAP = 14;
+  const isSingleCol = window.innerWidth < 768 || containerWidth < 520;
+  const numCols = isSingleCol ? 1 : 2;
+
+  // Pass 1: Set positioning, margin, box-sizing, and width so text wrapping & heights are accurate
+  cards.forEach(card => {
+    card.style.position = 'absolute';
+    card.style.boxSizing = 'border-box';
+    card.style.margin = '0';
+    if (numCols === 1) {
+      card.style.width = '100%';
+    } else {
+      card.style.width = 'calc(50% - 7px)';
+    }
+  });
+
+  // Pass 2: Shortest-column packing (Pinterest-style packing)
+  const colHeights = new Array(numCols).fill(0);
+
+  cards.forEach(card => {
+    let shortestCol = 0;
+    for (let c = 1; c < numCols; c++) {
+      if (colHeights[c] < colHeights[shortestCol]) {
+        shortestCol = c;
+      }
+    }
+
+    const top = colHeights[shortestCol];
+    card.style.top = `${top}px`;
+
+    if (numCols === 1) {
+      card.style.left = '0px';
+    } else {
+      card.style.left = shortestCol === 0 ? '0px' : 'calc(50% + 7px)';
+    }
+
+    const cardHeight = card.offsetHeight;
+    colHeights[shortestCol] += cardHeight + GAP;
+  });
+
+  const maxHeight = Math.max(...colHeights);
+  const totalHeight = maxHeight > 0 ? maxHeight - GAP : 0;
+  categoryList.style.height = `${totalHeight}px`;
+  categoryList.style.position = 'relative';
+}
 
 export function cleanupGradesView() {
   if (syncStatusListenerCleanup) {
@@ -103,10 +170,27 @@ export function cleanupGradesView() {
     document.removeEventListener('click', exportPopoverClickListener);
     exportPopoverClickListener = null;
   }
+  if (gradesResizeListener) {
+    window.removeEventListener('resize', gradesResizeListener);
+    gradesResizeListener = null;
+  }
+  if (masonryResizeObserver) {
+    masonryResizeObserver.disconnect();
+    masonryResizeObserver = null;
+  }
+  activeGradesContainer = null;
 }
 
 export function renderGradesView(container) {
   cleanupGradesView();
+  activeGradesContainer = container;
+
+  if (!gradesResizeListener) {
+    gradesResizeListener = () => {
+      layoutMasonryCards(activeGradesContainer);
+    };
+    window.addEventListener('resize', gradesResizeListener);
+  }
 
   const activeSubjects = store.getSubjects(false);
 
@@ -614,7 +698,7 @@ function renderTermTabContent(subject, term, gradeStats) {
       </div>
 
       <!-- Categories & Assessment Entries List (Clean Breakdown Accordion) -->
-      <div class="category-breakdown-list grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="category-breakdown-list">
         ${categories.length === 0 ? `
           <div class="empty-categories-card">
             <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--bg-surface-elevated); border: 1px solid var(--border-default); display: flex; align-items: center; justify-content: center; margin-bottom: 4px; color: var(--accent);">
@@ -1354,6 +1438,41 @@ function attachGradesEvents(container) {
   const attachGradesPanelEvents = (panelRoot) => {
     if (!panelRoot) return;
 
+    // JS-based masonry layout for category cards (shortest-column packing)
+    layoutMasonryCards(panelRoot);
+    requestAnimationFrame(() => layoutMasonryCards(panelRoot));
+
+    const categoryList = panelRoot.querySelector('.category-breakdown-list') || (panelRoot.classList?.contains('category-breakdown-list') ? panelRoot : null);
+    if (categoryList) {
+      if (typeof ResizeObserver !== 'undefined') {
+        if (masonryResizeObserver) {
+          masonryResizeObserver.disconnect();
+        }
+        let lastWidth = categoryList.clientWidth;
+        masonryResizeObserver = new ResizeObserver((entries) => {
+          let shouldRelayout = false;
+          for (const entry of entries) {
+            if (entry.target === categoryList) {
+              if (categoryList.clientWidth !== lastWidth) {
+                lastWidth = categoryList.clientWidth;
+                shouldRelayout = true;
+              }
+            } else {
+              shouldRelayout = true;
+            }
+          }
+          if (shouldRelayout) {
+            layoutMasonryCards(panelRoot);
+          }
+        });
+
+        masonryResizeObserver.observe(categoryList);
+        categoryList.querySelectorAll('.category-breakdown-section').forEach(c => {
+          masonryResizeObserver.observe(c);
+        });
+      }
+    }
+
     // Add Category triggers in panel
     panelRoot.querySelector('#btn-open-add-cat')?.addEventListener('click', () => openCategoryModal('manual'));
     panelRoot.querySelector('.btn-open-manual-cat')?.addEventListener('click', () => openCategoryModal('manual'));
@@ -1390,6 +1509,7 @@ function attachGradesEvents(container) {
           if (body) body.style.display = 'none';
           if (chevronBtn) chevronBtn.classList.remove('expanded');
         }
+        layoutMasonryCards(panelRoot);
       });
     });
 
@@ -1416,6 +1536,7 @@ function attachGradesEvents(container) {
           if (body) body.style.display = 'none';
           btn.classList.remove('expanded');
         }
+        layoutMasonryCards(panelRoot);
       });
     });
 
@@ -1674,7 +1795,6 @@ function attachGradesEvents(container) {
     }
 
     // Drag-and-Drop Category Reordering
-    const categoryList = panelRoot.querySelector('.category-breakdown-list') || panelRoot.querySelector('.category-list');
     if (categoryList) {
       let draggedCard = null;
       let isHandleGrabbed = false;
@@ -1747,6 +1867,8 @@ function attachGradesEvents(container) {
           categoryList.insertBefore(draggedCard, targetCard.nextSibling);
         }
 
+        layoutMasonryCards(categoryList);
+
         const updatedCards = Array.from(categoryList.querySelectorAll('.category-breakdown-section, .category-card'));
         updatedCards.forEach(c => {
           const first = firstRects.get(c);
@@ -1779,6 +1901,8 @@ function attachGradesEvents(container) {
           c.style.transition = '';
           c.style.transform = '';
         });
+
+        layoutMasonryCards(categoryList);
 
         const newOrderedIds = cards.map(c => c.dataset.catId).filter(Boolean);
         const currentCats = store.getSubjectGradeCategories(selectedSubjectId, activeTab);
