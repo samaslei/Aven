@@ -2,7 +2,7 @@
 
 **Aven** is a unified Academic Operating System for students — one place to manage subjects, track study time, calculate weighted grades, and keep interactive study plans, all built around a single core entity (**Subject**) that every feature links back to.
 
-🔗 **Live app:** [aven-livid.vercel.app](https://aven-livid.vercel.app)
+🔗 **Live app:** [aven-academicos.vercel.app](https://aven-academicos.vercel.app)
 
 ---
 
@@ -120,12 +120,6 @@ Output is generated in `dist/`. Deployment is configured via [`vercel.json`](./v
 ## 🎨 Design
 
 Aven uses a warm, cream-and-card visual language with pill-shaped buttons, circular icon badges, and a full animation system (`--dur-*` / `--ease-*` CSS custom properties) respecting `prefers-reduced-motion`. Multiple color themes are supported, each with light and dark variants.
-
----
-
-## 📄 License
-
-_Add your license here (e.g. MIT)._
 
 ---
 
